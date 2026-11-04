@@ -1,6 +1,6 @@
 // Service worker «Нити»: держит копию оболочки сайта, чтобы приложение открывалось быстро
 // и устанавливалось на главный экран. Данные чатов не кэшируются — они всегда свежие из Supabase.
-const CACHE='nit-v4';
+const CACHE='nit-v5';
 const SHELL=['./','index.html','css/style.css','manifest.webmanifest','icons/icon-192.png','icons/icon-512.png'];
 
 self.addEventListener('install',e=>{
@@ -19,7 +19,12 @@ self.addEventListener('fetch',e=>{
   }).catch(()=>caches.match(e.request).then(r=>r||caches.match('index.html'))));
 });
 // Нажатие на уведомление открывает приложение
+// Нажатие на уведомление открывает приложение и нужный чат
 self.addEventListener('notificationclick',e=>{
-  e.notification.close();
-  e.waitUntil(self.clients.matchAll({type:'window'}).then(cs=>cs[0]?cs[0].focus():self.clients.openWindow('./')));
+  e.notification.close();const chat=e.notification.data?.chat;
+  e.waitUntil(self.clients.matchAll({type:'window',includeUncontrolled:true}).then(async cs=>{
+    const c=cs[0];
+    if(c){await c.focus().catch(()=>{});if(chat)c.postMessage({open:chat});return}
+    const w=await self.clients.openWindow('./');if(w&&chat)setTimeout(()=>w.postMessage({open:chat}),3000);
+  }));
 });

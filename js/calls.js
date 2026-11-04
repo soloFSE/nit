@@ -16,13 +16,14 @@ const isFriendId=id=>fr.some(f=>f.status==='accepted'&&(f.a===id||f.b===id));
 function makePc(){
   const pc=new RTCPeerConnection({iceServers:ICE});
   pc.onicecandidate=e=>{if(e.candidate&&call)csig(call.peer,{t:'ice',c:e.candidate.toJSON()})};
-  pc.ontrack=e=>{const v=$('rv');if(v.srcObject!==e.streams[0]){v.srcObject=e.streams[0];v.play().catch(()=>{})}
+  pc.ontrack=e=>{const v=$('rv');v.muted=true;if(v.srcObject!==e.streams[0]){v.srcObject=e.streams[0];v.play().catch(()=>{})}
+    remoteAudio('call',e.streams[0]);
     $('call').classList.toggle('has-video',e.streams[0].getVideoTracks().length>0)};
   pc.onconnectionstatechange=()=>{
     if(!call)return;const s=pc.connectionState;
     if(s==='connected'&&call.state!=='active')callActive();
     if(s==='failed')endCall('failed');
-    if(s==='disconnected')setTimeout(()=>{if(call&&call.pc===pc&&pc.connectionState==='disconnected')endCall('lost')},6000);
+    if(s==='disconnected')setTimeout(()=>{if(call&&call.pc===pc&&pc.connectionState==='disconnected')endCall('lost')},12000);
   };
   return pc;
 }
@@ -58,9 +59,7 @@ async function onSig(p){
     if(call||gc){csig(p.from,{t:'busy',id:p.id});return}
     call={id:p.id,peer:p.from,video:!!p.video,role:'callee',state:'ringing',offer:p.sdp,ice:[]};
     showCall(true);setCallState(p.video?'Входящий видеозвонок':'Входящий звонок');tone('in');
-    if(document.hidden&&'Notification' in window&&Notification.permission==='granted'){
-      try{const n=new Notification(nameOf(p.from),{body:p.video?'📹 Видеозвонок':'📞 Звонок',tag:'call'});n.onclick=()=>{window.focus();n.close()}}catch{}
-    }
+    if(document.hidden)sysNotify(nameOf(p.from),{body:p.video?'📹 Входящий видеозвонок':'📞 Входящий звонок',tag:'call',call:true,chat:p.from});
     call.ring=setTimeout(()=>{if(call&&call.state==='ringing')endCall('missed',false)},45000);
     return;
   }
@@ -86,6 +85,9 @@ async function acceptCall(withVideo){
 
 function callActive(){
   call.state='active';call.start=Date.now();tone(null);clearTimeout(call.ring);
+  const hasCam=!!call.local?.getVideoTracks().length;
+  callSession(true,nameOf(call.peer),{hangup:()=>endCall('hangup'),mic:()=>$('cmute').click(),cam:hasCam?()=>$('ccam').click():null,
+    pip:hasCam&&document.pictureInPictureEnabled?()=>$('rv').requestPictureInPicture().catch(()=>{}):null});
   call.timer=setInterval(()=>setCallState(fmt((Date.now()-call.start)/1000)),500);
 }
 
@@ -95,7 +97,8 @@ function endCall(reason,tell=true){
   if(tell)csig(c.peer,{t:c.role==='callee'&&c.state==='ringing'?'decline':'hangup',id:c.id});
   clearTimeout(c.ring);clearInterval(c.timer);tone(null);
   c.local?.getTracks().forEach(t=>t.stop());try{c.pc?.close()}catch{}
-  $('rv').srcObject=null;$('lv').srcObject=null;
+  $('rv').srcObject=null;$('lv').srcObject=null;dropAudio('call');callSession(false);
+  if(document.pictureInPictureElement)document.exitPictureInPicture().catch(()=>{});
   const msg={busy:'Абонент занят',declined:'Звонок отклонён',noanswer:'Нет ответа',failed:'Не удалось соединиться',lost:'Связь прервалась'}[reason];
   if(msg){setCallState(msg);setTimeout(hideCall,1600)}else hideCall();
   // Запись о звонке в чат пишет только звонивший, чтобы не было двух
@@ -108,17 +111,18 @@ function showCall(incoming){
   const c=$('call');c.classList.remove('hide','has-video');c.classList.toggle('incoming',!!incoming);
   $('callName').textContent=nameOf(call.peer);const a=$('callAva');a.innerHTML='';a.append(avatar(call.peer,120));
   $('ccam').classList.toggle('hide',!call.video);$('cmute').classList.remove('off');$('ccam').classList.remove('off');
-  $('caccv').classList.toggle('hide',!call.video);
+  $('caccv').classList.toggle('hide',!call.video);$('cflip').classList.add('hide');$('cflip').classList.remove('spun');
 }
 function hideCall(){if(!call)$('call').classList.add('hide')}
 function setCallState(t){$('callState').textContent=t}
-function showLocal(){const v=$('lv');v.srcObject=call.local;v.classList.toggle('hide',!call.local.getVideoTracks().length);v.play().catch(()=>{})}
+function showLocal(){const v=$('lv');v.srcObject=call.local;v.classList.toggle('hide',!call.local.getVideoTracks().length);v.play().catch(()=>{});
+  mirrorLocal(v,'user');showFlip($('cflip'),call.local)}
 $('chang').onclick=()=>endCall('hangup');
 $('cdec').onclick=()=>endCall('decline');
 $('cacc').onclick=()=>acceptCall(false);
 $('caccv').onclick=()=>acceptCall(true);
-$('cmute').onclick=()=>{const t=call?.local?.getAudioTracks()[0];if(!t)return;t.enabled=!t.enabled;$('cmute').classList.toggle('off',!t.enabled)};
-$('ccam').onclick=()=>{const t=call?.local?.getVideoTracks()[0];if(!t)return;t.enabled=!t.enabled;$('ccam').classList.toggle('off',!t.enabled)};
+$('cmute').onclick=()=>{const t=call?.local?.getAudioTracks()[0];if(!t)return;t.enabled=!t.enabled;$('cmute').classList.toggle('off',!t.enabled);setSessionMic(t.enabled)};
+$('ccam').onclick=()=>{const t=call?.local?.getVideoTracks()[0];if(!t)return;t.enabled=!t.enabled;$('ccam').classList.toggle('off',!t.enabled);setSessionCam(t.enabled)};
 $('bcall').onclick=()=>cur&&(isGroupKey(cur)?startGroupCall(gidOf(cur),false):startCall(cur,false));
 $('bvcall').onclick=()=>cur&&(isGroupKey(cur)?startGroupCall(gidOf(cur),true):startCall(cur,true));
 window.addEventListener('beforeunload',()=>{if(call)endCall('hangup')});

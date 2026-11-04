@@ -61,7 +61,11 @@ function shrinkTo(f,max,q){return new Promise((ok,no)=>{const i=new Image();i.on
 function notifySection(s){
   const l=el('label','check');const c=document.createElement('input');c.type='checkbox';c.checked=notifyOn()&&('Notification' in window)&&Notification.permission==='granted';
   c.onchange=async()=>{c.checked=await setNotify(c.checked)};
-  l.append(c,document.createTextNode(' Уведомления о новых сообщениях, когда вкладка свёрнута'));
+  l.append(c,document.createTextNode(' Уведомления о новых сообщениях и звонках, когда приложение свёрнуто'));
   if(!('Notification' in window)){c.disabled=true}
-  s.append(l);
+  const l2=el('label','check');const c2=document.createElement('input');c2.type='checkbox';c2.checked=soundOn();
+  c2.onchange=()=>{try{localStorage.setItem('nit-sound',c2.checked?'1':'0')}catch{}if(c2.checked)ping()};
+  l2.append(c2,document.createTextNode(' Звук новых сообщений'));
+  s.append(l,l2);
+  if('Notification' in window&&Notification.permission==='denied')s.append(el('p','sm','Уведомления запрещены в настройках браузера для этого сайта — разрешите их там.'));
 }

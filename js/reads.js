@@ -76,7 +76,7 @@ async function setNotify(on){
 let audioCtx=null;
 function ping(){
   try{
-    audioCtx||=new (window.AudioContext||window.webkitAudioContext)();
+    audioCtx||=new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();
     const t=audioCtx.currentTime;
     [[880,0],[1320,.09]].forEach(([f,d])=>{const o=audioCtx.createOscillator(),g=audioCtx.createGain();
       o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.0001,t+d);g.gain.exponentialRampToValueAtTime(.12,t+d+.02);g.gain.exponentialRampToValueAtTime(.0001,t+d+.18);
@@ -86,11 +86,12 @@ function ping(){
 function notify(m){
   const k=chatKey(m);if(cur===k&&!document.hidden)return;
   if(isBlocked(m.sender))return;
-  ping();
-  if(!notifyOn()||!('Notification' in window)||Notification.permission!=='granted'||!document.hidden)return;
+  const sys=document.hidden&&notifyOn()&&('Notification' in window)&&Notification.permission==='granted';
+  // Свёрнуто — системное уведомление со звуком телефона; открыто — свой короткий звук и лёгкая вибрация
+  if(!sys&&soundOn()){ping();if(!document.hidden&&navigator.userActivation?.hasBeenActive)navigator.vibrate?.(40)}
+  if(!sys)return;
   const title=isGroupKey(k)?chatName(k)+' · '+nameOf(m.sender):nameOf(m.sender);
-  try{const n=new Notification(title,{body:preview(m),icon:prof[m.sender]?.avatar_path?avatarUrl(prof[m.sender].avatar_path):undefined,tag:k});
-    n.onclick=()=>{window.focus();openChat(k);n.close()}}catch{}
+  sysNotify(title,{body:preview(m),icon:prof[m.sender]?.avatar_path?avatarUrl(prof[m.sender].avatar_path):undefined,tag:k,chat:k});
 }
 // Число непрочитанных во вкладке браузера и на значке
 function updateBadge(){

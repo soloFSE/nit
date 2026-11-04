@@ -567,3 +567,9 @@ button{transition:background .15s var(--ease),color .15s var(--ease),transform .
 /* Кто не любит анимации (настройка системы) — без них */
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 .m.me .callrec .primary{background:#fff;color:var(--acc)}
+
+/* ============ Переворот камеры ============ */
+.call #lv.back-cam,.tile.me.back-cam video{transform:none}
+#cflip svg,#gcflip svg{transition:transform .4s var(--spring)}
+#cflip.spun svg,#gcflip.spun svg{transform:rotate(180deg)}
+.cbtn:disabled{opacity:.5}

@@ -150,12 +150,13 @@
 
 <!-- Звонок -->
 <div id="call" class="call hide">
-  <video id="rv" autoplay playsinline></video>
+  <video id="rv" autoplay playsinline muted></video>
   <div class="call-peer"><span id="callAva"></span><b id="callName"></b><small id="callState"></small></div>
   <video id="lv" class="hide" autoplay playsinline muted></video>
   <div class="call-bar active-bar">
     <button class="cbtn" id="cmute" title="Микрофон"><svg class="on-i"><use href="#i-mic"/></svg><svg class="off-i"><use href="#i-mic-off"/></svg></button>
     <button class="cbtn" id="ccam" title="Камера"><svg><use href="#i-video"/></svg></button>
+    <button class="cbtn hide" id="cflip" title="Перевернуть камеру"><svg><use href="#i-flip"/></svg></button>
     <button class="cbtn red" id="chang" title="Завершить"><svg><use href="#i-hang"/></svg></button>
   </div>
   <div class="call-bar ring-bar">
@@ -172,6 +173,7 @@
   <div class="call-bar">
     <button class="cbtn" id="gcmute" title="Микрофон"><svg class="on-i"><use href="#i-mic"/></svg><svg class="off-i"><use href="#i-mic-off"/></svg></button>
     <button class="cbtn" id="gccam" title="Камера"><svg><use href="#i-video"/></svg></button>
+    <button class="cbtn hide" id="gcflip" title="Перевернуть камеру"><svg><use href="#i-flip"/></svg></button>
     <button class="cbtn red" id="gcleave" title="Выйти из звонка"><svg><use href="#i-hang"/></svg></button>
   </div>
 </div>
@@ -206,6 +208,7 @@
 <script src="js/appearance.js"></script>
 <script src="js/calls.js"></script>
 <script src="js/gcall.js"></script>
+<script src="js/bg.js"></script>
 <script src="js/sync.js"></script>
 <script src="js/pwa.js"></script>
 <script src="js/app.js"></script>

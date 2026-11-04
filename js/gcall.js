@@ -24,7 +24,8 @@ async function joinGroupCall(gid,callId,video){
   let local;
   try{local=await getMedia(video)}catch(e){mediaErr(e);return false}
   gc={gid,callId,video,local,peers:{},ice:{},start:Date.now()};
-  showGc();addTile(me,local,true);
+  showGc();addTile(me,local,true);showFlip($('gcflip'),local);mirrorLocal(document.querySelector('.tile.me'),'user');
+  callSession(true,groups[gid]?.name||'Группа',{hangup:leaveGroupCall,mic:()=>$('gcmute').click(),cam:video?()=>$('gccam').click():null});
   const ch=gc.ch=sb.channel('gcall-'+callId,{config:{presence:{key:me},broadcast:{self:false}}});
   ch.on('broadcast',{event:'sig'},({payload:p})=>{if(gc&&p?.to===me)onGcSig(p).catch(e=>console.warn('gcall',e))})
     .on('presence',{event:'sync'},()=>syncGcPeers())
@@ -81,7 +82,7 @@ function flushGcIce(u){const l=gc.ice[u]||[];gc.ice[u]=[];l.forEach(c=>gc.peers[
 function dropGcPeer(u){
   try{gc.peers[u]?.close()}catch{}delete gc.peers[u];delete gc.ice[u];
   const t=document.querySelector('.tile[data-uid="'+u+'"]');if(t){t.classList.add('leaving');setTimeout(()=>{t.remove();layoutGc()},300)}
-  stopTalk(u);
+  stopTalk(u);dropAudio('gc:'+u);
 }
 
 function leaveGroupCall(){
@@ -89,6 +90,7 @@ function leaveGroupCall(){
   clearInterval(g.timer);
   try{g.ch.untrack();sb.removeChannel(g.ch)}catch{}
   Object.values(g.peers).forEach(pc=>{try{pc.close()}catch{}});
+  Object.keys(g.peers).forEach(u=>dropAudio('gc:'+u));callSession(false);
   g.local.getTracks().forEach(t=>t.stop());
   Object.keys(talk).forEach(stopTalk);
   $('gcall').classList.add('closing');
@@ -100,13 +102,13 @@ function showGc(){
   const g=groups[gc.gid];
   $('gcName').textContent=g?.name||'Группа';$('gcState').textContent='Подключение…';
   $('gcall').classList.remove('hide');
-  $('gccam').classList.toggle('hide',!gc.video);$('gcmute').classList.remove('off');$('gccam').classList.remove('off');
+  $('gccam').classList.toggle('hide',!gc.video);$('gcmute').classList.remove('off');$('gccam').classList.remove('off');$('gcflip').classList.remove('spun');
 }
 function addTile(u,stream,isMe){
   let t=document.querySelector('.tile[data-uid="'+u+'"]');
   if(!t){
     t=el('div','tile connecting'+(isMe?' me':''));t.dataset.uid=u;
-    const v=document.createElement('video');v.autoplay=true;v.playsInline=true;if(isMe){v.muted=true}
+    const v=document.createElement('video');v.autoplay=true;v.playsInline=true;v.muted=true; // звук — через <audio>, см. bg.js
     const ava=el('div','tile-ava');ava.append(avatar(u,72));
     t.append(v,ava,el('span','tile-n',isMe?'Вы':nameOf(u)));
     $('gcGrid').append(t);layoutGc();
@@ -117,13 +119,13 @@ function addTile(u,stream,isMe){
     const hasV=()=>stream.getVideoTracks().some(x=>x.enabled&&x.readyState==='live');
     t.classList.toggle('has-video',hasV());
     stream.onaddtrack=()=>t.classList.toggle('has-video',hasV());
-    if(!isMe)t.classList.remove('connecting');
+    if(!isMe){t.classList.remove('connecting');remoteAudio('gc:'+u,stream)}
     watchTalk(u,stream);
   }
 }
 function layoutGc(){const n=$('gcGrid').children.length;$('gcGrid').dataset.n=Math.min(n,9)}
 $('gcleave').onclick=leaveGroupCall;
-$('gcmute').onclick=()=>{const t=gc?.local.getAudioTracks()[0];if(!t)return;t.enabled=!t.enabled;$('gcmute').classList.toggle('off',!t.enabled);
+$('gcmute').onclick=()=>{const t=gc?.local.getAudioTracks()[0];if(!t)return;t.enabled=!t.enabled;$('gcmute').classList.toggle('off',!t.enabled);setSessionMic(t.enabled);
   document.querySelector('.tile.me')?.classList.toggle('muted',!t.enabled)};
 $('gccam').onclick=()=>{const t=gc?.local.getVideoTracks()[0];if(!t)return;t.enabled=!t.enabled;$('gccam').classList.toggle('off',!t.enabled);
   document.querySelector('.tile.me')?.classList.toggle('has-video',t.enabled);
@@ -159,9 +161,7 @@ function onGroupRing(p){
   $('grjoinv').classList.toggle('hide',!p.video);
   $('gring').classList.remove('hide');tone('in');
   clearTimeout(gring.t);gring.t=setTimeout(hideGring,40000);
-  if(document.hidden&&'Notification' in window&&Notification.permission==='granted'){
-    try{const n=new Notification(g.name,{body:'📞 '+nameOf(p.from)+' зовёт в звонок',tag:'gcall'});n.onclick=()=>{window.focus();n.close()}}catch{}
-  }
+  if(document.hidden)sysNotify(g.name,{body:'📞 '+nameOf(p.from)+' зовёт в '+(p.video?'видеозвонок':'звонок'),tag:'gcall',call:true,chat:'g:'+p.gid});
 }
 function hideGring(){if(gring){clearTimeout(gring.t);gring=null}$('gring').classList.add('hide');if(!call)tone(null)}
 $('grjoin').onclick=()=>gring&&joinGroupCall(gring.gid,gring.callId,false);
