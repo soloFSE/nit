@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#e5172b">
+<title>Нить</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
+<link rel="stylesheet" href="css/style.css">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+</head>
+<body>
+<!-- Значки, которые используются по всей странице -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-logo" viewBox="0 0 32 32"><path d="M4 22c5 0 6-12 12-12s6 12 12 12" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/><circle cx="4" cy="22" r="2.6" fill="currentColor"/><circle cx="28" cy="22" r="2.6" fill="currentColor"/></symbol>
+  <symbol id="i-clip" viewBox="0 0 24 24"><path d="M20 11.5l-7.8 7.8a5 5 0 01-7.1-7.1l8.5-8.5a3.3 3.3 0 014.7 4.7l-8.5 8.5a1.7 1.7 0 01-2.4-2.4l7.8-7.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11a7 7 0 0014 0M12 18v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2.5" fill="currentColor"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12l16-8-6 16-2.5-6.5L4 12z" fill="currentColor"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24"><path d="M14 4h4a2 2 0 012 2v12a2 2 0 01-2 2h-4M10 16l-4-4 4-4M6 12h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/></symbol>
+  <symbol id="i-flip" viewBox="0 0 24 24"><path d="M4 9a8 8 0 0114-3l2 2M20 15a8 8 0 01-14 3l-2-2M20 4v4h-4M4 20v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 14.5c1 1.3 2.3 2 4 2s3-.7 4-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="9.5" r="1.3" fill="currentColor"/><circle cx="15" cy="9.5" r="1.3" fill="currentColor"/></symbol>
+  <symbol id="i-reply" viewBox="0 0 24 24"><path d="M10 7L4 12l6 5M4 12h10a6 6 0 016 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M6.6 3.5l2.6.4 1.4 4-1.9 1.6a12 12 0 005.8 5.8l1.6-1.9 4 1.4.4 2.6a2 2 0 01-2 2.1A16.6 16.6 0 014.5 5.5a2 2 0 012.1-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="12.5" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 10.5l5-3v9l-5-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M9 4h6l-1 5 3 3v2H7v-2l3-3-1-5zM12 14v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></symbol>
+  <symbol id="i-mic-off" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11a7 7 0 0014 0M12 18v3M4 4l16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-hang" viewBox="0 0 24 24"><path d="M3 14.5c5-5 13-5 18 0l-2.3 2.3-3.3-1.4v-2.6a10 10 0 00-6.8 0v2.6l-3.3 1.4z" fill="currentColor"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5M16 4.8a3.5 3.5 0 010 6.4M18.5 14.8c1.6.8 2.6 2.5 3 5.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+</svg>
+
+<div id="auth" class="auth">
+  <div class="auth-card">
+    <div class="brand"><svg class="logo"><use href="#i-logo"/></svg><h1>Нить</h1></div>
+    <p class="tagline">Переписка с друзьями. Ничего лишнего.</p>
+    <div class="seg"><button id="tL">Вход</button><button class="g" id="tR">Регистрация</button></div>
+    <label class="fld"><span>Ник</span><input id="user" placeholder="латиница, цифры, _" maxlength="20" autocapitalize="none" autocomplete="username"></label>
+    <label class="fld"><span>Пароль</span><input id="pass" type="password" placeholder="от 6 символов" autocomplete="current-password"></label>
+    <button id="go" class="primary wide">Войти</button>
+    <p class="err" id="aerr"></p>
+  </div>
+</div>
+
+<div class="app hide" id="app">
+  <aside class="side">
+    <div class="me-bar">
+      <button class="mebtn" id="meBtn" title="Настройки профиля"><span id="meAva"></span><span class="me-txt"><b id="who"></b><small id="whoNick"></small></span></button>
+      <button class="ghost sm-btn hide" id="install" title="Установить как приложение">Установить</button>
+      <button class="icon" id="out" title="Выйти"><svg><use href="#i-out"/></svg></button>
+    </div>
+    <div id="net" class="net hide">Нет связи с сервером. Переподключаюсь…</div>
+    <div class="seg tabs"><button id="tabF">Друзья</button><button class="g" id="tabG">Группы</button></div>
+    <div class="side-scroll">
+      <section id="secF">
+        <div class="field"><input id="find" placeholder="Добавить друга по нику" autocapitalize="none"><button id="add" class="icon primary" title="Отправить заявку"><svg><use href="#i-plus"/></svg></button></div>
+        <p class="err" id="ferr"></p>
+        <div id="reqs"></div>
+        <div id="list"></div>
+      </section>
+      <section id="secG" class="hide">
+        <div class="field"><input id="gname" placeholder="Название новой группы" maxlength="40"><button id="gnew" class="icon primary" title="Создать группу"><svg><use href="#i-plus"/></svg></button></div>
+        <p class="err" id="gerr"></p>
+        <div id="glist"></div>
+      </section>
+    </div>
+  </aside>
+
+  <main class="pane" id="pane">
+    <header id="head" class="hide">
+      <button class="icon" id="back" title="Назад"><svg><use href="#i-back"/></svg></button>
+      <button class="peer" id="peer"><span id="cava"></span><span class="peer-txt"><b id="cname"></b><small id="csub"></small></span></button>
+      <button class="icon" id="bsearch" title="Поиск по чату"><svg><use href="#i-search"/></svg></button>
+      <button class="icon hide" id="bcall" title="Позвонить"><svg><use href="#i-phone"/></svg></button>
+      <button class="icon hide" id="bvcall" title="Видеозвонок"><svg><use href="#i-video"/></svg></button>
+      <button class="icon hide" id="gmem" title="Группа"><svg><use href="#i-users"/></svg></button>
+    </header>
+    <div id="search" class="search hide">
+      <div class="field"><input id="sq" placeholder="Поиск по сообщениям"><button class="icon" id="sx" title="Закрыть"><svg><use href="#i-x"/></svg></button></div>
+      <div id="sres"></div>
+    </div>
+    <div id="pinbar" class="pinbar hide"><svg><use href="#i-pin"/></svg><div class="pin-t" id="pinText"></div><button class="icon sm-btn" id="pinX" title="Открепить"><svg><use href="#i-x"/></svg></button></div>
+    <div id="gpanel" class="hide"></div>
+    <div id="log"><div class="empty"><svg class="logo big"><use href="#i-logo"/></svg>Выберите чат слева</div></div>
+    <div id="drop" class="drop hide"><div>Отпустите, чтобы отправить</div></div>
+    <div id="attach" class="attach hide">
+      <button data-a="file"><span>🖼️</span>Фото или файл</button>
+      <button data-a="poll"><span>📊</span>Опрос</button>
+      <button data-a="ttt"><span>❌</span>Крестики-нолики</button>
+      <button data-a="dice"><span>🎲</span>Кубик</button>
+      <button data-a="coin"><span>🪙</span>Монетка</button>
+      <button data-a="rps"><span>✊</span>Камень-ножницы-бумага</button>
+      <button data-a="ttl"><span>⏱</span>Исчезающие сообщения</button>
+    </div>
+    <div id="emoji" class="emoji hide">
+      <div class="seg"><button id="etE">Смайлики</button><button class="g" id="etS">Стикеры</button></div>
+      <div id="emojiTab" class="emoji-tab"></div>
+      <div id="stickTab" class="stick-tab hide"></div>
+    </div>
+    <div id="replybar" class="replybar hide">
+      <svg><use href="#i-reply"/></svg>
+      <div class="rb-txt"><b id="rbWho"></b><span id="rbText"></span></div>
+      <button class="icon" id="rbX" title="Не отвечать"><svg><use href="#i-x"/></svg></button>
+    </div>
+    <div id="blockbar" class="blockbar hide">Вы заблокировали этого пользователя. <button class="ghost sm-btn" id="unblockbtn">Разблокировать</button></div>
+    <div id="send" class="hide composer">
+      <button class="icon" id="bp" title="Вложения"><svg><use href="#i-clip"/></svg></button>
+      <input type="file" id="file" multiple hidden>
+      <button class="ttlchip hide" id="ttlchip" title="Исчезающие сообщения"></button>
+      <input id="msg" placeholder="Сообщение" autocomplete="off">
+      <button class="icon" id="be" title="Смайлики и стикеры"><svg><use href="#i-smile"/></svg></button>
+      <button class="icon hide" id="vc" title="Отменить запись"><svg><use href="#i-x"/></svg></button>
+      <button class="icon" id="bc" title="Кружок"><svg><use href="#i-circle"/></svg></button>
+      <button class="icon" id="bv" title="Голосовое"><svg class="i-mic"><use href="#i-mic"/></svg><svg class="i-stop"><use href="#i-stop"/></svg></button>
+      <button class="icon primary round" id="bs" title="Отправить"><svg><use href="#i-send"/></svg></button>
+    </div>
+  </main>
+</div>
+
+<!-- Запись кружка -->
+<div id="cam" class="cam hide" data-s="idle">
+  <div class="cam-box">
+    <div class="cam-view">
+      <video id="camv" playsinline muted></video>
+      <svg class="cam-ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="17" pathLength="100" id="camring"/></svg>
+    </div>
+    <div class="cam-t"><span class="cam-dot"></span><span id="camt">0:00</span></div>
+    <div class="cam-bar">
+      <button class="icon" id="camx" title="Отмена"><svg><use href="#i-x"/></svg></button>
+      <button class="cam-go" id="camgo" title="Записать"><span></span></button>
+      <button class="icon" id="camflip" title="Сменить камеру"><svg><use href="#i-flip"/></svg></button>
+    </div>
+    <p class="cam-hint">Нажмите, чтобы начать запись. Ещё раз — отправить. До 60 секунд.</p>
+  </div>
+</div>
+
+<!-- Просмотр фото -->
+<div id="viewer" class="viewer hide"><img alt=""><a target="_blank" rel="noopener" class="ghost">Открыть оригинал</a></div>
+
+<!-- Звонок -->
+<div id="call" class="call hide">
+  <video id="rv" autoplay playsinline></video>
+  <div class="call-peer"><span id="callAva"></span><b id="callName"></b><small id="callState"></small></div>
+  <video id="lv" class="hide" autoplay playsinline muted></video>
+  <div class="call-bar active-bar">
+    <button class="cbtn" id="cmute" title="Микрофон"><svg class="on-i"><use href="#i-mic"/></svg><svg class="off-i"><use href="#i-mic-off"/></svg></button>
+    <button class="cbtn" id="ccam" title="Камера"><svg><use href="#i-video"/></svg></button>
+    <button class="cbtn red" id="chang" title="Завершить"><svg><use href="#i-hang"/></svg></button>
+  </div>
+  <div class="call-bar ring-bar">
+    <button class="cbtn red" id="cdec" title="Отклонить"><svg><use href="#i-hang"/></svg></button>
+    <button class="cbtn green" id="cacc" title="Ответить"><svg><use href="#i-phone"/></svg></button>
+    <button class="cbtn green" id="caccv" title="Ответить с видео"><svg><use href="#i-video"/></svg></button>
+  </div>
+</div>
+
+<div id="modal" class="modal hide"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+
+<script src="js/config.js"></script>
+<script src="js/profile.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/friends.js"></script>
+<script src="js/groups.js"></script>
+<script src="js/chat.js"></script>
+<script src="js/files.js"></script>
+<script src="js/reads.js"></script>
+<script src="js/compose.js"></script>
+<script src="js/voice.js"></script>
+<script src="js/circle.js"></script>
+<script src="js/social.js"></script>
+<script src="js/emoji.js"></script>
+<script src="js/reactions.js"></script>
+<script src="js/msgtools.js"></script>
+<script src="js/fun.js"></script>
+<script src="js/appearance.js"></script>
+<script src="js/calls.js"></script>
+<script src="js/sync.js"></script>
+<script src="js/pwa.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
