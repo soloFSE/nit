@@ -9,5 +9,6 @@ let setupErr='';
 try{
   if(SUPABASE_URL.startsWith('ВСТАВЬТЕ')||SUPABASE_KEY.startsWith('ВСТАВЬТЕ'))throw new Error('В начале скрипта не заменены адрес проекта и ключ.');
   if(typeof supabase==='undefined')throw new Error('Не загрузилась библиотека Supabase. Проверьте интернет или отключите блокировщик рекламы.');
-  sb=supabase.createClient(SUPABASE_URL.trim(),SUPABASE_KEY.trim());
+  // Вход хранится в браузере (localStorage) и сам продлевается — заходить заново не нужно, пока не нажмёте «Выйти»
+  sb=supabase.createClient(SUPABASE_URL.trim(),SUPABASE_KEY.trim(),{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
 }catch(e){setupErr='Ошибка настройки: '+e.message;$('aerr').textContent=setupErr}

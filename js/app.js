@@ -1,23 +1,57 @@
-// Точка входа: следим за сессией и запускаем приложение
+// Точка входа: следим за сессией и запускаем приложение.
+// Вход сохраняется в браузере. Экран входа показываем ТОЛЬКО если сохранённого входа нет
+// или человек сам нажал «Выйти». Нет интернета при запуске — ждём и повторяем, а не выкидываем на вход.
+let byUser=false,retryT=0;
+const hasSaved=()=>{try{return Object.keys(localStorage).some(k=>/^sb-.+-auth-token$/.test(k))}catch{return false}};
+function showSplash(text,stuck){
+  $('splashT').textContent=text;$('splashB').classList.toggle('hide',!stuck);
+  $('splash').classList.remove('hide');$('auth').classList.add('hide');
+}
+function hideSplash(){clearTimeout(retryT);$('splash').classList.add('hide')}
 if(sb){
+  if(hasSaved())showSplash('Подключаюсь…');
   // setTimeout — рекомендация Supabase: запросы к базе прямо внутри этого
   // обработчика могут подвисать, пока библиотека держит блокировку сессии.
-  sb.auth.onAuthStateChange((_e,s)=>{ setTimeout(()=>{ s?.user?safeBoot(s.user):unboot() },0) });
+  sb.auth.onAuthStateChange((_e,s)=>{ setTimeout(()=>{
+    if(s?.user){safeBoot(s.user);return}
+    if(!byUser&&hasSaved()){waitSession();return}   // вход сохранён — просто пока нет связи
+    byUser=false;hideSplash();unboot();
+  },0) });
 }
+// Пытаемся продлить сохранённый вход, пока не получится
+function waitSession(delay){
+  if(me)return;
+  showSplash(navigator.onLine?'Подключаюсь…':'Нет интернета. Жду подключения…',true);
+  clearTimeout(retryT);
+  retryT=setTimeout(async()=>{
+    const r=await sb.auth.refreshSession().catch(e=>({error:e}));
+    if(r?.data?.session||me)return;               // получилось — дальше сработает onAuthStateChange
+    if(!hasSaved()){hideSplash();unboot();return}  // сервер сказал, что вход больше не действует
+    waitSession(Math.min((delay||2000)*1.5,15000));
+  },delay??600);
+}
+window.addEventListener('online',()=>{if(!me&&!$('splash').classList.contains('hide'))waitSession(0)});
 
 async function safeBoot(u){
-  try{await boot(u)}
-  catch(e){
+  clearTimeout(retryT);
+  try{
+    await boot(u);hideSplash();
+    navigator.storage?.persist?.().catch(()=>{}); // просим браузер не чистить данные сайта (и сохранённый вход)
+  }catch(e){
     console.error(e);me=null;
-    $('app').classList.add('hide');$('auth').classList.remove('hide');
-    $('aerr').textContent='Не получилось загрузить данные: '+authErr(e).replace(/^Ошибка: /,'')+' Обновите страницу.';
+    $('app').classList.add('hide');
+    showSplash('Не получилось загрузить данные: '+authErr(e).replace(/^Ошибка: /,'')+' Пробую снова…',true);
+    retryT=setTimeout(()=>safeBoot(u),5000);
   }
 }
+$('splashR').onclick=async()=>{const {data}=await sb.auth.getSession().catch(()=>({}));data?.session?.user?safeBoot(data.session.user):waitSession(0)};
+$('splashOut').onclick=()=>{byUser=true;hideSplash();sb.auth.signOut().catch(()=>{});
+  try{Object.keys(localStorage).filter(k=>/^sb-.+-auth-token$/.test(k)).forEach(k=>localStorage.removeItem(k))}catch{}unboot()};
 
 // Если на GitHub обновили не все файлы, части кода не будет — предупреждаем сразу
 (function(){
   const need={'js/files.js':'isFile','js/reads.js':'markRead','js/msgtools.js':'startEdit','js/fun.js':'pollOf','js/appearance.js':'applyWall',
-    'js/calls.js':'startCall','js/gcall.js':'joinGroupCall','js/ux.js':'layoutNode','js/bg.js':'sysNotify','js/social.js':'loadBlocks','js/emoji.js':'closeEmoji','js/reactions.js':'loadReactions','js/circle.js':'circleEl',
+    'js/calls.js':'startCall','js/gcall.js':'joinGroupCall','js/ux.js':'layoutNode','js/bg.js':'sysNotify','js/ginfo.js':'openGroupInfo','js/social.js':'loadBlocks','js/emoji.js':'closeEmoji','js/reactions.js':'loadReactions','js/circle.js':'circleEl',
     'js/voice.js':'startRec','js/groups.js':'loadGroups','js/friends.js':'loadFriends','js/profile.js':'loadProfiles','js/compose.js':'sendMsg','js/pwa.js':'installEvt'};
   const miss=Object.entries(need).filter(([,fn])=>{try{return typeof eval(fn)==='undefined'}catch{return true}}).map(([f])=>f);
   if(miss.length){const b=document.createElement('div');b.className='filewarn';

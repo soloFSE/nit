@@ -42,7 +42,7 @@ function draw(m){
   const keep=['open','cont','more','new'].filter(c=>d.classList.contains(c)).join(' ');
   d.innerHTML='';d.className='m '+(m.sender===me?'me':'them')+(keep?' '+keep:'');
   if(m.deleted_at)d.classList.add('del');
-  if(sp?.s.cls)d.classList.add(sp.s.cls);
+  if(sp&&sp.s.cls)d.classList.add(sp.s.cls);
   if(!m.deleted_at&&!isFile(m.image_path)&&isCircle(m.image_path))d.classList.add('circle');
   if(!m.deleted_at&&!sp&&!m.image_path&&isBigEmoji(m.body))d.classList.add('big');
 
@@ -102,6 +102,13 @@ function menuEl(m,sp){
     const {error}=await sb.rpc('delete_for_all',{mid:m.id});
     if(!error)line({...m,body:'',image_path:null,deleted_at:new Date().toISOString()});
   },'danger-soft');
+  // Админ группы может удалить чужое сообщение
+  if(m.group_id&&m.sender!==me&&!m.deleted_at&&isAdminOf(m.group_id))btn('Удалить у всех (админ)',async()=>{
+    if(!confirm('Удалить сообщение '+nameOf(m.sender)+' у всех участников?'))return;
+    const {error}=await sb.rpc('admin_delete_message',{mid:m.id});
+    if(error){toast('Не удалось: '+sqlHint(error));return}
+    line({...m,body:'',image_path:null,deleted_at:new Date().toISOString()});
+  },'danger-soft');
   return a;
 }
 
@@ -138,6 +145,7 @@ async function openChat(id){
   cur=id;nodes={};cancelReply();cancelEdit();closeEmoji();closeSearch();closeAttach();
   setHead(id);$('head').classList.remove('hide');applyBlockUI();
   $('gmem').classList.toggle('hide',!isGroupKey(id));$('gpanel').classList.add('hide');
+  if(giGid&&'g:'+giGid!==id)closeGroupInfo();
   $('app').classList.add('open');$('log').innerHTML='';$('log').append(skeleton());$('log').classList.remove('enter');render();
   newBelow=0;stick=true;updateDown();
   loadDraft(id);updateTtlChip();
@@ -201,7 +209,7 @@ function flash(id){const t=nodes[id];if(!t)return;t.scrollIntoView({block:'cente
 
 function closeChat(){
   saveDraft();try{localStorage.removeItem('nit-last')}catch{}
-  cur=null;nodes={};$('app').classList.remove('open');
+  cur=null;nodes={};$('app').classList.remove('open');closeGroupInfo();
   ['head','send','gpanel','blockbar','pinbar'].forEach(i=>$(i).classList.add('hide'));
   cancelReply();cancelEdit();closeEmoji();closeSearch();closeAttach();
   $('log').innerHTML='<div class="empty"><svg class="logo big"><use href="#i-logo"/></svg>Выберите чат слева</div>';render();
@@ -217,7 +225,6 @@ function setHead(k){
   $('bcall').title=isGroupKey(k)?'Групповой звонок':'Позвонить';$('bvcall').title=isGroupKey(k)?'Групповой видеозвонок':'Видеозвонок';
   setSub();
 }
-$('peer').onclick=()=>{if(!cur)return;if(isGroupKey(cur))showPanel($('gpanel').classList.contains('hide'));else showProfile(cur)};
 
 // Просмотр фото на весь экран
 function openViewer(u){

@@ -40,6 +40,11 @@
   <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5M16 4.8a3.5 3.5 0 010 6.4M18.5 14.8c1.6.8 2.6 2.5 3 5.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
 </svg>
 
+<div id="splash" class="splash hide">
+  <svg class="logo"><use href="#i-logo"/></svg>
+  <p id="splashT">Подключаюсь…</p>
+  <div id="splashB" class="splash-b hide"><button class="primary" id="splashR">Повторить</button><button class="ghost" id="splashOut">Выйти из аккаунта</button></div>
+</div>
 <div id="auth" class="auth">
   <div class="auth-card">
     <div class="brand"><svg class="logo"><use href="#i-logo"/></svg><h1>Нить</h1></div>
@@ -113,6 +118,7 @@
       <div class="rb-txt"><b id="rbWho"></b><span id="rbText"></span></div>
       <button class="icon" id="rbX" title="Не отвечать"><svg><use href="#i-x"/></svg></button>
     </div>
+    <div id="robar" class="blockbar hide">🔒 Писать в эту группу могут только админы</div>
     <div id="blockbar" class="blockbar hide">Вы заблокировали этого пользователя. <button class="ghost sm-btn" id="unblockbtn">Разблокировать</button></div>
     <div id="send" class="hide composer">
       <button class="icon" id="bp" title="Вложения"><svg><use href="#i-clip"/></svg></button>
@@ -147,6 +153,9 @@
 
 <!-- Просмотр фото -->
 <div id="viewer" class="viewer hide"><img alt=""><a target="_blank" rel="noopener" class="ghost">Открыть оригинал</a></div>
+
+<!-- Данные группы -->
+<div id="ginfo" class="gi hide"></div>
 
 <!-- Звонок -->
 <div id="call" class="call hide">
@@ -209,6 +218,7 @@
 <script src="js/calls.js"></script>
 <script src="js/gcall.js"></script>
 <script src="js/bg.js"></script>
+<script src="js/ginfo.js"></script>
 <script src="js/sync.js"></script>
 <script src="js/pwa.js"></script>
 <script src="js/app.js"></script>

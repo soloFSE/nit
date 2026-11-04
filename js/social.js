@@ -36,7 +36,8 @@ async function unblockUser(id){
 // В личке с заблокированным вместо поля ввода — плашка
 function applyBlockUI(){
   const b=cur&&!isGroupKey(cur)&&isBlocked(cur);
-  $('send').classList.toggle('hide',!cur||b);$('blockbar').classList.toggle('hide',!b);
+  const ro=cur&&isGroupKey(cur)&&groups[gidOf(cur)]&&!canDo(gidOf(cur),'send');
+  $('send').classList.toggle('hide',!cur||b||ro);$('blockbar').classList.toggle('hide',!b);$('robar').classList.toggle('hide',!ro);
 }
 $('unblockbtn').onclick=async()=>{if(cur&&await unblockUser(cur)){}};
 

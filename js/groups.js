@@ -1,6 +1,6 @@
-// Группы: список, создание, участники
+// Группы: список, создание, участники, роли (создатель / админ / участник)
 // Ключ чата группы в cur/unread — 'g:'+id, у личного чата — id друга.
-let groups={},gm={},grSeq=0,grSig='';
+let groups={},gm={},grole={},grSeq=0,grSig='',roleCols=true;
 const isGroupKey=k=>typeof k==='string'&&k.startsWith('g:');
 const gidOf=k=>k.slice(2);
 // Ключ чата, к которому относится сообщение
@@ -9,6 +9,13 @@ const chatKey=m=>m.group_id?'g:'+m.group_id:(m.sender===me?m.recipient:m.sender)
 const target=k=>isGroupKey(k)?{group_id:gidOf(k)}:{recipient:k};
 const chatName=k=>isGroupKey(k)?(groups[gidOf(k)]?.name||'Группа'):nameOf(k);
 
+// ---------- Роли и права ----------
+// owner — создатель (всегда админ), admin — назначенный админ, member — обычный участник
+const roleOf=(gid,u)=>groups[gid]?.owner===u?'owner':grole[gid]?.[u]==='admin'?'admin':'member';
+const isAdminOf=(gid,u=me)=>roleOf(gid,u)!=='member';
+// what: 'edit' — менять данные группы, 'send' — писать, 'add' — добавлять участников
+const canDo=(gid,what)=>isAdminOf(gid)||!groups[gid]?.['only_admins_'+what];
+
 async function loadGroups(){
   const seq=++grSeq;
   const {data:mine,error}=await sb.from('group_members').select('group_id').eq('user_id',me);
@@ -16,23 +23,24 @@ async function loadGroups(){
   const ids=(mine||[]).map(x=>x.group_id);
   let gs=[],ms=[];
   if(ids.length){
-    const [a,b]=await Promise.all([
-      sb.from('groups').select('*').in('id',ids),
-      sb.from('group_members').select('group_id,user_id').in('group_id',ids)
-    ]);
+    // Колонки role может ещё не быть (не запущен admins.sql) — тогда без неё
+    const mq=()=>sb.from('group_members').select(roleCols?'group_id,user_id,role':'group_id,user_id').in('group_id',ids);
+    let [a,b]=await Promise.all([sb.from('groups').select('*').in('id',ids),mq()]);
+    if(b.error&&roleCols&&/role/i.test(b.error.message)){roleCols=false;b=await mq()}
     if(seq!==grSeq||a.error||b.error)return;
     gs=a.data||[];ms=b.data||[];
   }
   await loadProfiles(ms.map(x=>x.user_id));
   if(seq!==grSeq)return;
-  const s=JSON.stringify([gs.map(g=>[g.id,g.name]).sort(),ms.map(x=>x.group_id+x.user_id).sort()]);
+  const s=JSON.stringify([gs.map(g=>JSON.stringify(g)).sort(),ms.map(x=>x.group_id+x.user_id+(x.role||'')).sort()]);
   if(s===grSig)return;
-  grSig=s;groups={};gm={};
-  gs.forEach(g=>{groups[g.id]=g;gm[g.id]=[]});
-  ms.forEach(x=>gm[x.group_id]?.push(x.user_id));
+  grSig=s;groups={};gm={};grole={};
+  gs.forEach(g=>{groups[g.id]=g;gm[g.id]=[];grole[g.id]={}});
+  ms.forEach(x=>{gm[x.group_id]?.push(x.user_id);if(grole[x.group_id])grole[x.group_id][x.user_id]=x.role||'member'});
   // Меня убрали из открытой группы — закрываем её
-  if(isGroupKey(cur)&&!groups[gidOf(cur)])closeChat();
-  else if(isGroupKey(cur)){setHead(cur);if(!$('gpanel').classList.contains('hide'))renderPanel()}
+  if(isGroupKey(cur)&&!groups[gidOf(cur)]){closeGroupInfo();closeChat()}
+  else if(isGroupKey(cur)){setHead(cur);applyBlockUI()}
+  refreshGroupInfo();
   renderGroups();
 }
 
@@ -60,14 +68,10 @@ $('gnew').onclick=async()=>{
   $('gnew').disabled=false;
   if(error){$('gerr').textContent='Не удалось создать: '+error.message;return}
   $('gname').value='';
-  groups[data.id]=data;gm[data.id]=[me];grSig='';renderGroups();
-  showTab(true);await openChat('g:'+data.id);showPanel(true);loadGroups();
+  groups[data.id]=data;gm[data.id]=[me];grole[data.id]={[me]:'member'};grSig='';renderGroups();
+  showTab(true);await openChat('g:'+data.id);openGroupInfo(data.id);openAddMembers(data.id);loadGroups();
 };
 $('gname').onkeydown=e=>{if(e.key==='Enter')$('gnew').click()};
-
-// Панель участников открытой группы
-function showPanel(on){$('gpanel').classList.toggle('hide',!on);if(on)renderPanel()}
-$('gmem').onclick=()=>showPanel($('gpanel').classList.contains('hide'));
 
 // Аватарка группы: фото или первая буква
 function groupAvatar(g,size){
@@ -75,45 +79,63 @@ function groupAvatar(g,size){
   if(g?.avatar_path){v.textContent='';const i=document.createElement('img');i.alt='';i.src=avatarUrl(g.avatar_path);v.append(i)}
   return v;
 }
-// Панель группы: фото, название, описание, участники
-function renderPanel(){
-  if(!isGroupKey(cur))return;
-  const gid=gidOf(cur),g=groups[gid];if(!g)return;
-  const owner=g.owner===me,box=$('gpanel');box.innerHTML='';
-  const info=el('div','ginfo');
-  const av=el('div','ginfo-ava');av.append(groupAvatar(g,72));info.append(av);
-  const txt=el('div','ginfo-t');txt.append(el('b',null,g.name));
-  if(g.description)txt.append(el('p','sm',g.description));
-  info.append(txt);box.append(info);
-  if(owner){
-    const ed=el('button','ghost sm-btn','Изменить группу');ed.onclick=()=>editGroup(g);info.append(ed);
-  }
-  const h=el('h2',null,'Участники · '+(gm[gid]||[]).length);box.append(h);
-  (gm[gid]||[]).slice().sort((a,b)=>(b===g.owner)-(a===g.owner)||nameOf(a).localeCompare(nameOf(b))).forEach(id=>{
-    let x=null;
-    if(owner&&id!==me){
-      x=el('span','row-acts');
-      const t=el('button','ghost sm-btn','★');t.title='Сделать создателем';t.onclick=e=>{e.stopPropagation();transferGroup(gid,id)};
-      const r=el('button','ghost sm-btn','убрать');r.onclick=e=>{e.stopPropagation();removeMember(gid,id,r)};x.append(t,r);
-    }
-    const r=row(avatar(id,34),nameOf(id)+(id===me?' (вы)':''),id===g.owner?'★ создатель':online.has(id)?'в сети':'@'+(people[id]||'?'),x);
-    r.onclick=()=>id!==me&&showProfile(id);box.append(r);
-  });
-  // Добавить можно только друзей, которых ещё нет в группе
-  const friends=fr.filter(f=>f.status==='accepted').map(f=>f.a===me?f.b:f.a).filter(id=>!(gm[gid]||[]).includes(id));
-  const add=el('div','field');add.style.marginTop='8px';
-  if(friends.length){
-    const sel=document.createElement('select');sel.id='gsel';
-    friends.forEach(id=>{const o=document.createElement('option');o.value=id;o.textContent=nameOf(id);sel.append(o)});
-    const b=el('button','primary','Добавить');
-    b.onclick=()=>addMember(gid,sel.value,b);
-    add.append(sel,b);
-  }else add.append(el('p','sm','Все ваши друзья уже в группе.'));
-  box.append(add);
-  const e=el('p','err');e.id='gperr';box.append(e);
-  const out=el('button','ghost danger wide','Выйти из группы');out.style.marginTop='6px';
-  out.onclick=()=>leaveGroup(gid,out);box.append(out);
+
+// ---------- Действия с участниками ----------
+const sqlHint=e=>/function|schema cache|column|role/i.test(e?.message||'')?'запустите supabase/admins.sql':(e?.message||e);
+async function addMembers(gid,ids){
+  if(!ids.length)return true;
+  const {error}=await sb.from('group_members').insert(ids.map(u=>({group_id:gid,user_id:u})));
+  if(error){toast('Не удалось добавить: '+error.message);return false}
+  ids.forEach(u=>{if(!gm[gid].includes(u))gm[gid].push(u);grole[gid][u]='member'});
+  grSig='';renderGroups();refreshGroupInfo();
+  for(const u of ids)await gevSend(gid,'add',u);
+  loadGroups();return true;
 }
+async function removeMember(gid,uid){
+  if(!confirm('Удалить '+nameOf(uid)+' из группы?'))return;
+  const {data,error}=await sb.from('group_members').delete().eq('group_id',gid).eq('user_id',uid).select();
+  if(error||!data?.length){toast('Не удалось удалить'+(error?': '+error.message:''));return}
+  gm[gid]=gm[gid].filter(x=>x!==uid);grSig='';renderGroups();refreshGroupInfo();gevSend(gid,'kick',uid);
+}
+async function setRole(gid,uid,role){
+  const {error}=await sb.rpc('set_group_role',{gid,uid,new_role:role});
+  if(error){toast('Не удалось: '+sqlHint(error));return}
+  grole[gid][uid]=role;grSig='';refreshGroupInfo();gevSend(gid,role==='admin'?'admin':'unadmin',uid);
+  toast(role==='admin'?nameOf(uid)+' теперь админ':nameOf(uid)+' больше не админ');
+}
+async function transferGroup(gid,uid){
+  if(!confirm('Передать права создателя участнику '+nameOf(uid)+'? Вы останетесь админом.'))return;
+  const {error}=await sb.rpc('transfer_group',{gid,uid});
+  if(error){toast('Не удалось: '+sqlHint(error));return}
+  groups[gid].owner=uid;grole[gid][me]='admin';grSig='';refreshGroupInfo();gevSend(gid,'owner',uid);loadGroups();toast('Права переданы');
+}
+async function leaveGroup(gid){
+  const g=groups[gid],last=(gm[gid]||[]).length<=1;
+  if(!confirm(last?'Вы последний участник. Группа и вся её переписка удалятся. Выйти?':'Выйти из группы «'+g.name+'»?'))return;
+  if(!last)await gevSend(gid,'left');
+  // Последний участник-создатель удаляет группу целиком, чтобы не оставалось пустых групп
+  const q=last&&g.owner===me
+    ?sb.from('groups').delete().eq('id',gid).select()
+    :sb.from('group_members').delete().eq('group_id',gid).eq('user_id',me).select();
+  const {data,error}=await q;
+  if(error||!data?.length){toast('Не удалось выйти'+(error?': '+error.message:''));return}
+  delete groups[gid];delete gm[gid];grSig='';closeGroupInfo();closeChat();renderGroups();
+}
+async function deleteGroup(gid){
+  const g=groups[gid];
+  if(!confirm('Удалить группу «'+g.name+'» у всех участников вместе со всей перепиской? Это нельзя отменить.'))return;
+  const {data,error}=await sb.from('groups').delete().eq('id',gid).select();
+  if(error||!data?.length){toast('Не удалось удалить группу'+(error?': '+error.message:''));return}
+  delete groups[gid];delete gm[gid];grSig='';closeGroupInfo();closeChat();renderGroups();toast('Группа удалена');
+}
+// Настройки группы: что разрешено только админам
+async function setGroupFlag(gid,what,on){
+  const {data,error}=await sb.from('groups').update({['only_admins_'+what]:on}).eq('id',gid).select().single();
+  if(error){toast('Не удалось: '+sqlHint(error));return false}
+  groups[gid]=data;grSig='';refreshGroupInfo();if(cur==='g:'+gid)applyBlockUI();
+  gevSend(gid,what+(on?1:0));return true;
+}
+
 function editGroup(g){
   let newAva=null;
   openModal(s=>{
@@ -137,41 +159,8 @@ function editGroup(g){
         if(newAva){const path=me+'/g_'+crypto.randomUUID()+'.jpg';const up=await sb.storage.from('avatars').upload(path,newAva,{contentType:'image/jpeg'});if(up.error)throw up.error;patch.avatar_path=path}
         const {data,error}=await sb.from('groups').update(patch).eq('id',g.id).select().single();
         if(error)throw error;
-        groups[g.id]=data;grSig='';renderGroups();setHead(cur);renderPanel();closeModal();
+        groups[g.id]=data;grSig='';renderGroups();if(cur==='g:'+g.id)setHead(cur);refreshGroupInfo();closeModal();
       }catch(e){err.textContent='Не удалось: '+(/column/i.test(e.message)?'запустите supabase/more.sql':e.message);sv.disabled=false}
     };
   });
-}
-async function transferGroup(gid,uid){
-  if(!confirm('Передать права создателя участнику '+nameOf(uid)+'? Вы останетесь обычным участником.'))return;
-  const {error}=await sb.rpc('transfer_group',{gid,uid});
-  if(error){alert('Не удалось: '+(/function|schema cache/i.test(error.message)?'запустите supabase/more.sql':error.message));return}
-  groups[gid].owner=uid;grSig='';renderPanel();loadGroups();toast('Права переданы');
-}
-
-async function addMember(gid,uid,b){
-  if(!uid)return;b.disabled=true;$('gperr').textContent='';
-  const {error}=await sb.from('group_members').insert({group_id:gid,user_id:uid});
-  b.disabled=false;
-  if(error){$('gperr').textContent='Не удалось добавить: '+error.message;return}
-  gm[gid].push(uid);grSig='';renderPanel();renderGroups();loadGroups();
-}
-async function removeMember(gid,uid,b){
-  if(!confirm('Убрать '+nameOf(uid)+' из группы?'))return;
-  b.disabled=true;
-  const {data,error}=await sb.from('group_members').delete().eq('group_id',gid).eq('user_id',uid).select();
-  if(error||!data?.length){b.disabled=false;$('gperr').textContent='Не удалось убрать'+(error?': '+error.message:'');return}
-  gm[gid]=gm[gid].filter(x=>x!==uid);grSig='';renderPanel();renderGroups();
-}
-async function leaveGroup(gid,b){
-  const g=groups[gid],last=(gm[gid]||[]).length<=1;
-  if(!confirm(last?'Вы последний участник. Группа и вся её переписка удалятся. Выйти?':'Выйти из группы «'+g.name+'»?'))return;
-  b.disabled=true;
-  // Последний участник-создатель удаляет группу целиком, чтобы не оставалось пустых групп
-  const q=last&&g.owner===me
-    ?sb.from('groups').delete().eq('id',gid).select()
-    :sb.from('group_members').delete().eq('group_id',gid).eq('user_id',me).select();
-  const {data,error}=await q;
-  if(error||!data?.length){b.disabled=false;$('gperr').textContent='Не удалось выйти'+(error?': '+error.message:'');return}
-  delete groups[gid];delete gm[gid];grSig='';closeChat();renderGroups();
 }

@@ -33,4 +33,4 @@ async function doAuth(){
     if(error)$('aerr').textContent=authErr(error);
   }
 }
-$('out').onclick=()=>sb.auth.signOut();
+$('out').onclick=()=>{byUser=true;sb.auth.signOut()};

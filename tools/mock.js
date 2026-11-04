@@ -13,7 +13,7 @@ const DB={
     {id:1,a:'u1',b:'u2',status:'accepted'},{id:2,a:'u3',b:'u1',status:'pending'},
     {id:3,a:'u4',b:'u1',status:'accepted'},{id:4,a:'u1',b:'u5',status:'pending'}],
   groups:[{id:'g1',name:'Пацаны',owner:'u1',created_at:t(500)}],
-  group_members:[{group_id:'g1',user_id:'u1'},{group_id:'g1',user_id:'u2'},{group_id:'g1',user_id:'u4'}],
+  group_members:[{group_id:'g1',user_id:'u1',role:'member'},{group_id:'g1',user_id:'u2',role:'admin'},{group_id:'g1',user_id:'u4',role:'member'}],
   messages:[
     {id:1,sender:'u2',recipient:'u1',group_id:null,body:'Привет! Ну как, новый дизайн готов?',image_path:null,created_at:t(30),deleted_at:null},
     {id:2,sender:'u1',recipient:'u2',group_id:null,body:'Почти, проверяю 🙂',image_path:null,created_at:t(29),deleted_at:null},
@@ -94,13 +94,15 @@ window.supabase={createClient(){return{
   rpc:async(n,a)=>{(window.__REQ||=[]).push('rpc:'+n);
     if(n==='unread_counts')return {data:[{chat:'dm:u1:u4',n:2}],error:null};
     if(n==='edit_message'){const m=DB.messages.find(x=>x.id===a.mid);m.body=a.new_body;m.edited_at=new Date().toISOString();return {error:null}}
+    if(n==='set_group_role'){DB.group_members.find(x=>x.group_id===a.gid&&x.user_id===a.uid).role=a.new_role;return {error:null}}
+    if(n==='admin_delete_message'){const m=DB.messages.find(x=>x.id===a.mid);Object.assign(m,{body:'',image_path:null,deleted_at:new Date().toISOString()});return {error:null}}
     if(n==='transfer_group'){DB.groups.find(g=>g.id===a.gid).owner=a.uid;return {error:null}}
     if(n==='ttt_move'){const m=DB.messages.find(x=>x.id===a.mid);const st=JSON.parse(m.body.slice(7));const me='u1';
       if(st.t==='o'&&!st.o)st.o=me;const b=[...st.b];if(b[a.cell]!=='-')return {error:{message:'Клетка занята'}};b[a.cell]=st.t;
       const L=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];let w='';L.forEach(l=>{if(l.every(i=>b[i]===st.t))w=st.t});if(!w&&!b.includes('-'))w='d';
       const ns={b:b.join(''),t:st.t==='x'?'o':'x',x:st.x,o:st.o,w};m.body='::ttt::'+JSON.stringify(ns);return {data:JSON.stringify(ns),error:null}}
     return {error:null}},
-  auth:{onAuthStateChange(f){cb=f;setTimeout(()=>f('SIGNED_IN',{user:{id:'u1'}}),50)},signOut:async()=>cb('SIGNED_OUT',null),updateUser:async()=>({error:null}),signInWithPassword:async()=>({error:null}),signUp:async()=>({data:{},error:null})},
+  auth:{onAuthStateChange(f){cb=f;setTimeout(()=>f('SIGNED_IN',{user:{id:'u1'}}),50)},signOut:async()=>cb('SIGNED_OUT',null),refreshSession:async()=>(window.__refresh?.()||{data:{session:null},error:{message:'Failed to fetch'}}),getSession:async()=>({data:{session:null}}),updateUser:async()=>({error:null}),signInWithPassword:async()=>({error:null}),signUp:async()=>({data:{},error:null})},
   channel(n){const c={on(t,f,h){if(t==='presence')c._p=h;if(t==='broadcast')c._b=h;return c},subscribe(cb){setTimeout(()=>{cb&&cb('SUBSCRIBED');c._p&&c._p()},10);if(n==='nit-live')window.__live=c;return c},track:async()=>{},send(){},presenceState:()=>({u1:[{}],u2:[{}]})};return c},removeAllChannels(){},
   storage:{from:()=>({createSignedUrl:async p=>{(window.__REQ||=[]).push('storage:sign');return {data:{signedUrl:FILES[p]||''}}},createSignedUrls:async ps=>{(window.__REQ||=[]).push('storage:signMany');return {data:ps.map(p=>({path:p,signedUrl:FILES[p]||''}))}},upload:async(p,b)=>{FILES[p]=URL.createObjectURL(b);return {error:null}},remove:async()=>({})})}
 }}};

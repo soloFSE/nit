@@ -573,3 +573,80 @@ button{transition:background .15s var(--ease),color .15s var(--ease),transform .
 #cflip svg,#gcflip svg{transition:transform .4s var(--spring)}
 #cflip.spun svg,#gcflip.spun svg{transform:rotate(180deg)}
 .cbtn:disabled{opacity:.5}
+
+/* ============ Данные группы (как в WhatsApp) ============ */
+.gi{position:fixed;inset:0;z-index:9;background:var(--bg);display:flex;flex-direction:column;animation:giIn .32s var(--ease)}
+.gi.closing{animation:giOut .26s var(--ease) forwards}
+@keyframes giIn{from{transform:translateX(100%)}}
+@keyframes giOut{to{transform:translateX(100%)}}
+@media (min-width:761px){
+  .gi{left:auto;width:420px;box-shadow:-12px 0 40px rgba(0,0,0,.18);border-left:1px solid var(--line)}
+}
+.gi-top{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;background:var(--surface);border-bottom:1px solid var(--line)}
+.gi-top b{flex:1;font-size:17px}
+.gi-edit{font-size:18px}
+.gi-scroll{flex:1;overflow-y:auto;padding:0 0 calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px}
+.gi-hero{display:flex;flex-direction:column;align-items:center;text-align:center;padding:24px 16px 18px;background:var(--surface);gap:4px}
+.gi-hero .ava{margin-bottom:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);animation:popIn .4s var(--spring)}
+.gi-hero .ava.zoom{cursor:zoom-in}
+.gi-hero h2{margin:0;font-size:22px;font-weight:800;color:var(--text);text-transform:none;letter-spacing:0}
+.gi-hero>small{color:var(--dim)}
+.gi-acts{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;justify-content:center}
+.gi-act{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:76px;padding:12px 10px;border-radius:16px;background:var(--surface2);color:var(--acc);font-size:12.5px;font-weight:700}
+.gi-act svg{width:22px;height:22px}
+.gi-act:active{transform:scale(.95)}
+.gi-card{background:var(--surface);padding:6px 0}
+.gi-card.sm{padding:12px 16px;font-size:13px}
+.gi-desc{margin:8px 16px 6px;white-space:pre-wrap;line-height:1.45}
+.gi-dim{color:var(--dim);display:block;padding:4px 16px 8px;font-size:12.5px}
+.gi-link{background:none;color:var(--acc);font-weight:700;padding:12px 16px;text-align:left;width:100%}
+.gi-h{display:flex;justify-content:space-between;align-items:center;padding:10px 16px 6px;color:var(--dim);font-size:13.5px;font-weight:700}
+.gi-row{display:flex;align-items:center;gap:14px;width:100%;padding:10px 16px;background:none;color:var(--text);text-align:left;border-radius:0}
+.gi-row:hover{background:var(--surface2)}
+.gi-row:active{background:var(--line)}
+.gi-ic{width:44px;height:44px;flex:none;display:grid;place-items:center;font-size:20px;color:var(--dim)}
+.gi-ic svg{width:22px;height:22px}
+.gi-ic .ava{--s:44px}
+.gi-rt{flex:1;min-width:0;display:flex;flex-direction:column}
+.gi-rt b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gi-rt small{color:var(--dim);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gi-accent .gi-ic{background:var(--acc);color:#fff;border-radius:50%}
+.gi-accent b{color:var(--acc)}
+.gi-danger,.gi-danger .gi-ic{color:var(--bad)}
+.gi-danger b{color:var(--bad)}
+.gi-role{flex:none;font-size:11.5px;font-weight:800;padding:3px 8px;border-radius:8px;color:var(--acc);background:color-mix(in srgb,var(--acc) 14%,transparent)}
+.gi-role.own{color:#b45309;background:#fef3c7}
+.gi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px 16px 12px}
+.gi-th{aspect-ratio:1;border-radius:10px;overflow:hidden;padding:0;background:var(--surface2)}
+.gi-th img{width:100%;height:100%;object-fit:cover;display:block;animation:fade .3s}
+.gi-who{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.gi-who b{display:block;font-size:17px}
+.gi-who small{color:var(--dim)}
+.opt.danger{color:var(--bad)}
+.gi-search{width:100%;margin-bottom:8px}
+.gi-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.gi-chip{display:flex;align-items:center;gap:6px;padding:3px 10px 3px 3px;border-radius:20px;background:var(--surface2);color:var(--text);font-size:13px;animation:popIn .2s var(--spring)}
+.gi-chip i{font-style:normal;color:var(--dim);font-size:11px}
+.gi-pick{max-height:46vh;overflow-y:auto;margin:0 -16px 10px}
+.gi-ck{width:24px;height:24px;border-radius:50%;border:2px solid var(--line);flex:none;transition:all .15s var(--ease);display:grid;place-items:center}
+.gi-ck.on{background:var(--acc);border-color:var(--acc)}
+.gi-ck.on::after{content:"✓";color:#fff;font-size:14px;font-weight:900}
+.gi-sw{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.gi-sw>span:first-child{flex:1;display:flex;flex-direction:column}
+.gi-sw small{color:var(--dim);font-size:12.5px}
+.gi-sw input{position:absolute;opacity:0;pointer-events:none}
+.gi-tg{width:46px;height:28px;border-radius:14px;background:var(--line);position:relative;flex:none;transition:background .2s var(--ease)}
+.gi-tg::after{content:"";position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .25s var(--spring)}
+.gi-sw input:checked+.gi-tg{background:var(--acc)}
+.gi-sw input:checked+.gi-tg::after{transform:translateX(18px)}
+/* Системные записи «Аня добавила Борю» */
+.m.gev{align-self:center;background:color-mix(in srgb,var(--surface) 85%,transparent)!important;color:var(--dim)!important;box-shadow:none;border-radius:12px!important;
+  font-size:12.5px;padding:5px 12px;max-width:85%;text-align:center;margin-top:8px}
+.m.gev .meta,.m.gev .who{display:none}
+
+/* ============ Заставка при запуске (вход сохранён, подключаемся) ============ */
+.splash{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--bg);color:var(--dim);padding:24px;text-align:center}
+.splash .logo{width:72px;height:72px;color:var(--acc);animation:splashPulse 1.6s var(--ease) infinite}
+@keyframes splashPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.92);opacity:.6}}
+.splash p{margin:0;max-width:320px}
+.splash-b{display:flex;flex-direction:column;gap:8px;min-width:220px}
