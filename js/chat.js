@@ -39,7 +39,8 @@ function draw(m){
   msgs[m.id]=m;
   const d=nodes[m.id];if(!d)return;
   const sp=!m.deleted_at&&specialOf(m.body);
-  d.innerHTML='';d.className='m '+(m.sender===me?'me':'them')+(d.classList.contains('open')?' open':'');
+  const keep=['open','cont','more','new'].filter(c=>d.classList.contains(c)).join(' ');
+  d.innerHTML='';d.className='m '+(m.sender===me?'me':'them')+(keep?' '+keep:'');
   if(m.deleted_at)d.classList.add('del');
   if(sp?.s.cls)d.classList.add(sp.s.cls);
   if(!m.deleted_at&&!isFile(m.image_path)&&isCircle(m.image_path))d.classList.add('circle');
@@ -105,22 +106,25 @@ function menuEl(m,sp){
 }
 
 // Создаёт пузырь сообщения; prepend — для подгрузки старых сверху
-function line(m,prepend){
+function line(m,prepend,quiet){
   if(hidden.has(m.id))return;
   if(nodes[m.id]){try{draw(m)}catch(err){console.error('draw',m.id,err)}return}
   if(m.expires_at&&new Date(m.expires_at)<=new Date())return;
-  const d=document.createElement('div');d.className='m';d.dataset.id=m.id;
+  const d=document.createElement('div');d.className='m';d.dataset.id=m.id;d.dataset.t=m.created_at;d.dataset.s=m.sender;
   d.onclick=e=>{if(e.target.closest('a,button,video,audio,input'))return;
-    document.querySelectorAll('.m.open').forEach(o=>{if(o!==d){o.classList.remove('open');o.querySelector('.acts')?.remove()}});
-    const open=d.classList.toggle('open');
-    if(open){const mm=msgs[d.dataset.id];if(mm&&!d.querySelector('.acts'))d.append(menuEl(mm,!mm.deleted_at&&specialOf(mm.body)))}
-    else d.querySelector('.acts')?.remove();
+    clearTimeout(tapTimer);
+    tapTimer=setTimeout(()=>{
+      document.querySelectorAll('.m.open').forEach(o=>{if(o!==d){o.classList.remove('open');o.querySelector('.acts')?.remove()}});
+      const open=d.classList.toggle('open');
+      if(open){const mm=msgs[d.dataset.id];if(mm&&!d.querySelector('.acts'))d.append(menuEl(mm,!mm.deleted_at&&specialOf(mm.body)))}
+      else d.querySelector('.acts')?.remove();
+    },e.detail>1?0:190);
   };
   nodes[m.id]=d;
-  const log=$('log');
+  const log=$('log'),near=bulk||prepend||distBottom()<120;
   if(prepend)log.insertBefore(d,log.querySelector('.m'));else log.append(d);
   try{draw(m)}catch(err){console.error('draw',m.id,err);d.className='m '+(m.sender===me?'me':'them');d.textContent=m.body&&!m.body.startsWith('::')?m.body:preview(m)}
-  if(!prepend)log.scrollTop=1e9;
+  placed(d,m,prepend,quiet,near);
 }
 
 // ---------- Открытие чата и подгрузка истории ----------
@@ -134,7 +138,8 @@ async function openChat(id){
   cur=id;nodes={};cancelReply();cancelEdit();closeEmoji();closeSearch();closeAttach();
   setHead(id);$('head').classList.remove('hide');applyBlockUI();
   $('gmem').classList.toggle('hide',!isGroupKey(id));$('gpanel').classList.add('hide');
-  $('app').classList.add('open');$('log').innerHTML='<div class="loading"><span class="spin"></span></div>';render();
+  $('app').classList.add('open');$('log').innerHTML='';$('log').append(skeleton());$('log').classList.remove('enter');render();
+  newBelow=0;stick=true;updateDown();
   loadDraft(id);updateTtlChip();
   let data,error;
   for(let attempt=0;attempt<3;attempt++){
@@ -156,8 +161,9 @@ async function openChat(id){
   const list=(data||[]).reverse();
   oldestId=list[0]?.id??null;hasMore=list.length===PAGE;
   if(hasMore)$('log').append(el('div','older','Листайте вверх, чтобы загрузить ещё'));
-  list.forEach(m=>line(m));
+  bulk=true;try{list.forEach(m=>line(m))}finally{bulk=false}
   if(!list.length)$('log').innerHTML='<div class="empty"><svg class="logo big"><use href="#i-logo"/></svg>Сообщений пока нет.<br>Напишите первым.</div>';
+  toBottom(false);void $('log').offsetWidth;$('log').classList.add('enter');
   afterRender(list);
   loadPeerReads(id);loadPin(id);markRead();
   if(!matchMedia('(max-width:760px)').matches)$('msg').focus();
@@ -170,7 +176,8 @@ async function loadOlder(){
   const {data}=await chatQuery(k).lt('id',oldestId).order('id',{ascending:false}).limit(PAGE);
   loadingOld=false;if(cur!==k)return;
   const list=(data||[]);// уже по убыванию — вставляем по одному наверх
-  list.forEach(m=>line(m,true));
+  bulk=true;try{list.forEach(m=>line(m,true))}finally{bulk=false}
+  layoutAll();
   oldestId=list.length?list[list.length-1].id:oldestId;hasMore=list.length===PAGE;
   const o=log.querySelector('.older');if(o){o.remove();if(hasMore)log.prepend(o)}
   log.scrollTop=log.scrollHeight-h;
@@ -185,7 +192,7 @@ async function jumpTo(id){
   const {data}=await chatQuery(k).gte('id',id).order('id',{ascending:true}).limit(1000);
   if(cur!==k)return;
   $('log').innerHTML='';nodes={};
-  (data||[]).forEach(m=>line(m));
+  bulk=true;try{(data||[]).forEach(m=>line(m))}finally{bulk=false}
   oldestId=data?.[0]?.id??null;hasMore=true;
   $('log').prepend(el('div','older','Листайте вверх, чтобы загрузить ещё'));
   afterRender(data||[]);flash(id);
@@ -205,7 +212,9 @@ function setHead(k){
   if(isGroupKey(k)){const g=groups[gidOf(k)];a.append(groupAvatar(g,40));$('cname').textContent=chatName(k)}
   else{a.append(avatar(k,40));$('cname').textContent=nameOf(k)}
   const dm=!isGroupKey(k)&&!isBlocked(k)&&fr.some(f=>f.status==='accepted'&&(f.a===k||f.b===k));
-  $('bcall').classList.toggle('hide',!dm);$('bvcall').classList.toggle('hide',!dm);
+  const can=dm||isGroupKey(k);
+  $('bcall').classList.toggle('hide',!can);$('bvcall').classList.toggle('hide',!can);
+  $('bcall').title=isGroupKey(k)?'Групповой звонок':'Позвонить';$('bvcall').title=isGroupKey(k)?'Групповой видеозвонок':'Видеозвонок';
   setSub();
 }
 $('peer').onclick=()=>{if(!cur)return;if(isGroupKey(cur))showPanel($('gpanel').classList.contains('hide'));else showProfile(cur)};

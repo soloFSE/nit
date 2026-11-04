@@ -34,6 +34,7 @@ function mediaErr(e){alert(e?.name==='NotAllowedError'?'Нет доступа к
 // ---------- Исходящий ----------
 async function startCall(peer,video){
   if(call)return;
+  if(gc){alert('Сначала выйдите из группового звонка.');return}
   if(!window.RTCPeerConnection||!navigator.mediaDevices){alert('Этот браузер не поддерживает звонки.');return}
   call={id:crypto.randomUUID(),peer,video,role:'caller',state:'calling',ice:[]};
   showCall();setCallState('Вызов…');
@@ -51,9 +52,10 @@ async function startCall(peer,video){
 // ---------- Входящий ----------
 async function onSig(p){
   if(!p||p.from===me)return;
+  if(p.t==='gring'){onGroupRing(p);return}
   if(p.t==='offer'){
     if(!isFriendId(p.from)||isBlocked(p.from))return;
-    if(call){csig(p.from,{t:'busy',id:p.id});return}
+    if(call||gc){csig(p.from,{t:'busy',id:p.id});return}
     call={id:p.id,peer:p.from,video:!!p.video,role:'callee',state:'ringing',offer:p.sdp,ice:[]};
     showCall(true);setCallState(p.video?'Входящий видеозвонок':'Входящий звонок');tone('in');
     if(document.hidden&&'Notification' in window&&Notification.permission==='granted'){
@@ -117,8 +119,8 @@ $('cacc').onclick=()=>acceptCall(false);
 $('caccv').onclick=()=>acceptCall(true);
 $('cmute').onclick=()=>{const t=call?.local?.getAudioTracks()[0];if(!t)return;t.enabled=!t.enabled;$('cmute').classList.toggle('off',!t.enabled)};
 $('ccam').onclick=()=>{const t=call?.local?.getVideoTracks()[0];if(!t)return;t.enabled=!t.enabled;$('ccam').classList.toggle('off',!t.enabled)};
-$('bcall').onclick=()=>cur&&startCall(cur,false);
-$('bvcall').onclick=()=>cur&&startCall(cur,true);
+$('bcall').onclick=()=>cur&&(isGroupKey(cur)?startGroupCall(gidOf(cur),false):startCall(cur,false));
+$('bvcall').onclick=()=>cur&&(isGroupKey(cur)?startGroupCall(gidOf(cur),true):startCall(cur,true));
 window.addEventListener('beforeunload',()=>{if(call)endCall('hangup')});
 
 // ---------- Гудки ----------

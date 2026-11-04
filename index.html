@@ -92,6 +92,7 @@
     <div id="pinbar" class="pinbar hide"><svg><use href="#i-pin"/></svg><div class="pin-t" id="pinText"></div><button class="icon sm-btn" id="pinX" title="Открепить"><svg><use href="#i-x"/></svg></button></div>
     <div id="gpanel" class="hide"></div>
     <div id="log"><div class="empty"><svg class="logo big"><use href="#i-logo"/></svg>Выберите чат слева</div></div>
+    <button id="tobottom" class="tobottom" title="Вниз"><svg><use href="#i-back"/></svg><span id="tbN" class="badge hide"></span></button>
     <div id="drop" class="drop hide"><div>Отпустите, чтобы отправить</div></div>
     <div id="attach" class="attach hide">
       <button data-a="file"><span>🖼️</span>Фото или файл</button>
@@ -164,6 +165,25 @@
   </div>
 </div>
 
+<!-- Групповой звонок -->
+<div id="gcall" class="gcall hide">
+  <div class="gc-head"><b id="gcName"></b><small id="gcState"></small></div>
+  <div id="gcGrid" class="gc-grid" data-n="1"></div>
+  <div class="call-bar">
+    <button class="cbtn" id="gcmute" title="Микрофон"><svg class="on-i"><use href="#i-mic"/></svg><svg class="off-i"><use href="#i-mic-off"/></svg></button>
+    <button class="cbtn" id="gccam" title="Камера"><svg><use href="#i-video"/></svg></button>
+    <button class="cbtn red" id="gcleave" title="Выйти из звонка"><svg><use href="#i-hang"/></svg></button>
+  </div>
+</div>
+<!-- Приглашение в групповой звонок -->
+<div id="gring" class="gring hide">
+  <span id="grAva"></span>
+  <div class="gr-t"><b id="grName"></b><small id="grText"></small></div>
+  <button class="cbtn green sm" id="grjoin" title="Войти"><svg><use href="#i-phone"/></svg></button>
+  <button class="cbtn green sm" id="grjoinv" title="Войти с видео"><svg><use href="#i-video"/></svg></button>
+  <button class="cbtn red sm" id="grno" title="Отклонить"><svg><use href="#i-x"/></svg></button>
+</div>
+
 <div id="modal" class="modal hide"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
 
 <script src="js/config.js"></script>
@@ -172,6 +192,7 @@
 <script src="js/friends.js"></script>
 <script src="js/groups.js"></script>
 <script src="js/chat.js"></script>
+<script src="js/ux.js"></script>
 <script src="js/files.js"></script>
 <script src="js/reads.js"></script>
 <script src="js/compose.js"></script>
@@ -184,6 +205,7 @@
 <script src="js/fun.js"></script>
 <script src="js/appearance.js"></script>
 <script src="js/calls.js"></script>
+<script src="js/gcall.js"></script>
 <script src="js/sync.js"></script>
 <script src="js/pwa.js"></script>
 <script src="js/app.js"></script>

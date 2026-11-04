@@ -6,7 +6,8 @@ async function sendMsg(to,fields,opt={}){
   const {data,error}=await sb.from('messages').insert(row).select().single();
   if(error)throw error;
   seen.add(data.id);
-  if(cur===to){const e=$('log').querySelector('.empty');if(e)e.remove();line(data);markRead()}
+  if(cur===to){const e=$('log').querySelector('.empty');if(e)e.remove();opt.pending?.remove();line(data,false,!!opt.pending);markRead()}
+  else opt.pending?.remove();
   if(data.body)fxFor(data.body);
   return data;
 }
@@ -16,7 +17,9 @@ async function send(){
   const t=$('msg').value.trim();if(!t||!cur)return;
   if(t.length>4000){alert('Слишком длинное сообщение (максимум 4000 символов).');return}
   $('msg').value='';saveDraft();
-  try{await sendMsg(cur,{body:t})}catch(e){$('msg').value=t;saveDraft();alert('Не отправилось: '+e.message)}
+  const pending=sendingBubble(t);
+  try{await sendMsg(cur,{body:t},{pending})}
+  catch(e){pending.classList.add('failed');pending.title='Не отправилось';setTimeout(()=>pending.remove(),2500);$('msg').value=t;saveDraft();toast('Не отправилось: '+e.message)}
 }
 
 // ---------- Фото и файлы ----------

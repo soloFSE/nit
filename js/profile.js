@@ -35,7 +35,11 @@ function avatar(id,size,label){
 
 // ---------- Модальное окно ----------
 function openModal(build){const s=$('sheet');s.innerHTML='';build(s);$('modal').classList.remove('hide')}
-function closeModal(){$('modal').classList.add('hide');$('sheet').innerHTML=''}
+function closeModal(){
+  const m=$('modal');if(m.classList.contains('hide')||m.classList.contains('closing'))return;
+  m.classList.add('closing');
+  setTimeout(()=>{m.classList.add('hide');m.classList.remove('closing');$('sheet').innerHTML=''},180);
+}
 $('modal').onclick=e=>{if(e.target.id==='modal')closeModal()};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('modal').classList.contains('hide'))closeModal()});
 function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}

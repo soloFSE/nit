@@ -77,7 +77,8 @@ function renderOnline(){
 function setSub(){
   const k=cur;if(!k)return;const t=typing[k];
   if(t&&t.until>Date.now()){
-    $('csub').textContent=(isGroupKey(k)?nameOf(t.from)+' печатает':'печатает')+'…';$('csub').classList.add('typing');return;
+    const c=$('csub');c.textContent=isGroupKey(k)?nameOf(t.from)+' печатает':'печатает';
+    const dots=el('span','dots');dots.append(el('i'),el('i'),el('i'));c.append(dots);c.classList.add('typing');return;
   }
   $('csub').classList.remove('typing');
   if(isGroupKey(k)){const n=(gm[gidOf(k)]||[]).length,on=(gm[gidOf(k)]||[]).filter(i=>i!==me&&online.has(i)).length;
