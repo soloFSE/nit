@@ -61,7 +61,7 @@ function placed(d,m,prepend,quiet,near){
 // ---------- Мгновенная отправка: пузырь появляется сразу, до ответа сервера ----------
 function sendingBubble(text){
   const d=el('div','m me sending');d.append(document.createTextNode(text));
-  const s=el('small','meta');s.append(el('span','clock'),document.createTextNode(timeStr(new Date())));d.append(s);
+  const s=el('small','meta');s.append(el('span','clock'),document.createTextNode(clockStr(new Date())));d.append(s);
   const e=$('log').querySelector('.empty');if(e)e.remove();
   $('log').append(d);d.classList.add('new');toBottom(true);
   return d;
@@ -119,3 +119,16 @@ function skeleton(){
     const d=el('div','m sk '+s);d.style.width=w+'%';f.append(d)});
   return f;
 }
+
+// ---------- Всплывающее меню сообщения: вверх, если внизу нет места; закрытие щелчком мимо ----------
+function placeMenu(d){
+  const a=d.querySelector('.acts');if(!a)return;d.classList.remove('up');
+  requestAnimationFrame(()=>{
+    const L=$('log').getBoundingClientRect(),r=a.getBoundingClientRect(),b=d.getBoundingClientRect();
+    if(r.bottom>L.bottom-6&&b.top-L.top>r.height+16)d.classList.add('up');
+    a.scrollIntoView({block:'nearest',behavior:reduceMotion?'auto':'smooth'});
+  });
+}
+function closeMenus(){document.querySelectorAll('.m.open').forEach(o=>{o.classList.remove('open','up');o.querySelector('.acts')?.remove()})}
+document.addEventListener('pointerdown',e=>{if(!e.target.closest('.m.open'))closeMenus()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenus()});

@@ -25,33 +25,24 @@ function row(ava,title,sub,right,on){
 // Кружок с числом непрочитанных
 function badge(k){const n=+unread[k]||0;return n?el('span','badge',n>99?'99+':String(n)):null}
 function render(){
-  const reqs=$('reqs'),list=$('list');reqs.innerHTML='';list.innerHTML='';
+  const reqs=$('reqs');reqs.innerHTML='';
   const inc=fr.filter(f=>f.status==='pending'&&f.b===me&&!isBlocked(f.a));
-  if(inc.length)reqs.append(el('h2',null,'Заявки · '+inc.length));
-  inc.forEach(f=>{
-    const w=el('span','row-acts');
-    const y=el('button','icon primary sm-btn','✓');y.title='Принять';
-    const x=el('button','icon sm-btn','✕');x.title='Отклонить';
-    y.onclick=e=>{e.stopPropagation();answer(f,true,y,x)};x.onclick=e=>{e.stopPropagation();answer(f,false,y,x)};
-    w.append(y,x);
-    const r=row(avatar(f.a,40),nameOf(f.a),'@'+(people[f.a]||'?')+' хочет дружить',w);
-    r.onclick=()=>showProfile(f.a);reqs.append(r);
-  });
-  const fl=fr.filter(f=>f.status==='accepted'||(f.status==='pending'&&f.a===me));
-  if(fl.length)list.append(el('h2',null,'Друзья · '+fl.filter(f=>f.status==='accepted').length));
-  fl.map(f=>f.a===me?f.b:f.a).sort((a,b)=>nameOf(a).localeCompare(nameOf(b))).forEach(id=>{
-    const f=fl.find(g=>g.a===id||g.b===id);
-    if(f.status==='pending'){
-      const r=row(avatar(id,40),nameOf(id),'ждёт ответа',null,false);r.classList.add('dim');r.onclick=()=>showProfile(id);list.append(r);
-    }else{
-      const sub=hasDraft(id)&&cur!==id?'✏️ черновик':prof[id]?.status||prof[id]?.bio||'@'+(people[id]||'?');
-      const r=row(avatar(id,40),nameOf(id),sub,badge(id),cur===id);
-      r.onclick=()=>openChat(id);list.append(r);
-    }
-  });
-  if(!fl.length)list.innerHTML='<div class="hint">Пока никого.<br>Добавьте друга по нику выше.</div>';
+  if(inc.length){
+    const box=el('div','reqbox');box.append(el('div','reqbox-h','Заявки в друзья · '+inc.length));
+    inc.forEach(f=>{
+      const w=el('span','row-acts');
+      const y=el('button','icon primary sm-btn');y.append(svgI('i-check'));y.title='Принять';
+      const x=el('button','icon sm-btn');x.append(svgI('i-x'));x.title='Отклонить';
+      y.onclick=e=>{e.stopPropagation();answer(f,true,y,x)};x.onclick=e=>{e.stopPropagation();answer(f,false,y,x)};
+      w.append(y,x);
+      const r=row(avatar(f.a,44),nameOf(f.a),'@'+(people[f.a]||'?')+' хочет дружить',w);
+      r.onclick=()=>showProfile(f.a);box.append(r);
+    });
+    reqs.append(box);
+  }
   $('tabF').classList.toggle('has',Object.keys(unread).some(k=>unread[k]&&!isGroupKey(k))||inc.length>0);
   renderGroups();
+  if(typeof scheduleChats==='function')scheduleChats();
 }
 
 // Принять или отклонить заявку: сразу показываем результат, не дожидаясь опроса
@@ -81,7 +72,7 @@ $('add').onclick=async()=>{
   }
   const {error}=await sb.from('friendships').insert({a:me,b:data.id});
   if(error){$('ferr').textContent='Не получилось отправить';return}
-  people[data.id]=data.username;$('find').value='';loadFriends();
+  people[data.id]=data.username;$('find').value='';loadFriends();toast('Заявка отправлена @'+data.username);
 };
 
 // Вкладки «Друзья / Группы»

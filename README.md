@@ -42,7 +42,7 @@
 
 - Все `const/let/function` на верхнем уровне — **общие глобальные** имена для всех файлов. **Имена не должны повторяться** между файлами (однажды `sig` в `calls.js` совпал с `sig` в `config.js` и сломал звонки). Проверка: см. «Как проверять».
 - **Порядок скриптов важен**: код, который выполняется сразу при загрузке файла, может использовать только то, что объявлено в файлах выше. Функции из файлов ниже можно вызывать внутри обработчиков (к моменту вызова всё уже загружено). `app.js` — последним.
-- Порядок сейчас: `config, profile, auth, friends, groups, chat, ux, files, reads, compose, voice, circle, social, emoji, reactions, msgtools, fun, appearance, calls, gcall, bg, ginfo, account, sync, pwa, app`.
+- Порядок сейчас: `config, profile, auth, friends, groups, chat, ux, files, reads, compose, voice, circle, social, emoji, reactions, msgtools, fun, appearance, calls, gcall, bg, ginfo, account, inbox, sync, pwa, app`.
 
 ### Файлы
 
@@ -53,6 +53,7 @@
 | `js/config.js` | Адрес и публичный ключ Supabase, `$()` = `getElementById`, общие переменные состояния |
 | `js/auth.js` | **Вход и регистрация** (экраны рисуются в `#authBody`, `showAuth(view)`: login / register / check / forgot / otp / newpass). Регистрация по настоящей почте с подтверждением письмом (`emailRedirectTo: SITE_URL`), ник проверяется RPC `username_free`, пароль 8+ с буквами и цифрами. Google/GitHub — `signInWithOAuth`. Вход по почте или по нику (старые аккаунты: служебная почта `ник@nit-chat.com`, `isFakeEmail`). «Забыли пароль» → `resetPasswordForEmail` → событие PASSWORD_RECOVERY → экран «Новый пароль» (флаг `recovering`). Вход по коду — `signInWithOtp` + `verifyOtp`. Тексты ошибок `authErr()` |
 | `js/account.js` | «Аккаунт и безопасность» (`openAccount`): привязать/сменить почту, задать/сменить пароль (с кодом reauthenticate, если включено), привязать/отвязать Google и GitHub (`linkIdentity`), выйти на всех устройствах. `checkUsername()` — после входа через Google/GitHub просит выбрать ник (RPC `set_username`) |
+| `js/inbox.js` | **Список чатов как в Telegram**: друзья и группы вместе, по времени последнего сообщения (`lastOf[k]`, грузится `loadLast()` при входе, обновляется `noteLast()` из `onMsg` и `sendMsg`), превью «Вы:/Имя:», время, галочки, «печатает…», черновики, папки (`folder`: all/dm/groups/unread), поиск `#csearch`, панель «новый чат» `#newbox` (кнопка ✎ / плавающая `#fab`). Поле ввода: класс `.typing` у `#send` превращает микрофон в «отправить». Перерисовка — `scheduleChats()` (таймер, не rAF: rAF не срабатывает в фоне) |
 | `js/profile.js` | Профили (`prof`, `nameOf`, `avatar()`), окно настроек профиля, карточка собеседника, тема, `el()` — хелпер создания элементов, модальное окно `openModal/closeModal` |
 | `js/friends.js` | Друзья и заявки, строка списка `row()`, счётчик `badge()`, вкладки «Друзья/Группы» |
 | `js/groups.js` | Группы: список, создание, редактирование, **роли** (`grole[gid][uid]`, `roleOf()` → owner/admin/member, `isAdminOf()`, `canDo(gid,'send'|'edit'|'add')` по флагам `groups.only_admins_*`), действия: `addMembers/removeMember/setRole/transferGroup/leaveGroup/deleteGroup/setGroupFlag`, `groupAvatar()`. Если колонки `role` нет (не запущен admins.sql) — грузит без неё (`roleCols`) |
@@ -76,6 +77,8 @@
 | `js/sync.js` | `boot()` после входа, realtime-подписки, **опрос сервера `tick()`**, `onMsg()` — обработка входящих |
 | `js/pwa.js` | Регистрация service worker и кнопка «Установить» |
 | `js/app.js` | Точка входа: слушает сессию → `safeBoot()`; проверка, что загружены все файлы (красная плашка, если нет) |
+| `css/theme.css` | **Внешний вид поверх style.css**: обои из нитяных узоров (маска SVG в `.pane::before`), пузыри с градиентом и хвостиками (`::before` у последнего в серии), стеклянная шапка, строки списка `.crow`, папки `.fold`, всплывающее меню сообщения `.acts` (открывается вверх классом `.up`, `placeMenu()` в ux.js), поле ввода `.cbox` + круглые `#bv/#bs`. Меняя дизайн — правьте здесь |
+| `tools/icons.py` | Рисованные иконки в стиле «нить» (одна линия, хвостик нити). Правите пути в словаре `ICONS` → `python tools/icons.py` вписывает `<symbol id="i-…">` в index.html |
 | `sw.js` | Service worker (кэш оболочки сайта, network-first). **При изменениях сайта поднимать `CACHE='nit-vN'`** |
 | `manifest.webmanifest`, `icons/` | PWA: название, цвета, иконки 192/512/maskable |
 | `build.js` | `node build.js` → `dist/nit.html`: всё в одном файле (для пересылки другу). `dist/` в git не попадает |

@@ -5,7 +5,7 @@ async function sendMsg(to,fields,opt={}){
   const row={sender:me,...target(to),body:'',...fields,...(opt.noReply?{}:takeReply()),...ttlField(to)};
   const {data,error}=await sb.from('messages').insert(row).select().single();
   if(error)throw error;
-  seen.add(data.id);
+  seen.add(data.id);noteLast(data);
   if(cur===to){const e=$('log').querySelector('.empty');if(e)e.remove();opt.pending?.remove();line(data,false,!!opt.pending);markRead()}
   else opt.pending?.remove();
   if(data.body)fxFor(data.body);

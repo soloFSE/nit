@@ -14,6 +14,7 @@ async function boot(u){
   const {data:dl}=await sb.from('messages').select('deleted_at').not('deleted_at','is',null).order('deleted_at',{ascending:false}).limit(1);
   lastDel=dl?.[0]?.deleted_at||lastDel;
   await loadUnread();
+  loadLast();
   try{
     const last=localStorage.getItem('nit-last');
     const ok=last&&(isGroupKey(last)?groups[gidOf(last)]:fr.some(f=>f.status==='accepted'&&(f.a===last||f.b===last)));
@@ -37,7 +38,7 @@ async function boot(u){
   startCalls();
   startLive();
 }
-function unboot(){clearTimeout(poll);poll=null;me=null;cur=null;fr=[];frSig="";groups={};gm={};grSig="";prof={};unread={};blocked=new Set();online=new Set();reacts={};liveCh=null;socialOk=true;myReads={};peerReads={};votes={};seen=new Set();sb.removeAllChannels();$('app').classList.add('hide');$('auth').classList.remove('hide')}
+function unboot(){clearTimeout(poll);lastOf={};poll=null;me=null;cur=null;fr=[];frSig="";groups={};gm={};grSig="";prof={};unread={};blocked=new Set();online=new Set();reacts={};liveCh=null;socialOk=true;myReads={};peerReads={};votes={};seen=new Set();sb.removeAllChannels();$('app').classList.add('hide');$('auth').classList.remove('hide')}
 
 // Пока работают мгновенные обновления (realtime), сервер почти не опрашиваем — это только подстраховка.
 // Если realtime отвалился — опрашиваем чаще. Свёрнутая вкладка опрашивает в 4 раза реже.
@@ -72,7 +73,7 @@ async function tick(){
 function setNet(ok){$('net').classList.toggle('hide',!!ok)}
 function onMsg(m){
   if(m.id>lastId)lastId=m.id;
-  const other=chatKey(m),isNew=!seen.has(m.id);seen.add(m.id);
+  const other=chatKey(m),isNew=!seen.has(m.id);seen.add(m.id);noteLast(m);
   if(m.group_id&&!groups[m.group_id])loadGroups(); // нас только что добавили в группу
   if(hidden.has(m.id)||(m.deleted_at&&!nodes[m.id]))return;
   if(m.expires_at&&new Date(m.expires_at)<=new Date())return;

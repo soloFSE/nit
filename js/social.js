@@ -65,7 +65,7 @@ function startLive(){
     if(!p||p.from===me||isBlocked(p.from))return;
     const k=isGroupKey(p.to)?p.to:(p.to===me?p.from:null);if(!k)return;
     if(isGroupKey(k)&&!groups[gidOf(k)])return;
-    typing[k]={from:p.from,until:Date.now()+4000};
+    typing[k]={from:p.from,until:Date.now()+4000};scheduleChats();clearTimeout(typing[k].t2);typing[k].t2=setTimeout(scheduleChats,4100);
     if(cur===k)setSub();
     setTimeout(()=>{if(cur===k)setSub()},4100);
   }).subscribe(async st=>{if(st==='SUBSCRIBED')await liveCh.track({at:Date.now()})});

@@ -1,0 +1,223 @@
+/* =====================================================================
+   «Нить» — новый внешний вид (поверх style.css).
+   Идея: нить. Рисованные иконки, обои из нитяных узоров, мягкие пузыри с хвостиками,
+   список чатов как в Telegram, поле ввода как в WhatsApp.
+   ===================================================================== */
+:root{
+  --r:20px;
+  --them:#ffffff;
+  --side:#ffffff;
+  --glass:rgba(255,255,255,.78);
+  --doodle:rgba(229,23,43,.075);
+  --chat-bg:#f4efe8;
+  --bubble-shadow:0 1px 1.5px rgba(40,20,10,.10);
+  --menu-shadow:0 18px 50px rgba(20,10,10,.22),0 0 0 1px rgba(0,0,0,.05);
+  --me-grad:linear-gradient(160deg,color-mix(in srgb,var(--me) 70%,#ff9d6c) 0%,var(--me) 78%);
+  --acc-grad:linear-gradient(135deg,color-mix(in srgb,var(--acc) 75%,#ff9466),var(--acc));
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --them:#202128;--side:#121317;--glass:rgba(20,21,26,.78);--doodle:rgba(255,255,255,.035);--chat-bg:#0d0e12;
+  --bubble-shadow:0 1px 1.5px rgba(0,0,0,.35);--menu-shadow:0 18px 50px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.06);
+}}
+:root[data-theme="dark"]{
+  --them:#202128;--side:#121317;--glass:rgba(20,21,26,.78);--doodle:rgba(255,255,255,.035);--chat-bg:#0d0e12;
+  --bubble-shadow:0 1px 1.5px rgba(0,0,0,.35);--menu-shadow:0 18px 50px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.06);
+}
+
+/* Обои: нитяные завитки, клубки, иголки, сердечки — нарисованы одной линией */
+:root{--chat:var(--chat-bg)}
+.pane{background:var(--chat-bg)}
+.pane:not(.walled)::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;background-color:var(--doodle);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Cg fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 46c18-20 34 8 52-8s30-22 48-6'/%3E%3Cpath d='M170 26c12-1 22 9 21 21-1 11-10 20-21 20-12 0-21-10-21-21 1-11 10-19 21-20zM155 37c9 1 20 9 25 24M161 28c8 5 17 16 19 31M151 50c7 0 16 6 21 16'/%3E%3Cpath d='M190 60c4 4 3 10 8 12'/%3E%3Cpath d='M62 118c-9-6-17-13-17-21 0-5 4-9 9-9 4 0 7 2 8 5 1-3 4-5 8-5 5 0 9 4 9 9 0 8-8 15-17 21z'/%3E%3Cpath d='M150 160l46-46M199 108c3-3 7-2 7 2s-4 6-7 5'/%3E%3Cpath d='M150 160c-12 12-30 4-44 18'/%3E%3Cpath d='M20 196c10-15 27-15 31 0s-15 19-19 6 11-19 26-13'/%3E%3Cpath d='M118 206l3 7 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z'/%3E%3Cpath d='M206 200c7 0 12 5 12 12s-5 12-12 12-12-5-12-12 5-12 12-12zM198 204c5 2 11 8 13 15M196 213c4 0 9 3 12 9'/%3E%3Cpath d='M98 60c4-8 12-8 14 0s-8 10-10 3'/%3E%3C/g%3E%3C/svg%3E") 0 0/240px 240px;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Cg fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 46c18-20 34 8 52-8s30-22 48-6'/%3E%3Cpath d='M170 26c12-1 22 9 21 21-1 11-10 20-21 20-12 0-21-10-21-21 1-11 10-19 21-20zM155 37c9 1 20 9 25 24M161 28c8 5 17 16 19 31M151 50c7 0 16 6 21 16'/%3E%3Cpath d='M190 60c4 4 3 10 8 12'/%3E%3Cpath d='M62 118c-9-6-17-13-17-21 0-5 4-9 9-9 4 0 7 2 8 5 1-3 4-5 8-5 5 0 9 4 9 9 0 8-8 15-17 21z'/%3E%3Cpath d='M150 160l46-46M199 108c3-3 7-2 7 2s-4 6-7 5'/%3E%3Cpath d='M150 160c-12 12-30 4-44 18'/%3E%3Cpath d='M20 196c10-15 27-15 31 0s-15 19-19 6 11-19 26-13'/%3E%3Cpath d='M118 206l3 7 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z'/%3E%3Cpath d='M206 200c7 0 12 5 12 12s-5 12-12 12-12-5-12-12 5-12 12-12zM198 204c5 2 11 8 13 15M196 213c4 0 9 3 12 9'/%3E%3Cpath d='M98 60c4-8 12-8 14 0s-8 10-10 3'/%3E%3C/g%3E%3C/svg%3E") 0 0/240px 240px}
+.pane>*{position:relative;z-index:1}
+.pane>.emoji,.pane>.attach,.pane>.tobottom,.pane>.drop{position:absolute}
+
+/* Общие мелочи */
+svg{stroke-width:inherit}
+button.primary,button.icon.primary{background:var(--acc-grad);box-shadow:0 4px 14px color-mix(in srgb,var(--acc) 30%,transparent)}
+button.primary:hover,button.icon.primary:hover{filter:brightness(1.06);background:var(--acc-grad)}
+*{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--dim) 35%,transparent) transparent}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--dim) 30%,transparent);border-radius:8px}
+.ava{box-shadow:inset 0 0 0 1px rgba(0,0,0,.04)}
+.ava.online::after{background:#22c55e;width:26%;height:26%;box-shadow:0 0 0 2.5px var(--side)}
+
+/* ============ Боковая панель ============ */
+.app{grid-template-columns:minmax(300px,380px) 1fr}
+.side{background:var(--side);padding:10px 8px 0;position:relative;border-right:1px solid var(--line)}
+.me-bar{margin:0 2px 10px;gap:2px}
+.mebtn{border-radius:16px;padding:6px 8px}
+.mebtn:hover{background:var(--surface2)}
+#newchat.on,.fab.on{color:#fff;background:var(--acc-grad)}
+.csearch{display:flex;align-items:center;gap:8px;height:42px;margin:0 4px 10px;padding:0 4px 0 13px;background:var(--surface2);border-radius:14px;cursor:text;transition:box-shadow .15s}
+.csearch:focus-within{box-shadow:0 0 0 2px color-mix(in srgb,var(--acc) 55%,transparent);background:var(--surface)}
+.csearch>svg{width:18px;height:18px;color:var(--dim)}
+.csearch input{background:transparent!important;border:0!important;padding:0;height:100%;font-weight:500}
+.csearch .icon{width:32px;height:32px}
+.folders{display:flex;gap:6px;overflow-x:auto;padding:0 4px 8px;scrollbar-width:none}
+.folders::-webkit-scrollbar{display:none}
+.fold{flex:none;display:flex;align-items:center;gap:6px;padding:7px 13px;border-radius:999px;background:transparent;color:var(--dim);font-size:13.5px;font-weight:700;box-shadow:inset 0 0 0 1.5px var(--line)}
+.fold:hover{background:var(--surface2);color:var(--text)}
+.fold.on{background:var(--acc-grad);color:#fff;box-shadow:0 4px 14px color-mix(in srgb,var(--acc) 30%,transparent)}
+.fold i{font-style:normal;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--acc);color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center}
+.fold.on i{background:#fff;color:var(--acc)}
+.side-scroll{margin:0 -8px;padding:0 8px calc(90px + env(safe-area-inset-bottom,0px))}
+
+/* Строка чата */
+.crow{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:18px;cursor:pointer;user-select:none;transition:background .15s var(--ease),transform .12s var(--ease)}
+.crow:hover{background:var(--surface2)}
+.crow:active{transform:scale(.985)}
+.crow.on{background:var(--acc-grad);color:#fff;box-shadow:0 6px 18px color-mix(in srgb,var(--acc) 25%,transparent)}
+.crow.on .crow-p,.crow.on .crow-p em,.crow.on time,.crow.on .tick{color:rgba(255,255,255,.88)!important}
+.crow.on .badge{background:#fff;color:var(--acc)}
+.crow.on .ava.online::after{box-shadow:0 0 0 2.5px var(--acc)}
+.crow-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.crow-t{display:flex;align-items:baseline;gap:8px}
+.crow-t b{flex:1;min-width:0;font-size:15.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crow-t time{flex:none;font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+.crow.unread .crow-t time{color:var(--acc);font-weight:800}
+.crow-s{display:flex;align-items:center;gap:4px;min-height:21px}
+.crow-p{flex:1;min-width:0;font-size:14px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crow-p em{font-style:normal;font-weight:600;color:var(--text)}
+.crow-p em.draft{color:var(--bad)}
+.crow-p.typing{color:var(--acc);font-weight:600}
+.crow .tick{margin:0 2px 0 0;font-size:12px;color:var(--acc);opacity:1}
+.crow .tick:not(.read){color:var(--dim)}
+.crow .badge{min-width:22px;height:22px;font-size:11.5px}
+.crow.dim{opacity:.55}
+.list-empty{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:48px 20px;color:var(--dim)}
+.list-empty svg{width:56px;height:56px;color:var(--acc);opacity:.7;margin-bottom:6px;stroke-width:1.4}
+.list-empty b{color:var(--text);font-size:16px}
+.list-empty span{font-size:13.5px;max-width:240px}
+
+/* Заявки и «новый чат» */
+.reqbox{background:var(--acc-soft);border-radius:20px;padding:4px;margin:0 0 10px;animation:slideDown .25s var(--ease)}
+.reqbox-h{font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--acc);padding:8px 12px 4px}
+.reqbox .row{border-radius:16px}
+.reqbox .row:hover{background:color-mix(in srgb,var(--surface) 60%,transparent)}
+.newbox{background:var(--surface2);border-radius:20px;padding:12px;margin:0 0 10px;animation:slideDown .25s var(--ease)}
+.nb-h{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13.5px;margin:4px 4px 8px}
+.nb-h svg{width:18px;height:18px;color:var(--acc)}
+.newbox input{background:var(--surface)}
+.newbox .err:not(:empty){margin-bottom:8px}
+.fab{display:none;position:absolute;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:5;width:58px;height:58px;border-radius:20px;padding:0;place-items:center;
+  background:var(--acc-grad);color:#fff;box-shadow:0 10px 26px color-mix(in srgb,var(--acc) 40%,transparent);transition:transform .25s var(--spring),border-radius .25s}
+.fab svg{width:26px;height:26px}
+.fab:hover{background:var(--acc-grad);filter:brightness(1.06)}
+.fab.on{transform:rotate(-12deg);border-radius:50%}
+.net{margin:0 4px 8px}
+
+/* ============ Шапка чата ============ */
+#head{position:relative;z-index:4;min-height:62px;padding:8px 10px;background:var(--glass);backdrop-filter:blur(18px) saturate(1.5);-webkit-backdrop-filter:blur(18px) saturate(1.5);border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+#cname{font-size:16px;font-weight:800}
+#csub{font-size:13px}
+.peer{border-radius:14px}
+#head .icon{border-radius:50%}
+.pinbar,.search{background:var(--glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+
+/* ============ Лента ============ */
+#log{padding:14px clamp(10px,4vw,56px) 10px}
+.empty{display:flex;flex-direction:column;align-items:center;gap:4px;padding:26px 30px;border-radius:26px;background:color-mix(in srgb,var(--surface) 72%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-size:14px}
+.empty b{font-size:22px;font-weight:800;color:var(--text)}
+.day span{background:color-mix(in srgb,var(--surface) 75%,transparent);color:var(--text);opacity:.85;padding:5px 13px;font-size:12.5px;border-radius:14px}
+.older{background:color-mix(in srgb,var(--surface) 75%,transparent);backdrop-filter:blur(8px)}
+
+/* Пузыри */
+.m{padding:7px 11px 6px;font-size:15px;line-height:1.42;box-shadow:var(--bubble-shadow);max-width:min(76%,560px)}
+.m.me{background:var(--me-grad);color:var(--me-text)}
+.m.them{background:var(--them)}
+.m.me{border-radius:var(--r) var(--r) 6px var(--r)}
+.m.them{border-radius:var(--r) var(--r) var(--r) 6px}
+.m.me.cont{border-top-right-radius:6px}
+.m.them.cont{border-top-left-radius:6px}
+.m.me:not(.more){border-bottom-right-radius:4px}
+.m.them:not(.more){border-bottom-left-radius:4px}
+/* Хвостики у последнего сообщения в серии */
+.m.me:not(.more):not(.sticker):not(.big):not(.circle):not(.gev):not(.sk)::before,
+.m.them:not(.more):not(.sticker):not(.big):not(.circle):not(.gev):not(.sk)::before{content:"";position:absolute;bottom:0;width:12px;height:17px;pointer-events:none}
+.m.me:not(.more):not(.sticker):not(.big):not(.circle):not(.gev):not(.sk)::before{right:-6px;background:var(--me);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 17'%3E%3Cpath d='M0 0C1 8 3.5 13.5 12 17H0z'/%3E%3C/svg%3E") no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 17'%3E%3Cpath d='M0 0C1 8 3.5 13.5 12 17H0z'/%3E%3C/svg%3E") no-repeat}
+.m.them:not(.more):not(.sticker):not(.big):not(.circle):not(.gev):not(.sk)::before{left:-6px;background:var(--them);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 17'%3E%3Cpath d='M12 0C11 8 8.5 13.5 0 17H12z'/%3E%3C/svg%3E") no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 17'%3E%3Cpath d='M12 0C11 8 8.5 13.5 0 17H12z'/%3E%3C/svg%3E") no-repeat}
+.m.failed::before{background:var(--bad)!important}
+.m .who{font-size:13px;margin-bottom:2px}
+.m small.meta{font-size:11px;gap:4px;margin-top:1px;opacity:.72}
+.m.them small.meta{color:var(--dim);opacity:1}
+.m.me .tick{opacity:.75;letter-spacing:-3.5px;margin-left:3px}
+.m.me .tick.read{color:#fff;opacity:1}
+.m img{border-radius:14px;margin:2px -5px 2px}
+.m.me a.link{color:#fff}
+.quote{border-left-width:3px;border-radius:6px 10px 10px 6px;padding:5px 10px;margin:2px 0 6px}
+.m.me .quote{background:rgba(255,255,255,.18)}
+.m.them .quote{background:color-mix(in srgb,var(--acc) 9%,transparent)}
+.react{background:color-mix(in srgb,var(--acc) 10%,transparent);border-radius:14px;padding:3px 9px}
+.m.me .react{background:rgba(255,255,255,.22)}
+.file{border-radius:14px}
+.m.sticker small,.m.big small,.m.circle small{background:color-mix(in srgb,var(--surface) 80%,transparent);backdrop-filter:blur(6px)}
+
+/* Выделенное сообщение и всплывающее меню (как в Telegram) */
+#log:has(.m.open) > :not(.open){opacity:.35;filter:saturate(.7);transition:opacity .2s,filter .2s}
+.m.open{z-index:8;box-shadow:0 12px 36px rgba(0,0,0,.18);transition:box-shadow .2s}
+.acts{position:absolute;top:calc(100% + 8px);z-index:9;min-width:230px;max-width:280px;padding:6px;margin:0;display:none;flex-direction:column;gap:0;
+  white-space:normal;cursor:default;color:var(--text);font-style:normal;
+  background:color-mix(in srgb,var(--surface) 96%,transparent);backdrop-filter:blur(22px) saturate(1.6);-webkit-backdrop-filter:blur(22px) saturate(1.6);border-radius:20px;box-shadow:var(--menu-shadow);animation:menuIn .24s var(--spring)}
+.m.me .acts{right:0;transform-origin:top right}
+.m.them .acts{left:0;transform-origin:top left}
+.m.up .acts{top:auto;bottom:calc(100% + 8px)}
+.m.me.up .acts{transform-origin:bottom right}.m.them.up .acts{transform-origin:bottom left}
+.m.open .acts{display:flex}
+@keyframes menuIn{from{opacity:0;transform:scale(.88)}}
+.acts button{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border-radius:13px;font-size:14.5px;font-weight:600;text-align:left;
+  background:transparent!important;color:var(--text)!important;box-shadow:none!important}
+.acts button:hover{background:color-mix(in srgb,var(--text) 7%,transparent)!important}
+.acts button svg{width:20px;height:20px;color:var(--dim)}
+.acts .danger-soft,.acts .danger-soft svg{color:var(--bad)!important}
+.acts .qreact{display:flex;gap:2px;padding:2px 2px 6px;margin-bottom:4px;border-bottom:1px solid color-mix(in srgb,var(--line) 80%,transparent)}
+.acts .qreact button{justify-content:center;font-size:23px;padding:6px 0!important;border-radius:12px}
+.acts .qreact button:hover{transform:scale(1.2)}
+.m.me .acts button,.m.big .acts button{background:transparent!important;color:var(--text)!important}
+
+/* ============ Поле ввода (как в WhatsApp) ============ */
+.composer{display:flex;align-items:flex-end;gap:8px;padding:0;background:transparent;box-shadow:none;border-radius:0;margin:0 clamp(8px,3vw,48px) calc(10px + env(safe-area-inset-bottom,0px))}
+.cbox{flex:1;min-width:0;min-height:50px;display:flex;align-items:center;gap:0;padding:4px;border-radius:26px;background:var(--surface);
+  box-shadow:0 2px 10px rgba(16,16,24,.08),0 0 0 1px color-mix(in srgb,var(--line) 60%,transparent)}
+.cbox #msg{flex:1;min-width:0;background:transparent;border:0;padding:10px 4px;font-size:15.5px}
+.cbox .icon{width:42px;height:42px;border-radius:50%}
+.cbox .icon svg{width:23px;height:23px}
+#bv,#bs{flex:none;width:50px;height:50px;border-radius:50%;animation:popIn .22s var(--spring)}
+#bv svg,#bs svg{width:24px;height:24px}
+.composer.typing #bv,.composer.typing #bc{display:none}
+.composer:not(.typing) #bs{display:none}
+.composer.recording #bv,#bv.rec{display:grid!important}
+.composer.recording #bs{display:none}
+#bv.rec{background:var(--bad)}
+.replybar{margin:0 calc(clamp(8px,3vw,48px) + 58px) 6px clamp(8px,3vw,48px);border-radius:18px;background:var(--surface)}
+.blockbar{margin:0 clamp(8px,3vw,48px) calc(10px + env(safe-area-inset-bottom,0px));border-radius:20px}
+.tobottom{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+
+/* Меню вложений — рисованные иконки, как на примере */
+.attach{left:auto;right:calc(clamp(8px,3vw,48px) + 60px);bottom:calc(72px + env(safe-area-inset-bottom,0px));min-width:270px;padding:8px;border-radius:24px;
+  background:color-mix(in srgb,var(--surface) 96%,transparent);backdrop-filter:blur(22px) saturate(1.6);-webkit-backdrop-filter:blur(22px) saturate(1.6);box-shadow:var(--menu-shadow);transform-origin:bottom right}
+.attach button{gap:16px;padding:11px 14px;font-size:15.5px;font-weight:600;border-radius:15px;color:var(--text)}
+.attach button:hover{background:color-mix(in srgb,var(--text) 7%,transparent)}
+.attach button svg{width:28px;height:28px;stroke-width:1.6;color:var(--text)}
+.emoji{left:clamp(8px,3vw,48px);right:auto;bottom:calc(72px + env(safe-area-inset-bottom,0px));border-radius:24px;transform-origin:bottom left}
+
+/* ============ Окна ============ */
+.sheet{border-radius:28px}
+.modal{background:rgba(10,8,8,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+
+/* ============ Телефон ============ */
+@media (max-width:760px){
+  .fab{display:grid}
+  #newchat{display:none}
+  .side{padding:calc(8px + env(safe-area-inset-top,0px)) 6px 0}
+  .crow{padding:8px 8px}
+  .m{max-width:84%}
+  #log{padding:12px 10px 8px}
+  .composer{margin:0 6px calc(8px + env(safe-area-inset-bottom,0px));gap:6px}
+  .replybar{margin:0 62px 6px 6px}
+  .attach{right:8px;left:8px;min-width:0}
+  .sheet::before{content:"";display:block;width:40px;height:5px;border-radius:3px;background:var(--line);margin:-8px auto 10px}
+  .acts{min-width:210px}
+}

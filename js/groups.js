@@ -56,6 +56,7 @@ function renderGroups(){
   });
   if(!gs.length)list.innerHTML='<div class="hint">Групп пока нет.<br>Придумайте название и нажмите +.</div>';
   $('tabG').classList.toggle('has',Object.keys(unread).some(k=>unread[k]&&isGroupKey(k)));
+  if(typeof scheduleChats==='function')scheduleChats();
 }
 const plural=(n,a,b,c)=>{const m=n%10,h=n%100;return m===1&&h!==11?a:m>=2&&m<=4&&(h<12||h>14)?b:c};
 
@@ -69,7 +70,7 @@ $('gnew').onclick=async()=>{
   if(error){$('gerr').textContent='Не удалось создать: '+error.message;return}
   $('gname').value='';
   groups[data.id]=data;gm[data.id]=[me];grole[data.id]={[me]:'member'};grSig='';renderGroups();
-  showTab(true);await openChat('g:'+data.id);openGroupInfo(data.id);openAddMembers(data.id);loadGroups();
+  toggleNew(false);await openChat('g:'+data.id);openGroupInfo(data.id);openAddMembers(data.id);loadGroups();
 };
 $('gname').onkeydown=e=>{if(e.key==='Enter')$('gnew').click()};
 

@@ -34,6 +34,7 @@ function preview(m){
   return 'Сообщение';
 }
 const timeStr=t=>new Date(t).toLocaleString('ru',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+const clockStr=t=>new Date(t).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}); // в пузыре — только время, дата в разделителе дня
 
 function draw(m){
   msgs[m.id]=m;
@@ -63,7 +64,7 @@ function draw(m){
   const s=el('small','meta');
   if(m.expires_at&&!m.deleted_at){const t=el('span','ttl');t.dataset.exp=m.expires_at;t.textContent='⏱ '+ttlLeft(m.expires_at);s.append(t)}
   if(m.edited_at&&!m.deleted_at)s.append(el('span','edited','изменено'));
-  s.append(document.createTextNode(timeStr(m.created_at)));
+  s.append(document.createTextNode(clockStr(m.created_at)));
   if(m.sender===me&&!m.deleted_at)s.append(tickEl(m));
   d.append(s);
   if(d.classList.contains('open'))d.append(menuEl(m,sp));
@@ -83,9 +84,10 @@ function mediaEl(path){
 }
 
 // Меню сообщения: реакции и действия
+const MENU_IC={'Ответить':'i-reply','Изменить':'i-pencil','Переслать':'i-forward','Закрепить':'i-pin','Открепить':'i-pin','Копировать':'i-copy'};
 function menuEl(m,sp){
   const a=el('div','acts'),d=nodes[m.id];
-  const btn=(t,f,cls)=>{const b=el('button',cls||'g',t);b.onclick=e=>{e.stopPropagation();d.classList.remove('open');a.remove();f()};a.append(b);return b};
+  const btn=(t,f,cls)=>{const b=el('button',cls||'g');const ic=MENU_IC[t.replace(/ \(.*\)$/,'')]||(/^Удалить/.test(t)?'i-trash':null);if(ic)b.append(svgI(ic));b.append(el('span',null,t));b.onclick=e=>{e.stopPropagation();d.classList.remove('open');a.remove();f()};a.append(b);return b};
   if(!m.deleted_at){
     a.append(reactPicker(m));
     btn('Ответить',()=>startReply(m));
@@ -123,7 +125,7 @@ function line(m,prepend,quiet){
     tapTimer=setTimeout(()=>{
       document.querySelectorAll('.m.open').forEach(o=>{if(o!==d){o.classList.remove('open');o.querySelector('.acts')?.remove()}});
       const open=d.classList.toggle('open');
-      if(open){const mm=msgs[d.dataset.id];if(mm&&!d.querySelector('.acts'))d.append(menuEl(mm,!mm.deleted_at&&specialOf(mm.body)))}
+      if(open){const mm=msgs[d.dataset.id];if(mm&&!d.querySelector('.acts'))d.append(menuEl(mm,!mm.deleted_at&&specialOf(mm.body)));placeMenu(d)}
       else d.querySelector('.acts')?.remove();
     },e.detail>1?0:190);
   };
