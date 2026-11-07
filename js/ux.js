@@ -154,3 +154,20 @@ $('log').addEventListener('touchstart',e=>{
 },{passive:true});
 $('log').addEventListener('touchmove',e=>{if(!lpXY)return;const t=e.touches[0];if(Math.abs(t.clientX-lpXY[0])>10||Math.abs(t.clientY-lpXY[1])>10){clearTimeout(lpT);lpXY=null}},{passive:true});
 $('log').addEventListener('touchend',()=>{clearTimeout(lpT);lpXY=null;setTimeout(()=>{longFired=false},400)});
+
+// ---------- Клавиатура на телефоне: шапка не уезжает, ничего не прыгает ----------
+// Высота приложения = видимая часть экрана над клавиатурой; страницу браузер больше не сдвигает.
+(function(){
+  const vv=window.visualViewport,root=document.documentElement;
+  let wasStick=true;
+  const fit=()=>{
+    const h=vv?vv.height:innerHeight;root.style.setProperty('--app-h',Math.round(h)+'px');
+    if(window.scrollY||document.documentElement.scrollTop)window.scrollTo(0,0);
+    if(wasStick&&cur)toBottom(false);
+  };
+  if(vv){vv.addEventListener('resize',()=>{wasStick=stick;requestAnimationFrame(fit)});vv.addEventListener('scroll',()=>{if(vv.offsetTop)window.scrollTo(0,0)})}
+  window.addEventListener('resize',fit);fit();
+  $('msg').addEventListener('focus',()=>{wasStick=stick;setTimeout(fit,60);setTimeout(fit,350)});
+})();
+// Кнопки рядом с полем ввода не забирают фокус — клавиатура не закрывается и не открывается заново
+['bs','bv'].forEach(id=>$(id).addEventListener('pointerdown',e=>{if(document.activeElement===$('msg'))e.preventDefault()}));

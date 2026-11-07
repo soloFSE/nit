@@ -24,7 +24,7 @@ function cropImage(file,size=320,round=true){
       stage.addEventListener('wheel',e=>{e.preventDefault();const r=stage.getBoundingClientRect();setZoom(k*(e.deltaY<0?1.1:.9),e.clientX-r.left,e.clientY-r.top)},{passive:false});
       // Перетаскивание и щипок
       const pts=new Map();let last=null,lastD=0;
-      stage.addEventListener('pointerdown',e=>{stage.setPointerCapture(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);last=null;lastD=0});
+      stage.addEventListener('pointerdown',e=>{try{stage.setPointerCapture(e.pointerId)}catch{}pts.set(e.pointerId,[e.clientX,e.clientY]);last=null;lastD=0});
       stage.addEventListener('pointermove',e=>{
         if(!pts.has(e.pointerId))return;pts.set(e.pointerId,[e.clientX,e.clientY]);const p=[...pts.values()];
         if(p.length===1){if(last){x+=p[0][0]-last[0];y+=p[0][1]-last[1];paint()}last=p[0]}

@@ -339,3 +339,12 @@ button.primary:hover,button.icon.primary:hover{filter:brightness(1.06);backgroun
 .crop-stage.round .crop-mask{border-radius:50%;box-shadow:0 0 0 999px rgba(0,0,0,.55),inset 0 0 0 2px rgba(255,255,255,.8)}
 .crop-zoom{width:100%;accent-color:var(--acc);padding:0;background:transparent}
 .crop-bar{display:flex;gap:10px}.crop-bar button{flex:1;padding:12px}
+
+/* ============ Клавиатура на телефоне ============ */
+html,body{overscroll-behavior:none}
+@media (max-width:760px){
+  html,body{overflow:hidden;position:fixed;inset:0;width:100%}
+  .app{height:var(--app-h,100dvh)}
+  #head{flex:none}
+  #msg{font-size:16px} /* меньше 16px — iPhone приближает страницу при вводе */
+}

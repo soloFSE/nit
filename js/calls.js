@@ -177,7 +177,7 @@ function swapCall(on){
 }
 ['lv','rv'].forEach(id=>{
   const v=$(id);let st=null;
-  v.addEventListener('pointerdown',e=>{if(v!==smallVideo())return;const r=v.getBoundingClientRect();st={x:e.clientX,y:e.clientY,dx:e.clientX-r.left,dy:e.clientY-r.top,moved:false};v.setPointerCapture(e.pointerId)});
+  v.addEventListener('pointerdown',e=>{if(v!==smallVideo())return;const r=v.getBoundingClientRect();st={x:e.clientX,y:e.clientY,dx:e.clientX-r.left,dy:e.clientY-r.top,moved:false};try{v.setPointerCapture(e.pointerId)}catch{}});
   v.addEventListener('pointermove',e=>{if(!st)return;if(Math.abs(e.clientX-st.x)+Math.abs(e.clientY-st.y)>6)st.moved=true;if(!st.moved)return;
     const W=innerWidth,H=innerHeight,r=v.getBoundingClientRect();
     v.style.left=Math.max(6,Math.min(W-r.width-6,e.clientX-st.dx))+'px';v.style.top=Math.max(6,Math.min(H-r.height-6,e.clientY-st.dy))+'px';v.style.right='auto'});
