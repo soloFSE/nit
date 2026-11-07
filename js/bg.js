@@ -78,7 +78,7 @@ async function countCams(){
 async function flipCamera(local,pcs){
   const old=local?.getVideoTracks()[0];if(!old)return null;
   const st=old.getSettings?.()||{},was=st.facingMode||(local._facing||'user'),next=was==='environment'?'user':'environment';
-  const on=old.enabled,size={width:{ideal:640},height:{ideal:480}};
+  const on=old.enabled,size={width:{ideal:1280},height:{ideal:720},frameRate:{ideal:30}};
   old.stop(); // многие телефоны не открывают две камеры одновременно
   let s=null,facing=next;
   try{s=await navigator.mediaDevices.getUserMedia({video:{facingMode:{exact:next},...size}})}catch{}

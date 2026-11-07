@@ -239,3 +239,12 @@ button.primary:hover,button.icon.primary:hover{filter:brightness(1.06);backgroun
 .m:not(.quick) .acts .more-btn{display:none}
 .m{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .m .quote,.m a{-webkit-user-select:auto;user-select:auto}
+
+/* ============ Звонок: своё окошко двигается, окна можно поменять местами ============ */
+.call #lv{touch-action:none;cursor:grab;transition:left .25s var(--ease),top .05s,opacity .2s;user-select:none}
+.call #lv:active{cursor:grabbing}
+.call.swap #lv{position:absolute;inset:0!important;left:0!important;top:0!important;width:100%;height:100%;aspect-ratio:auto;border-radius:0;z-index:0;box-shadow:none;cursor:default}
+.call.swap #rv{position:absolute;inset:auto;right:16px;top:calc(16px + env(safe-area-inset-top,0px));width:min(28vw,180px);height:auto;aspect-ratio:3/4;border-radius:16px;z-index:2;opacity:1;
+  box-shadow:0 8px 30px rgba(0,0,0,.5);touch-action:none;cursor:grab;object-fit:cover}
+.call.swap .call-peer{opacity:0}
+.call #lv.back-cam{transform:none}

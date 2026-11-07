@@ -16,9 +16,10 @@ const isFriendId=id=>fr.some(f=>f.status==='accepted'&&(f.a===id||f.b===id));
 function makePc(){
   const pc=new RTCPeerConnection({iceServers:ICE});
   pc.onicecandidate=e=>{if(e.candidate&&call)csig(call.peer,{t:'ice',c:e.candidate.toJSON()})};
-  pc.ontrack=e=>{const v=$('rv');v.muted=true;if(v.srcObject!==e.streams[0]){v.srcObject=e.streams[0];v.play().catch(()=>{})}
-    remoteAudio('call',e.streams[0]);
-    $('call').classList.toggle('has-video',e.streams[0].getVideoTracks().length>0)};
+  pc.ontrack=e=>{const st=e.streams[0]||new MediaStream([e.track]),v=$('rv');v.muted=true;
+    if(v.srcObject!==st){v.srcObject=st;v.play().catch(()=>{})}else if(!st.getTracks().includes(e.track))st.addTrack(e.track);
+    remoteAudio('call',st);
+    e.track.onunmute=e.track.onmute=remoteVideoUI;remoteVideoUI()};
   pc.onconnectionstatechange=()=>{
     if(!call)return;const s=pc.connectionState;
     if(s==='connected'&&call.state!=='active')callActive();
@@ -27,8 +28,10 @@ function makePc(){
   };
   return pc;
 }
+// Видео 720p 30 к/с (если камера и сеть тянут — браузер сам снизит при плохой связи)
+const VIDEO_C={facingMode:'user',width:{ideal:1280},height:{ideal:720},frameRate:{ideal:30}};
 async function getMedia(video){
-  return navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true},video:video?{facingMode:'user',width:{ideal:640},height:{ideal:480}}:false});
+  return navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:video?VIDEO_C:false});
 }
 function mediaErr(e){alert(e?.name==='NotAllowedError'?'Нет доступа к микрофону или камере. Разрешите их в настройках сайта.':'Не удалось включить микрофон/камеру: '+(e?.message||e))}
 
@@ -37,7 +40,7 @@ async function startCall(peer,video){
   if(call)return;
   if(gc){alert('Сначала выйдите из группового звонка.');return}
   if(!window.RTCPeerConnection||!navigator.mediaDevices){alert('Этот браузер не поддерживает звонки.');return}
-  call={id:crypto.randomUUID(),peer,video,role:'caller',state:'calling',ice:[]};
+  call={id:crypto.randomUUID(),peer,video,role:'caller',state:'calling',ice:[],camOn:!!video,remoteCam:false};
   showCall();setCallState('Вызов…');
   try{call.local=await getMedia(video)}catch(e){call=null;hideCall();mediaErr(e);return}
   if(!call)return;
@@ -57,14 +60,18 @@ async function onSig(p){
   if(p.t==='offer'){
     if(!isFriendId(p.from)||isBlocked(p.from))return;
     if(call||gc){csig(p.from,{t:'busy',id:p.id});return}
-    call={id:p.id,peer:p.from,video:!!p.video,role:'callee',state:'ringing',offer:p.sdp,ice:[]};
+    call={id:p.id,peer:p.from,video:!!p.video,role:'callee',state:'ringing',offer:p.sdp,ice:[],camOn:false,remoteCam:!!p.video};
     showCall(true);setCallState(p.video?'Входящий видеозвонок':'Входящий звонок');tone('in');
     if(document.hidden)sysNotify(nameOf(p.from),{body:p.video?'📹 Входящий видеозвонок':'📞 Входящий звонок',tag:'call',call:true,chat:p.from});
     call.ring=setTimeout(()=>{if(call&&call.state==='ringing')endCall('missed',false)},45000);
     return;
   }
   if(!call||p.id!==call.id)return;
-  if(p.t==='answer'){await call.pc.setRemoteDescription({type:'answer',sdp:p.sdp});flushIce();setCallState('Соединение…');tone(null)}
+  if(p.t==='answer'){call.remoteCam=!!p.video;await call.pc.setRemoteDescription({type:'answer',sdp:p.sdp});flushIce();setCallState('Соединение…');tone(null);remoteVideoUI()}
+  // Камеру включили посреди звонка — заново договариваемся о соединении
+  else if(p.t==='reoffer'&&call.pc){await call.pc.setRemoteDescription({type:'offer',sdp:p.sdp});const a=await call.pc.createAnswer();await call.pc.setLocalDescription(a);csig(call.peer,{t:'reanswer',sdp:a.sdp})}
+  else if(p.t==='reanswer'&&call.pc){await call.pc.setRemoteDescription({type:'answer',sdp:p.sdp})}
+  else if(p.t==='cam'){call.remoteCam=!!p.on;remoteVideoUI()}
   else if(p.t==='ice'){if(call.pc?.remoteDescription)call.pc.addIceCandidate(p.c).catch(()=>{});else call.ice.push(p.c)}
   else if(p.t==='hangup')endCall('remote',false);
   else if(p.t==='decline')endCall('declined',false);
@@ -76,11 +83,11 @@ async function acceptCall(withVideo){
   if(!call||call.state!=='ringing')return;
   tone(null);clearTimeout(call.ring);call.state='connecting';setCallState('Соединение…');showCall(false);
   try{call.local=await getMedia(withVideo)}catch(e){mediaErr(e);endCall('decline');return}
-  showLocal();
+  call.camOn=!!withVideo;showLocal();
   call.pc=makePc();call.local.getTracks().forEach(t=>call.pc.addTrack(t,call.local));
   await call.pc.setRemoteDescription({type:'offer',sdp:call.offer});flushIce();
   const ans=await call.pc.createAnswer();await call.pc.setLocalDescription(ans);
-  await csig(call.peer,{t:'answer',sdp:ans.sdp});
+  await csig(call.peer,{t:'answer',sdp:ans.sdp,video:!!withVideo});
 }
 
 function callActive(){
@@ -89,6 +96,40 @@ function callActive(){
   callSession(true,nameOf(call.peer),{hangup:()=>endCall('hangup'),mic:()=>$('cmute').click(),cam:hasCam?()=>$('ccam').click():null,
     pip:hasCam&&document.pictureInPictureEnabled?()=>$('rv').requestPictureInPicture().catch(()=>{}):null});
   call.timer=setInterval(()=>setCallState(fmt((Date.now()-call.start)/1000)),500);
+  tuneSenders(call.pc);
+}
+// Чуть больше битрейта видео — картинка чётче (браузер сам снизит при слабой сети)
+function tuneSenders(pc){
+  pc?.getSenders().forEach(s=>{if(s.track?.kind!=='video')return;const p=s.getParameters();if(!p.encodings?.length)return;
+    p.encodings[0].maxBitrate=1500000;p.degradationPreference='balanced';s.setParameters(p).catch(()=>{})});
+}
+// Показ видео собеседника: только если он сказал, что камера включена, и кадры идут
+function remoteVideoUI(){
+  if(!call)return;const v=$('rv'),t=v.srcObject?.getVideoTracks?.()[0];
+  const on=!!(call.remoteCam&&t&&t.readyState==='live'&&!t.muted);
+  $('call').classList.toggle('has-video',on);
+  if(!on&&$('call').classList.contains('swap'))swapCall(false);
+}
+// ---------- Камера в звонке: включить в любой момент, выключить — у собеседника аватарка ----------
+async function renegotiate(){const o=await call.pc.createOffer();await call.pc.setLocalDescription(o);csig(call.peer,{t:'reoffer',sdp:o.sdp})}
+async function camToggle(){
+  if(!call?.local)return;
+  let t=call.local.getVideoTracks()[0];
+  if(!t){ // камеры ещё не было (аудиозвонок или приняли как аудио)
+    let s;try{s=await navigator.mediaDevices.getUserMedia({video:VIDEO_C})}catch(e){mediaErr(e);return}
+    if(!call)return s.getTracks().forEach(x=>x.stop());
+    t=s.getVideoTracks()[0];call.local.addTrack(t);
+    if(call.pc){
+      const tr=call.pc.getTransceivers().find(x=>x.receiver.track?.kind==='video');
+      if(tr){await tr.sender.replaceTrack(t);if(tr.direction!=='sendrecv'){tr.direction='sendrecv';await renegotiate()}}
+      else{call.pc.addTrack(t,call.local);await renegotiate()}
+      tuneSenders(call.pc);
+    }
+    call.camOn=true;
+  }else{t.enabled=!t.enabled;call.camOn=t.enabled}
+  showLocal();
+  $('ccam').classList.toggle('off',!call.camOn);setSessionCam(call.camOn);
+  csig(call.peer,{t:'cam',on:call.camOn});
 }
 
 // reason: hangup | decline | noanswer | failed | lost | remote | declined | busy | missed
@@ -110,19 +151,41 @@ function endCall(reason,tell=true){
 function showCall(incoming){
   const c=$('call');c.classList.remove('hide','has-video');c.classList.toggle('incoming',!!incoming);
   $('callName').textContent=nameOf(call.peer);const a=$('callAva');a.innerHTML='';a.append(avatar(call.peer,120));
-  $('ccam').classList.toggle('hide',!call.video);$('cmute').classList.remove('off');$('ccam').classList.remove('off');
+  $('ccam').classList.remove('hide');$('cmute').classList.remove('off');$('ccam').classList.toggle('off',!call.camOn);
+  c.classList.remove('swap');['lv','rv'].forEach(i=>{$(i).style.left=$(i).style.top=''});
   $('caccv').classList.toggle('hide',!call.video);$('cflip').classList.add('hide');$('cflip').classList.remove('spun');
 }
 function hideCall(){if(!call)$('call').classList.add('hide')}
 function setCallState(t){$('callState').textContent=t}
-function showLocal(){const v=$('lv');v.srcObject=call.local;v.classList.toggle('hide',!call.local.getVideoTracks().length);v.play().catch(()=>{});
-  mirrorLocal(v,'user');showFlip($('cflip'),call.local)}
+function showLocal(){const v=$('lv');if(v.srcObject!==call.local)v.srcObject=call.local;
+  const on=!!call.camOn&&call.local.getVideoTracks().some(t=>t.enabled);v.classList.toggle('hide',!on);v.play().catch(()=>{});
+  mirrorLocal(v,call.local._facing||'user');showFlip($('cflip'),on?call.local:null);
+  if(!on&&$('call').classList.contains('swap'))swapCall(false)}
 $('chang').onclick=()=>endCall('hangup');
 $('cdec').onclick=()=>endCall('decline');
 $('cacc').onclick=()=>acceptCall(false);
 $('caccv').onclick=()=>acceptCall(true);
 $('cmute').onclick=()=>{const t=call?.local?.getAudioTracks()[0];if(!t)return;t.enabled=!t.enabled;$('cmute').classList.toggle('off',!t.enabled);setSessionMic(t.enabled)};
-$('ccam').onclick=()=>{const t=call?.local?.getVideoTracks()[0];if(!t)return;t.enabled=!t.enabled;$('ccam').classList.toggle('off',!t.enabled);setSessionCam(t.enabled)};
+$('ccam').onclick=()=>camToggle();
+
+// ---------- Своё окошко: перетаскивается, нажатие — поменять местами с собеседником ----------
+function smallVideo(){return $('call').classList.contains('swap')?$('rv'):$('lv')}
+function swapCall(on){
+  const c=$('call'),was=smallVideo(),pos=[was.style.left,was.style.top];
+  c.classList.toggle('swap',on);was.style.left=was.style.top='';
+  const now=smallVideo();now.style.left=pos[0];now.style.top=pos[1];
+}
+['lv','rv'].forEach(id=>{
+  const v=$(id);let st=null;
+  v.addEventListener('pointerdown',e=>{if(v!==smallVideo())return;const r=v.getBoundingClientRect();st={x:e.clientX,y:e.clientY,dx:e.clientX-r.left,dy:e.clientY-r.top,moved:false};v.setPointerCapture(e.pointerId)});
+  v.addEventListener('pointermove',e=>{if(!st)return;if(Math.abs(e.clientX-st.x)+Math.abs(e.clientY-st.y)>6)st.moved=true;if(!st.moved)return;
+    const W=innerWidth,H=innerHeight,r=v.getBoundingClientRect();
+    v.style.left=Math.max(6,Math.min(W-r.width-6,e.clientX-st.dx))+'px';v.style.top=Math.max(6,Math.min(H-r.height-6,e.clientY-st.dy))+'px';v.style.right='auto'});
+  v.addEventListener('pointerup',()=>{if(!st)return;const m=st.moved;st=null;
+    if(m){ // прилипает к ближайшему краю
+      const r=v.getBoundingClientRect(),W=innerWidth;v.style.left=(r.left+r.width/2<W/2?12:W-r.width-12)+'px';return}
+    if($('call').classList.contains('has-video')&&!$('lv').classList.contains('hide'))swapCall(!$('call').classList.contains('swap'))});
+});
 $('bcall').onclick=()=>cur&&(isGroupKey(cur)?startGroupCall(gidOf(cur),false):startCall(cur,false));
 $('bvcall').onclick=()=>cur&&(isGroupKey(cur)?startGroupCall(gidOf(cur),true):startCall(cur,true));
 window.addEventListener('beforeunload',()=>{if(call)endCall('hangup')});
