@@ -54,6 +54,7 @@ function renderPeer(){
   const av=avatar(id,120);if(p.avatar_path){av.classList.add('zoom');av.onclick=()=>openViewer(avatarUrl(p.avatar_path))}
   hero.append(av,el('h2',null,nameOf(id)));
   const nk=el('button','pv-nick','@'+nick);nk.title='Скопировать ник';nk.onclick=()=>{navigator.clipboard?.writeText('@'+nick);toast('Ник скопирован')};hero.append(nk);
+  const mt=mainTitle(id);if(mt)hero.append(titleBadge(mt,'big'));
   const line=el('div','pv-line');
   if(blockedNow)line.append(el('span','pv-badge bad','Заблокирован'));
   else if(online.has(id))line.append(el('span','pv-badge on','в сети'));
@@ -76,6 +77,8 @@ function renderPeer(){
 
   // О себе
   if(p.bio){const c=el('section','gi-card');c.append(el('div','gi-h','О себе'),el('p','gi-desc',p.bio));sc.append(c)}
+  // Звания
+  const tc=titlesCard(id);if(tc)sc.append(tc);
   // Ник и общие группы
   const info=el('section','gi-card');
   const r1=giRow('i-user','@'+nick,'Ник — по нему вас находят друзья');r1.onclick=()=>{navigator.clipboard?.writeText('@'+nick);toast('Ник скопирован')};info.append(r1);

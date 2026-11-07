@@ -71,6 +71,7 @@ function openProfileEdit(){
       }catch(e){err.textContent=e.message}};
     del.onclick=()=>{newAva=null;dropAva=true;holder.innerHTML='';holder.append(avatar(me,96,p.display_name||myName))};
     btns.append(pick,del,f);ava.append(btns);s.append(ava);
+    if(typeof titlesCard==='function'){const mt=mainTitle(me);if(mt){const b=el('div','t-self');b.append(titleBadge(mt,'big'));s.append(b);if((titlesOf[me]||[]).length>1){const tc=titlesCard(me);if(tc)s.append(tc)}}}
 
     const nm=el('label','fld');nm.append(el('span',null,'Имя'));
     const ni=document.createElement('input');ni.maxLength=30;ni.placeholder=myName;ni.value=p.display_name||'';nm.append(ni);s.append(nm);

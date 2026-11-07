@@ -164,26 +164,36 @@ $('log').addEventListener('touchmove',e=>{if(!lpXY)return;const t=e.touches[0];i
 $('log').addEventListener('touchend',()=>{clearTimeout(lpT);lpXY=null;setTimeout(()=>{longFired=false},400)});
 
 // ---------- Клавиатура на телефоне: шапка не уезжает, ничего не прыгает ----------
-// Высота приложения = видимая часть экрана над клавиатурой; страницу браузер больше не сдвигает.
+// Пока поле ввода в фокусе, приложение = видимая область над клавиатурой (iPhone сдвигает её, а не страницу).
+// Без фокуса — всегда весь экран с верха: так шапка не остаётся обрезанной после закрытия клавиатуры или меню.
+// Во время выезда/ухода клавиатуры подгоняем каждый кадр (~1,2 с), а не несколькими таймерами — без рывков и пустых полос.
 (function(){
   const vv=window.visualViewport,root=document.documentElement;
-  let wasStick=true,full=innerHeight;
+  let wasStick=true,full=innerHeight,lastH=-1,lastT=-1,lastKb=null,lastF=null,until=0;
+  const typing=()=>!!document.activeElement?.matches?.('input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea,[contenteditable=true]');
   const fit=()=>{
-    const h=vv?vv.height:innerHeight,t=vv?vv.offsetTop:0;
-    if(!document.activeElement?.matches?.('input,textarea'))full=Math.max(full,innerHeight); // высота без клавиатуры
-    root.style.setProperty('--app-h',Math.round(h)+'px');
-    root.style.setProperty('--vv-top',Math.round(t)+'px'); // iPhone при клавиатуре сдвигает видимую область, а не страницу
-    // Клавиатура открыта — убираем нижний «безопасный отступ» (на iPhone он остаётся и даёт пустую полосу над клавиатурой)
-    root.classList.toggle('kb',full-h>120);
-    if(window.scrollY||document.documentElement.scrollTop)window.scrollTo(0,0);
-    if(wasStick&&cur)toBottom(false);
+    const focus=typing();
+    if(!focus)full=Math.max(innerHeight,vv?vv.height:0); // высота без клавиатуры
+    let h,t;
+    if(focus&&vv){h=vv.height;t=Math.max(0,vv.offsetTop)}
+    else{h=full;t=0;if(window.scrollY||root.scrollTop||(vv&&vv.offsetTop>0))window.scrollTo(0,0)}
+    h=Math.round(h);t=Math.round(t);
+    const kb=focus&&full-h>120;
+    if(h!==lastH||focus!==lastF){if(focus)root.style.setProperty('--app-h',h+'px');else root.style.removeProperty('--app-h')} // без клавиатуры — 100dvh, весь экран без серой полосы снизу
+    if(t!==lastT)root.style.setProperty('--vv-top',t+'px');
+    if(kb!==lastKb)root.classList.toggle('kb',kb);
+    // Ленту держим у низа только когда реально изменилась высота, и только если она и была внизу
+    if(h!==lastH&&lastH>0&&wasStick&&cur)toBottom(false);
+    lastH=h;lastT=t;lastKb=kb;lastF=focus;
   };
-  // Клавиатура выезжает/уезжает ~300 мс — подгоняем сразу и ещё несколько раз, чтобы не было «съезда» и пустоты
-  const burst=()=>{fit();[60,150,300,500,800].forEach(d=>setTimeout(fit,d))};
-  if(vv){vv.addEventListener('resize',()=>{wasStick=stick;fit()});vv.addEventListener('scroll',fit)}
-  window.addEventListener('resize',fit);window.addEventListener('orientationchange',()=>{full=0;burst()});fit();
+  const loop=()=>{fit();if(performance.now()<until)requestAnimationFrame(loop)};
+  const burst=()=>{const idle=performance.now()>=until;until=performance.now()+1200;if(idle)requestAnimationFrame(loop)};
+  if(vv){vv.addEventListener('resize',()=>{if(performance.now()>=until)wasStick=stick;burst()});vv.addEventListener('scroll',burst)}
+  window.addEventListener('resize',burst);window.addEventListener('orientationchange',()=>{full=0;burst()});fit();
   document.addEventListener('focusin',e=>{if(e.target.matches?.('input,textarea')){wasStick=stick;burst()}});
-  document.addEventListener('focusout',e=>{if(e.target.matches?.('input,textarea'))burst()});
+  document.addEventListener('focusout',e=>{if(e.target.matches?.('input,textarea')){wasStick=stick;burst()}});
+  // Вернулись в приложение (из фона, после звонка) — пересчитать
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)burst()});
 })();
 // Кнопки рядом с полем ввода не забирают фокус — клавиатура не закрывается и не открывается заново
 ['bs','bv'].forEach(id=>$(id).addEventListener('pointerdown',e=>{if(document.activeElement===$('msg'))e.preventDefault()}));
