@@ -181,3 +181,10 @@ node tools/serve.js .
 - Превью любых ссылок (нужен свой серверный прокси — сторонним сервисам ссылки пользователей не отдаём).
 - Сжатие видео-кружков сильнее, предпросмотр перед отправкой.
 - Перенос оставшихся «старых» таблиц в миграции, чтобы базу можно было поднять с нуля.
+
+## Работа в России без VPN (посредник)
+- Адреса `*.supabase.co` в России блокируются. Все запросы могут идти через **Cloudflare Worker** `https://nit-proxy.mreldar-work.workers.dev` (аккаунт Cloudflare: mreldar.work@gmail.com, воркер `nit-proxy`). Код — `tools/cloudflare-worker.js` (пересылает /auth, /rest, /storage, /realtime (WebSocket), /functions; `/__nit` — проверка «жив»; остальное 404). Обновлять: Cloudflare → Workers & Pages → nit-proxy → Edit code → вставить → Deploy.
+- `js/config.js`: `SUPA_DIRECT` / `SUPA_PROXY`, выбранный путь в `localStorage['nit-route']`. `probeRoute()` при запуске: напрямую не отвечает, а посредник отвечает → переключается и перезагружается (не чаще раза в минуту). `storageKey` клиента фиксирован (`sb-lojlwcsqbbthmpetmbmq-auth-token`), чтобы при смене пути не терялся вход.
+- Библиотека Supabase лежит на сайте: `js/vendor/supabase.min.js` (CDN в России тоже бывает недоступен). `tools/serve.js` подменяет её на `tools/mock.js` для /__test.
+- Ссылки в письмах ведут на сайт: `{{ .SiteURL }}?token_hash={{ .TokenHash }}&type=signup|email|recovery|email_change|invite`; `js/auth.js` подтверждает их через `verifyOtp` по работающему пути. Шаблоны в Supabase уже переключены.
+- Ограничение: вход через Google/GitHub возвращает на `…supabase.co/auth/v1/callback` — без VPN из России, скорее всего, не сработает (исправить можно только платным «custom domain» Supabase). Почта/ник и код из письма работают.
