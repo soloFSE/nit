@@ -71,10 +71,9 @@ grant execute on function public.set_main_title(uuid) to authenticated;
 -- 4. Мгновенное появление
 do $$ begin alter publication supabase_realtime add table public.titles; exception when duplicate_object then null; end $$;
 
--- 5. Первый админ — владелец проекта (по почте аккаунта). Других можно добавить так:
---    insert into app_admins(user_id) select id from profiles where username = 'ник' on conflict do nothing;
+-- 5. Админ приложения — @lampizza. Добавить ещё кого-то: поменять ник и запустить эту строку.
 insert into public.app_admins(user_id)
-select id from auth.users where lower(email) = 'saidaakaunt@gmail.com'
+select id from public.profiles where username = 'lampizza'
 on conflict do nothing;
 
 select 'titles ok' as result,
