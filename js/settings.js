@@ -38,12 +38,12 @@ function setMain(sc){
   s1.append(setRow('i-gear','Оформление','Тема, цвета, обои, размер текста',()=>goSet('look')));
   s1.append(setRow('i-bell','Уведомления и звук',null,()=>goSet('notify')));
   s1.append(setRow('i-user','Конфиденциальность','Заблокированные',()=>goSet('privacy')));
-  s1.append(setRow('🔐','Аккаунт и безопасность','Почта, пароль, Google и GitHub',()=>openAccount()));
+  s1.append(setRow('i-lock','Аккаунт и безопасность','Почта, пароль, Google и GitHub',()=>openAccount()));
   sc.append(s1);
-  if(typeof installEvt!=='undefined'&&installEvt){const s2=el('section','gi-card');s2.append(setRow('⬇️','Установить приложение',null,()=>$('install').click()));sc.append(s2)}
+  if(typeof installEvt!=='undefined'&&installEvt){const s2=el('section','gi-card');s2.append(setRow('i-download','Установить приложение',null,()=>$('install').click()));sc.append(s2)}
   const s3=el('section','gi-card');const out=giRow('i-out','Выйти из аккаунта',null,'gi-danger');
   out.onclick=()=>{if(confirm('Выйти из аккаунта @'+myName+'?')){closeSettings();$('out').click()}};s3.append(out);sc.append(s3);
-  sc.append(el('p','set-ver','Нить · сделано с ❤️'));
+  {const v=el('p','set-ver','Нить · сделано с ');v.append(ico('i-heart','love'));sc.append(v)}
 }
 
 function setLook(sc){
@@ -60,7 +60,7 @@ function setLook(sc){
   const c3=el('section','gi-card set-pad');c3.append(el('div','gi-h','Сообщения'));
   const demo=el('div','set-demo');
   const mk=(cls,t)=>{const d=el('div','m '+cls);d.append(document.createTextNode(t));const s=el('small','meta','12:00');d.append(s);return d};
-  demo.append(mk('them','Привет! Как тебе новый вид?'),mk('me','Огонь 🔥'));c3.append(demo);
+  demo.append(mk('them','Привет! Как тебе новый вид?'),mk('me','Огонь!'));c3.append(demo);
   const slider=(label,key,min,max,def,apply)=>{
     const l=el('label','set-sl');const v=el('b',null,'');const i=document.createElement('input');i.type='range';i.min=min;i.max=max;i.value=+ls.get(key)||def;
     const upd=()=>{v.textContent=i.value+' px';ls.set(key,i.value);apply()};i.oninput=upd;v.textContent=i.value+' px';

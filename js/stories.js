@@ -36,7 +36,7 @@ function renderStories(){
   // Моя история
   const mine=g[me]||[];
   const my=el('button','st-it'+(mine.length?' has':' add'));
-  const ring=el('span','st-ring'+(mine.length?' seen':''));ring.append(avatar(me,54));my.append(ring);
+  const ring=el('span','st-ring'+(mine.length?' mine':''));ring.append(avatar(me,54));my.append(ring);
   if(!mine.length){const plus=el('i','st-plus');plus.append(svgI('i-plus'));ring.append(plus)}
   my.append(el('small',null,mine.length?'Вы':'Ваша история'));
   my.onclick=()=>mine.length?openStoryViewer(me):pickStory();
@@ -111,7 +111,7 @@ async function showStory(){
   // Низ: свои — просмотры и удаление; чужие — ответ
   const bot=el('div','stv-bot');
   if(owner===me){
-    const views=el('button','stv-views');views.append(el('span',null,'👁'),el('b',null,'…'));bot.append(views);
+    const views=el('button','stv-views');views.append(svgI('i-eye'),el('b',null,'…'));bot.append(views);
     sb.from('story_views').select('viewer,viewed_at').eq('story_id',s.id).then(({data})=>{views.querySelector('b').textContent=(data||[]).length+' '+plural((data||[]).length,'просмотр','просмотра','просмотров');
       views.onclick=()=>storyViewers(data||[])});
     const add=el('button','icon stv-ic');add.append(svgI('i-plus'));add.title='Ещё история';add.onclick=()=>{closeStory();pickStory()};
@@ -124,18 +124,18 @@ async function showStory(){
     const rep=document.createElement('input');rep.placeholder='Ответить '+nameOf(owner).split(' ')[0]+'…';
     rep.onfocus=()=>pauseStory(true);rep.onblur=()=>pauseStory(false);
     const sendR=async()=>{const v=rep.value.trim();if(!v)return;rep.value='';rep.blur();
-      try{await sendMsg(owner,{body:'↩ На вашу историю'+(s.caption?' «'+s.caption.slice(0,40)+'»':'')+': '+v},{noReply:true});toast('Ответ отправлен в личку')}catch(err){toast('Не удалось: '+err.message)}};
+      try{await sendMsg(owner,{body:'Ответ на вашу историю'+(s.caption?' «'+s.caption.slice(0,40)+'»':'')+': '+v},{noReply:true});toast('Ответ отправлен в личку')}catch(err){toast('Не удалось: '+err.message)}};
     rep.onkeydown=ev=>{if(ev.key==='Enter')sendR()};
     const go=el('button','icon stv-ic');go.append(svgI('i-send'));go.onclick=sendR;
     const heart=el('button','icon stv-ic');heart.append(svgI('i-heart'));heart.title='Нравится';heart.onclick=async()=>{heart.classList.add('liked');
-      try{await sendMsg(owner,{body:'❤️ на вашу историю'},{noReply:true})}catch{}};
+      try{await sendMsg(owner,{body:'::slike::'},{noReply:true})}catch{}};
     bot.append(rep,heart,go);
     if(!storySeen.has(s.id)){storySeen.add(s.id);sb.from('story_views').insert({story_id:s.id,viewer:me}).then(()=>{})}
   }
   e.append(bot);
   // Зоны нажатия: слева — назад, справа — вперёд, удержание — пауза, свайп вниз — закрыть
   let downT=0,held=false,sy=0;
-  e.onpointerdown=ev=>{if(ev.target.closest('button,input,.stv-bot,.stv-top'))return;downT=Date.now();sy=ev.clientY;held=false;sv.holdT=setTimeout(()=>{held=true;pauseStory(true)},220)};
+  e.onpointerdown=ev=>{if(ev.target.closest('button,input,.stv-bot,.stv-top,.stv-sheet'))return;downT=Date.now();sy=ev.clientY;held=false;sv.holdT=setTimeout(()=>{held=true;pauseStory(true)},220)};
   e.onpointerup=ev=>{if(!downT||!sv)return;clearTimeout(sv.holdT);const dy=ev.clientY-sy;downT=0;
     if(dy>90){closeStory();return}
     if(held){pauseStory(false);return}
@@ -159,16 +159,21 @@ function pauseStory(on){
 }
 function nextStory(){if(!sv)return;const list=sv.g[sv.owners[sv.oi]]||[];if(sv.si<list.length-1){sv.si++;showStory()}else if(sv.oi<sv.owners.length-1){sv.oi++;sv.si=0;showStory()}else closeStory()}
 function prevStory(){if(!sv)return;if(sv.si>0){sv.si--;showStory()}else if(sv.oi>0){sv.oi--;sv.si=Math.max(0,(sv.g[sv.owners[sv.oi]]||[]).length-1);showStory()}else showStory()}
+// Список «кто посмотрел» — шторка внутри самого экрана истории (поверх неё на любом экране)
 function storyViewers(list){
-  pauseStory(true);
-  $('modal').classList.add('over-stv'); // поверх экрана истории, а не под ним
-  openModal(s=>{
-    const top=el('div','sheet-top');top.append(el('h3',null,'Просмотры · '+list.length));const x=el('button','icon','✕');x.onclick=closeModal;top.append(x);s.append(top);
-    if(!list.length)s.append(el('p','sm','Пока никто не посмотрел.'));
-    loadProfiles(list.map(v=>v.viewer)).then(()=>list.forEach(v=>s.append(row(avatar(v.viewer,40),nameOf(v.viewer),agoStr(v.viewed_at)))));
-  });
-  const iv=setInterval(()=>{if($('modal').classList.contains('hide')){clearInterval(iv);$('modal').classList.remove('over-stv');pauseStory(false)}},300);
+  if(!sv)return;pauseStory(true);sv.el.querySelector('.stv-sheet')?.remove();
+  const back=el('div','stv-sheet');const sh=el('div','stv-sh');back.append(sh);
+  const close=()=>{back.classList.add('out');setTimeout(()=>{back.remove();pauseStory(false)},200)};
+  back.onclick=ev=>{if(ev.target===back)close()};back.onpointerdown=ev=>ev.stopPropagation();back.onpointerup=ev=>ev.stopPropagation();
+  const top=el('div','sheet-top');top.append(el('h3',null,'Просмотры · '+list.length));const x=el('button','icon');x.append(svgI('i-x'));x.onclick=close;top.append(x);sh.append(top);
+  const box=el('div','stv-list');sh.append(box);
+  if(!list.length)box.append(el('p','sm','Пока никто не посмотрел.'));
+  loadProfiles(list.map(v=>v.viewer)).then(()=>list.forEach(v=>{const r=giRow(avatar(v.viewer,40),nameOf(v.viewer),agoStr(v.viewed_at),'gi-mem');r.onclick=()=>{closeStory();showProfile(v.viewer)};box.append(r)}));
+  sv.closeSheet=close;sv.el.append(back);
 }
 const agoStr=t=>{const s=(Date.now()-new Date(t))/1000;return !(s>=60)?'только что':s<3600?Math.floor(s/60)+' мин назад':Math.floor(s/3600)+' ч назад'};
-document.addEventListener('keydown',e=>{if(!sv||e.target.matches?.('input')||!$('modal').classList.contains('hide'))return;if(e.key==='Escape')closeStory();if(e.key==='ArrowRight')nextStory();if(e.key==='ArrowLeft')prevStory()});
+document.addEventListener('keydown',e=>{if(!sv||e.target.matches?.('input')||!$('modal').classList.contains('hide'))return;if(e.key==='Escape'){const sh=sv.el.querySelector('.stv-sheet');sh?sv.closeSheet?.():closeStory();return}if(sv.el.querySelector('.stv-sheet'))return;if(e.key==='ArrowRight')nextStory();if(e.key==='ArrowLeft')prevStory()});
 setInterval(()=>{if(me&&!document.hidden)loadStories()},60000);
+// «Нравится ваша история» — отдельное сообщение с сердцем в стиле иконок
+SPECIAL.push({re:/^::slike::$/,cls:'slike-m',forward:false,preview:()=>PI('i-heart')+'Нравится ваша история',
+  render:(m,d)=>{d.append(icoText('i-heart',m.sender===me?'Вам понравилась история':'Нравится ваша история','slike'))}});

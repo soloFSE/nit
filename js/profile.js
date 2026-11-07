@@ -57,7 +57,7 @@ function openProfileEdit(){
   const p=prof[me]||{};let newAva=null,dropAva=false;
   openModal(s=>{
     const top=el('div','sheet-top');top.append(el('h3',null,'Профиль'));
-    const x=el('button','icon','✕');x.title='Закрыть';x.onclick=closeModal;top.append(x);s.append(top);
+    const x=el('button','icon');x.append(svgI('i-x'));x.title='Закрыть';x.onclick=closeModal;top.append(x);s.append(top);
 
     const ava=el('div','ava-edit');const holder=el('div');holder.append(avatar(me,96));ava.append(holder);
     const btns=el('div','ava-btns');
@@ -86,10 +86,10 @@ function openProfileEdit(){
 
     // Статус под ником
     const stl=el('label','fld');stl.append(el('span',null,'Статус'));
-    const sti=document.createElement('input');sti.maxLength=40;sti.placeholder='Например: 🎮 играю';sti.value=p.status||'';stl.append(sti);
+    const sti=document.createElement('input');sti.maxLength=40;sti.placeholder='Например: на работе';sti.value=p.status||'';stl.append(sti);
     const chips=el('div','chips');
-    ['🎮 играю','📚 учусь','💼 работаю','😴 сплю','🚗 в дороге','🎧 слушаю музыку','🍕 ем'].forEach(t=>{const c=el('button','chip',t);c.onclick=e=>{e.preventDefault();sti.value=t};chips.append(c)});
-    const clr=el('button','chip','✕ очистить');clr.onclick=e=>{e.preventDefault();sti.value=''};chips.append(clr);
+    ['играю','учусь','работаю','сплю','в дороге','слушаю музыку','ем'].forEach(t=>{const c=el('button','chip',t);c.onclick=e=>{e.preventDefault();sti.value=t};chips.append(c)});
+    const clr=el('button','chip chip-x');clr.append(ico('i-x'),'очистить');clr.onclick=e=>{e.preventDefault();sti.value=''};chips.append(clr);
     stl.append(chips);s.append(stl);
     if(profCols>0)stl.append(el('small','sm','Чтобы сохранить статус, запустите supabase/more.sql.'));
 

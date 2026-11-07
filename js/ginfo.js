@@ -11,7 +11,7 @@ const GEV={add:'добавил(а)',kick:'удалил(а)',admin:'назнач�
 const whoName=u=>u===me?'Вы':nameOf(u);
 function gevText(m,x){const v0=GEV[x[1]]||x[1],verb=m.sender===me?v0.replace(/л\(а\)/g,'ли'):v0,u=x[2];return whoName(m.sender)+' '+verb+(u?' '+(u===me?'вас':nameOf(u)):'')}
 SPECIAL.push({re:/^::gev:([a-z0-9]+):?([0-9a-zA-Z-]*)::$/,cls:'gev',forward:false,
-  preview:x=>'ℹ️ '+(GEV[x[1]]?'Изменения в группе':''),
+  preview:x=>PI('i-users')+(GEV[x[1]]?'Изменения в группе':''),
   render:(m,d,x)=>{d.append(el('span','gev-t',gevText(m,x)))}});
 const gevSend=(gid,kind,u)=>sendMsg('g:'+gid,{body:'::gev:'+kind+(u?':'+u:'')+'::'},{noReply:true}).catch(()=>{});
 
@@ -47,7 +47,7 @@ function renderGroupInfo(){
   const top=el('div','gi-top');
   const back=el('button','icon');back.append(svgI('i-back'));back.title='Назад';back.onclick=closeGroupInfo;
   top.append(back,el('b',null,'Данные группы'));
-  if(canDo(gid,'edit')){const ed=el('button','icon gi-edit','✎');ed.title='Изменить';ed.onclick=()=>editGroup(g);top.append(ed)}
+  if(canDo(gid,'edit')){const ed=el('button','icon gi-edit');ed.append(svgI('i-pencil'));ed.title='Изменить';ed.onclick=()=>editGroup(g);top.append(ed)}
   w.append(top);
   const sc=el('div','gi-scroll');w.append(sc);
 
@@ -76,7 +76,7 @@ function renderGroupInfo(){
   // Настройки — только админам
   if(admin){
     const st=el('section','gi-card');
-    const r=giRow('⚙️','Настройки группы',settingsSummary(g));r.onclick=()=>openGroupSettings(gid);st.append(r);
+    const r=giRow('i-gear','Настройки группы',settingsSummary(g));r.onclick=()=>openGroupSettings(gid);st.append(r);
     sc.append(st);
   }else if(g.only_admins_send||g.only_admins_edit||g.only_admins_add){
     sc.append(el('section','gi-card gi-dim sm',settingsSummary(g)));
@@ -100,7 +100,7 @@ function renderGroupInfo(){
   // Выход и удаление
   const danger=el('section','gi-card');
   const out=giRow('i-out','Выйти из группы',null,'gi-danger');out.onclick=()=>leaveGroup(gid);danger.append(out);
-  if(owner){const del=giRow('🗑','Удалить группу',null,'gi-danger');del.onclick=()=>deleteGroup(gid);danger.append(del)}
+  if(owner){const del=giRow('i-trash','Удалить группу',null,'gi-danger');del.onclick=()=>deleteGroup(gid);danger.append(del)}
   sc.append(danger);
   sc.scrollTop=keep;
 }
@@ -134,15 +134,15 @@ function memberActions(gid,u){
   openModal(s=>{
     const c=el('div','gi-who');c.append(avatar(u,64));
     const t=el('div');t.append(el('b',null,nameOf(u)),el('small',null,'@'+(people[u]||'?')+(role!=='member'?' · '+(role==='owner'?'создатель':'админ'):'')));c.append(t);s.append(c);
-    const opt=(label,f,cls)=>{const b=el('button','opt'+(cls?' '+cls:''),label);b.onclick=()=>{closeModal();f()};s.append(b)};
-    if(isFriend)opt('💬 Написать '+nameOf(u),()=>{closeGroupInfo();openChat(u)});
-    opt('👤 Профиль',()=>setTimeout(()=>showProfile(u),200));
+    const opt=(label,f,cls)=>{const b=el('button','opt opt-i'+(cls?' '+cls:''));fillRich(b,label);b.onclick=()=>{closeModal();f()};s.append(b)};
+    if(isFriend)opt(PI('i-chats')+'Написать '+nameOf(u),()=>{closeGroupInfo();openChat(u)});
+    opt(PI('i-user')+'Профиль',()=>setTimeout(()=>showProfile(u),200));
     if(admin&&role!=='owner'){
-      if(role==='admin')opt('⬇️ Снять с админов',()=>setRole(gid,u,'member'));
-      else opt('⭐ Назначить админом',()=>setRole(gid,u,'admin'));
+      if(role==='admin')opt(PI('i-user')+'Снять с админов',()=>setRole(gid,u,'member'));
+      else opt(PI('i-star')+'Назначить админом',()=>setRole(gid,u,'admin'));
     }
-    if(owner)opt('👑 Передать права создателя',()=>transferGroup(gid,u));
-    if(admin&&role!=='owner')opt('🚫 Удалить из группы',()=>removeMember(gid,u),'danger');
+    if(owner)opt(PI('i-crown')+'Передать права создателя',()=>transferGroup(gid,u));
+    if(admin&&role!=='owner')opt(PI('i-block')+'Удалить из группы',()=>removeMember(gid,u),'danger');
     const x=el('button','ghost wide','Отмена');x.onclick=closeModal;s.append(x);
   });
 }
@@ -153,14 +153,14 @@ function openAddMembers(gid){
   const list=fr.filter(f=>f.status==='accepted').map(f=>f.a===me?f.b:f.a).filter(id=>!inG.has(id)&&!isBlocked(id)).sort((a,b)=>nameOf(a).localeCompare(nameOf(b)));
   const pick=new Set();
   openModal(s=>{
-    const top=el('div','sheet-top');top.append(el('h3',null,'Добавить участников'));const x=el('button','icon','✕');x.onclick=closeModal;top.append(x);s.append(top);
+    const top=el('div','sheet-top');top.append(el('h3',null,'Добавить участников'));const x=el('button','icon');x.append(svgI('i-x'));x.onclick=closeModal;top.append(x);s.append(top);
     if(!list.length){s.append(el('p','sm','Все ваши друзья уже в группе. Добавить можно только друзей.'));return}
     const q=document.createElement('input');q.placeholder='Поиск друзей';q.className='gi-search';s.append(q);
     const chips=el('div','gi-chips');s.append(chips);
     const box=el('div','gi-pick');s.append(box);
     const go=el('button','primary wide','Добавить');go.disabled=true;s.append(go);
     const upd=()=>{go.disabled=!pick.size;go.textContent=pick.size?'Добавить · '+pick.size:'Добавить';
-      chips.innerHTML='';pick.forEach(u=>{const c=el('button','gi-chip');c.append(avatar(u,24),el('span',null,nameOf(u)),el('i',null,'✕'));c.onclick=()=>{pick.delete(u);draw();upd()};chips.append(c)})};
+      chips.innerHTML='';pick.forEach(u=>{const c=el('button','gi-chip');c.append(avatar(u,24),el('span',null,nameOf(u)),(()=>{const i=el('i');i.append(ico('i-x'));return i})());c.onclick=()=>{pick.delete(u);draw();upd()};chips.append(c)})};
     const draw=()=>{
       const f=q.value.trim().toLowerCase();box.innerHTML='';
       list.filter(u=>!f||nameOf(u).toLowerCase().includes(f)||(people[u]||'').includes(f)).forEach(u=>{
@@ -179,7 +179,7 @@ function openAddMembers(gid){
 function openGroupSettings(gid){
   openModal(s=>{
     const g=groups[gid];
-    const top=el('div','sheet-top');top.append(el('h3',null,'Настройки группы'));const x=el('button','icon','✕');x.onclick=closeModal;top.append(x);s.append(top);
+    const top=el('div','sheet-top');top.append(el('h3',null,'Настройки группы'));const x=el('button','icon');x.append(svgI('i-x'));x.onclick=closeModal;top.append(x);s.append(top);
     s.append(el('p','sm','Выберите, что разрешено только админам. Создатель группы — всегда админ.'));
     [['send','Отправлять сообщения','Остальные смогут только читать'],
      ['edit','Менять название, фото и описание',''],

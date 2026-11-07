@@ -5,12 +5,12 @@ const isFile=p=>FILE_RE.test(p||'');
 const fileName=p=>(p||'').match(FILE_RE)?.[2]||'файл';
 const fileSize=p=>+((p||'').match(FILE_RE)?.[1]||0);
 const fmtSize=n=>n>=1048576?(n/1048576).toFixed(1).replace('.0','')+' МБ':n>=1024?Math.round(n/1024)+' КБ':n+' Б';
-const EXT_ICON={pdf:'📕',doc:'📘',docx:'📘',xls:'📗',xlsx:'📗',csv:'📗',ppt:'📙',pptx:'📙',zip:'🗜️',rar:'🗜️','7z':'🗜️',txt:'📄',md:'📄',mp3:'🎵',wav:'🎵',mp4:'🎬',mov:'🎬',apk:'🤖',exe:'⚙️',psd:'🎨',png:'🖼️',jpg:'🖼️',gif:'🖼️',svg:'🖼️'};
+const EXT_ICON={zip:'i-box',rar:'i-box','7z':'i-box',mp3:'i-music',wav:'i-music',ogg:'i-music',m4a:'i-music',mp4:'i-film',mov:'i-film',webm:'i-film',apk:'i-gear',exe:'i-gear',psd:'i-image',png:'i-image',jpg:'i-image',jpeg:'i-image',gif:'i-image',svg:'i-image',webp:'i-image'};
 
 function fileEl(path){
   const name=fileName(path),ext=(name.split('.').pop()||'').toLowerCase();
   const a=el('a','file');a.target='_blank';a.rel='noopener';
-  const ic=el('span','file-ic',EXT_ICON[ext]||'📎');
+  const ic=el('span','file-ic');ic.append(svgI(EXT_ICON[ext]||'i-file'));
   const t=el('span','file-t');t.append(el('b',null,name),el('small',null,fmtSize(fileSize(path))+(ext?' · '+ext.toUpperCase():'')));
   a.append(ic,t);
   a.onclick=async e=>{e.preventDefault();e.stopPropagation();const u=await imgUrl(path,name);if(u)window.open(u,'_blank')};

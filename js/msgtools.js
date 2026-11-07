@@ -26,8 +26,8 @@ $('rbX').onclick=()=>{cancelReply();cancelEdit()};
 // ---------- Пересылка ----------
 function forwardMsg(m){
   openModal(s=>{
-    const top=el('div','sheet-top');top.append(el('h3',null,'Переслать'));const x=el('button','icon','✕');x.onclick=closeModal;top.append(x);s.append(top);
-    s.append(el('div','fwd-prev',preview(m)));
+    const top=el('div','sheet-top');top.append(el('h3',null,'Переслать'));const x=el('button','icon');x.append(svgI('i-x'));x.onclick=closeModal;top.append(x);s.append(top);
+    s.append(fillRich(el('div','fwd-prev'),preview(m)));
     const q=document.createElement('input');q.placeholder='Найти чат';s.append(q);
     const list=el('div','pick');s.append(list);
     const chats=[
@@ -61,7 +61,7 @@ async function loadPin(k){
   if(!m){const r=await sb.from('messages').select('*').eq('id',pinnedId).maybeSingle();m=r.data;if(m)msgs[m.id]=m}
   if(cur!==k)return;
   if(!m){pinnedId=null;return}
-  $('pinText').textContent=preview(m);$('pinbar').classList.remove('hide');
+  fillRich($('pinText'),preview(m));$('pinbar').classList.remove('hide');
   redrawMenus();
 }
 async function pinMsg(m){

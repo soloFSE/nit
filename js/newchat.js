@@ -44,7 +44,7 @@ function personRow(id,nick,p){
     else if(s2==='friend')set('Написать','soft',()=>{closeModal();openChat(id)});
     else if(s2==='sent')set('Отправлена','muted');
     else if(s2==='incoming'){set('Принять','main',async()=>{b.disabled=true;await acceptFriend(id);setTimeout(refresh,300)});
-      const no=el('button','nc-btn muted','✕');no.title='Отклонить';no.onclick=async e=>{e.stopPropagation();const f=friendState(id).f;await answer(f,false,el('button'),el('button'));r.remove()};r.append(no)}
+      const no=el('button','nc-btn muted');no.append(ico('i-x'));no.title='Отклонить';no.onclick=async e=>{e.stopPropagation();const f=friendState(id).f;await answer(f,false,el('button'),el('button'));r.remove()};r.append(no)}
     else set('Добавить','main',async()=>{b.disabled=true;await requestFriend(id,nick);b.disabled=false;refresh()})};
   refresh();r.append(b);return r;
 }
@@ -85,7 +85,7 @@ function gwMembers(body,s){
   const list=el('div','gi-pick gw-list');body.append(list);
   const next=el('button','primary wide gw-next');s.append(next);
   const upd=()=>{
-    chips.innerHTML='';gw.ids.forEach(u=>{const c=el('button','gi-chip');c.append(avatar(u,24),el('span',null,nameOf(u)),el('i',null,'✕'));c.onclick=()=>{gw.ids.delete(u);draw();upd()};chips.append(c)});
+    chips.innerHTML='';gw.ids.forEach(u=>{const c=el('button','gi-chip');c.append(avatar(u,24),el('span',null,nameOf(u)),(()=>{const i=el('i');i.append(ico('i-x'));return i})());c.onclick=()=>{gw.ids.delete(u);draw();upd()};chips.append(c)});
     next.textContent=gw.ids.size?'Далее · '+gw.ids.size:'Далее без участников';
   };
   const draw=()=>{

@@ -49,7 +49,7 @@ async function buildStickers(force){
   customs.forEach(c=>{
     const b=el('button','stick');const i=document.createElement('img');i.loading='lazy';i.alt='';i.src=csUrl(c.path);b.append(i);
     b.onclick=()=>{closeEmoji();sendMsg(cur,{body:'::cs:'+c.path+'::'}).catch(e=>alert(e.message))};
-    const x=el('span','st-del','✕');x.title='Убрать из моих стикеров';
+    const x=el('span','st-del');x.append(ico('i-x'));x.title='Убрать из моих стикеров';
     x.onclick=async e=>{e.stopPropagation();if(!confirm('Убрать стикер из ваших? В отправленных сообщениях он останется.'))return;
       const {error}=await sb.from('custom_stickers').delete().eq('id',c.id);if(error){toast('Не удалось: '+error.message);return}
       toast('Стикер убран');buildStickers(true)};b.append(x);

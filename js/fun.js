@@ -7,7 +7,7 @@ let votes={};
 function openPollEditor(){
   if(!cur)return;
   openModal(s=>{
-    const top=el('div','sheet-top');top.append(el('h3',null,'Новый опрос'));const x=el('button','icon','✕');x.onclick=closeModal;top.append(x);s.append(top);
+    const top=el('div','sheet-top');top.append(el('h3',null,'Новый опрос'));const x=el('button','icon');x.append(svgI('i-x'));x.onclick=closeModal;top.append(x);s.append(top);
     const ql=el('label','fld');ql.append(el('span',null,'Вопрос'));const q=document.createElement('input');q.maxLength=200;q.placeholder='Куда идём в субботу?';ql.append(q);s.append(ql);
     const ol=el('div','fld');ol.append(el('span',null,'Варианты'));const box=el('div','popts');ol.append(box);s.append(ol);
     const add=()=>{if(box.children.length>=10)return;const i=document.createElement('input');i.maxLength=100;i.placeholder='Вариант '+(box.children.length+1);
@@ -46,7 +46,7 @@ async function vote(m,i,multi){
   else{if(!multi&&mine.length)await q().delete().eq('message_id',m.id).eq('user_id',me);({error}=await q().insert({message_id:m.id,user_id:me,option:i}))}
   if(error){alert('Голос не сохранился: '+(/relation|schema cache/i.test(error.message)?'запустите supabase/more.sql':error.message));loadVotes([m.id])}
 }
-SPECIAL.push({re:POLL_RE,cls:'poll-m',preview:x=>{try{return '📊 '+JSON.parse(x[1]).q}catch{return '📊 Опрос'}},render:(m,d)=>{
+SPECIAL.push({re:POLL_RE,cls:'poll-m',preview:x=>{try{return PI('i-poll')+JSON.parse(x[1]).q}catch{return PI('i-poll')+'Опрос'}},render:(m,d)=>{
   const p=pollOf(m.body);if(!p)return;
   const vs=votes[m.id]||[],voters=new Set(vs.map(v=>v.user_id)),mine=new Set(vs.filter(v=>v.user_id===me).map(v=>v.option));
   const w=el('div','poll');
@@ -55,7 +55,7 @@ SPECIAL.push({re:POLL_RE,cls:'poll-m',preview:x=>{try{return '📊 '+JSON.parse(
     const n=vs.filter(v=>v.option===i).length,pct=voters.size?Math.round(n/voters.size*100):0;
     const b=el('button','popt'+(mine.has(i)?' mine':''));
     b.style.setProperty('--p',pct+'%');
-    b.append(el('span','popt-c',mine.has(i)?'✓':''),el('span','popt-t',t),el('span','popt-n',voters.size?pct+'%':''));
+    b.append((()=>{const c=el('span','popt-c');if(mine.has(i))c.append(ico('i-check'));return c})(),el('span','popt-t',t),el('span','popt-n',voters.size?pct+'%':''));
     b.title=vs.filter(v=>v.option===i).map(v=>nameOf(v.user_id)).join(', ');
     b.onclick=e=>{e.stopPropagation();vote(m,i,p.m)};w.append(b);
   });
@@ -65,7 +65,11 @@ SPECIAL.push({re:POLL_RE,cls:'poll-m',preview:x=>{try{return '📊 '+JSON.parse(
 
 // ---------- Кубик, монетка, КНБ ----------
 const rnd=n=>crypto.getRandomValues(new Uint32Array(1))[0]%n;
-const DICE='⚀⚁⚂⚃⚄⚅',RPS=[['✊','Камень'],['✌️','Ножницы'],['✋','Бумага']];
+const RPS=[['i-fist','Камень'],['i-scissors','Ножницы'],['i-palm','Бумага']];
+// Грань кубика — рисуем точки сами, в стиле иконок
+function dieSvg(n){const P={1:[[12,12]],2:[[8,8],[16,16]],3:[[7.5,7.5],[12,12],[16.5,16.5]],4:[[8,8],[16,8],[8,16],[16,16]],5:[[7.5,7.5],[16.5,7.5],[12,12],[7.5,16.5],[16.5,16.5]],6:[[8,7],[16,7],[8,12],[16,12],[8,17],[16,17]]}[n];
+  const ns='http://www.w3.org/2000/svg',s=document.createElementNS(ns,'svg');s.setAttribute('viewBox','0 0 24 24');
+  s.innerHTML='<path d="M6.1 3.6c3.9-.5 8-.5 11.8.1 1.3.2 2.2 1.1 2.4 2.4.5 3.9.5 7.9-.1 11.8-.2 1.3-1.1 2.2-2.4 2.4-3.9.5-7.9.5-11.8-.1-1.3-.2-2.2-1.1-2.4-2.4-.5-3.9-.5-7.9.1-11.8.2-1.3 1.1-2.2 2.4-2.4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>'+P.map(([x,y])=>'<circle cx="'+x+'" cy="'+y+'" r="1.7" fill="currentColor"/>').join('');return s}
 async function sendGame(kind){
   if(!cur)return;
   const body=kind==='dice'?'::dice:'+(rnd(6)+1)+'::':kind==='coin'?'::coin:'+rnd(2)+'::':kind==='rps'?'::rps:'+rnd(3)+'::':
@@ -73,30 +77,30 @@ async function sendGame(kind){
   try{await sendMsg(cur,{body})}catch(e){alert('Не отправилось: '+e.message)}
 }
 const fresh=m=>Date.now()-new Date(m.created_at)<4000;
-SPECIAL.push({re:/^::dice:([1-6])::$/,cls:'game-m',forward:false,preview:x=>'🎲 Кубик: '+x[1],render:(m,d,x)=>{
-  const w=el('div','game');const f=el('div','die'+(fresh(m)?' roll':''),DICE[x[1]-1]);
+SPECIAL.push({re:/^::dice:([1-6])::$/,cls:'game-m',forward:false,preview:x=>PI('i-dice')+'Кубик: '+x[1],render:(m,d,x)=>{
+  const w=el('div','game');const f=el('div','die'+(fresh(m)?' roll':''));f.append(dieSvg(+x[1]));
   w.append(f,el('span',null,'Выпало '+x[1]));d.append(w);
 }});
-SPECIAL.push({re:/^::coin:([01])::$/,cls:'game-m',forward:false,preview:x=>'🪙 '+(x[1]==='0'?'Орёл':'Решка'),render:(m,d,x)=>{
-  const w=el('div','game');w.append(el('div','coin'+(fresh(m)?' flip':''),x[1]==='0'?'🦅':'🪙'),el('span',null,x[1]==='0'?'Орёл':'Решка'));d.append(w);
+SPECIAL.push({re:/^::coin:([01])::$/,cls:'game-m',forward:false,preview:x=>PI('i-coin')+(x[1]==='0'?'Орёл':'Решка'),render:(m,d,x)=>{
+  const w=el('div','game');const cn=el('div','coin'+(fresh(m)?' flip':''));cn.append(svgI(x[1]==='0'?'i-crown':'i-coin'));w.append(cn,el('span',null,x[1]==='0'?'Орёл':'Решка'));d.append(w);
 }});
-SPECIAL.push({re:/^::rps:([0-2])::$/,cls:'game-m',forward:false,preview:x=>RPS[x[1]][0]+' '+RPS[x[1]][1],render:(m,d,x)=>{
-  const w=el('div','game');w.append(el('div','rps'+(fresh(m)?' shake':''),RPS[x[1]][0]),el('span',null,RPS[x[1]][1]));d.append(w);
+SPECIAL.push({re:/^::rps:([0-2])::$/,cls:'game-m',forward:false,preview:x=>PI(RPS[x[1]][0])+RPS[x[1]][1],render:(m,d,x)=>{
+  const w=el('div','game');const rp=el('div','rps'+(fresh(m)?' shake':''));rp.append(svgI(RPS[x[1]][0]));w.append(rp,el('span',null,RPS[x[1]][1]));d.append(w);
 }});
 
 // ---------- Крестики-нолики: ход проверяет база (ttt_move) ----------
-SPECIAL.push({re:/^::ttt::(\{.*\})$/s,cls:'ttt-m',forward:false,preview:()=>'❌⭕ Крестики-нолики',render:(m,d,x)=>{
+SPECIAL.push({re:/^::ttt::(\{.*\})$/s,cls:'ttt-m',forward:false,preview:()=>PI('i-ttt')+'Крестики-нолики',render:(m,d,x)=>{
   let st;try{st=JSON.parse(x[1])}catch{return}
   const w=el('div','ttt');
-  const lbl=v=>v==='x'?'❌':v==='o'?'⭕':'';
+  const lbl=v=>v==='x'?'крестики':v==='o'?'нолики':'';
   const who=id=>id?(id===me?'вы':nameOf(id)):'кто угодно';
-  const status=st.w==='d'?'Ничья 🤝':st.w?'Победа: '+lbl(st.w)+' '+who(st.w==='x'?st.x:st.o):
-    'Ход '+lbl(st.t)+' — '+(st.t==='x'?who(st.x):st.o?who(st.o):'кто угодно, кроме '+nameOf(st.x));
+  const status=st.w==='d'?'Ничья':st.w?'Победа: '+lbl(st.w)+' · '+who(st.w==='x'?st.x:st.o):
+    'Ходят '+lbl(st.t)+' — '+(st.t==='x'?who(st.x):st.o?who(st.o):'кто угодно, кроме '+nameOf(st.x));
   w.append(el('b','ttt-h','Крестики-нолики'),el('small','ttt-s',status));
   const g=el('div','ttt-g');
   const myTurn=!st.w&&((st.t==='x'&&st.x===me)||(st.t==='o'&&(st.o?st.o===me:st.x!==me)));
   [...st.b].forEach((c,i)=>{
-    const b=el('button','cell'+(c!=='-'?' '+c:''),c==='-'?'':lbl(c));
+    const b=el('button','cell'+(c!=='-'?' '+c:''));if(c!=='-')b.append(svgI(c==='x'?'i-xx':'i-o'));
     b.disabled=c!=='-'||!myTurn;
     b.onclick=async e=>{e.stopPropagation();g.querySelectorAll('button').forEach(z=>z.disabled=true);
       const {data,error}=await sb.rpc('ttt_move',{mid:m.id,cell:i});
@@ -132,7 +136,7 @@ function fx(kind){
     const e=t-t0;x.clearRect(0,0,W,H);x.globalAlpha=Math.max(0,Math.min(1,(3200-e)/600));
     P.forEach(p=>{
       if(kind==='confetti'){p.vy+=.45*k;p.vx*=.99;p.x+=p.vx;p.y+=p.vy;p.a+=p.va;x.save();x.translate(p.x,p.y);x.rotate(p.a);x.fillStyle=p.c;x.fillRect(-p.r,-p.r/2,p.r*2,p.r);x.restore()}
-      else if(kind==='hearts'){p.x+=p.vx+Math.sin(e/300+p.r)*.6*k;p.y+=p.vy;x.font=p.r+'px serif';x.fillText('❤️',p.x,p.y)}
+      else if(kind==='hearts'){p.x+=p.vx+Math.sin(e/300+p.r)*.6*k;p.y+=p.vy;const r=p.r/2;x.fillStyle='#ff4d6d';x.beginPath();x.moveTo(p.x,p.y+r*.9);x.bezierCurveTo(p.x-r*1.6,p.y-r*.1,p.x-r*.9,p.y-r*1.4,p.x,p.y-r*.5);x.bezierCurveTo(p.x+r*.9,p.y-r*1.4,p.x+r*1.6,p.y-r*.1,p.x,p.y+r*.9);x.fill()}
       else{p.x+=p.vx+Math.sin(e/600+p.r)*.5*k;p.y+=p.vy;x.fillStyle='rgba(255,255,255,.95)';x.beginPath();x.arc(p.x,p.y,p.r,0,7);x.fill();x.strokeStyle='rgba(120,160,220,.5)';x.stroke()}
     });
     if(e<3200)requestAnimationFrame(step);else c.remove();

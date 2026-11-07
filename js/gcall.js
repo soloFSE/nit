@@ -161,7 +161,7 @@ function onGroupRing(p){
   $('grjoinv').classList.toggle('hide',!p.video);
   $('gring').classList.remove('hide');tone('in');
   clearTimeout(gring.t);gring.t=setTimeout(hideGring,40000);
-  if(document.hidden)sysNotify(g.name,{body:'📞 '+nameOf(p.from)+' зовёт в '+(p.video?'видеозвонок':'звонок'),tag:'gcall',call:true,chat:'g:'+p.gid});
+  if(document.hidden)sysNotify(g.name,{body:nameOf(p.from)+' зовёт в '+(p.video?'видеозвонок':'звонок'),tag:'gcall',call:true,chat:'g:'+p.gid});
 }
 function hideGring(){if(gring){clearTimeout(gring.t);gring=null}$('gring').classList.add('hide');if(!call)tone(null)}
 $('grjoin').onclick=()=>gring&&joinGroupCall(gring.gid,gring.callId,false);
@@ -170,10 +170,10 @@ $('grno').onclick=hideGring;
 
 // ---------- Приглашение в чате ----------
 SPECIAL.push({re:/^::gcall:([0-9a-f-]{36}):([01])::$/,cls:'call-m',forward:false,
-  preview:x=>(x[2]==='1'?'📹 Групповой видеозвонок':'📞 Групповой звонок'),
+  preview:x=>(x[2]==='1'?PI('i-video')+'Групповой видеозвонок':PI('i-phone')+'Групповой звонок'),
   render:(m,d,x)=>{
     const v=x[2]==='1',fresh=Date.now()-new Date(m.created_at)<3*3600*1000;
-    const w=el('div','callrec');w.append(el('span','callrec-i',v?'📹':'📞'));
+    const w=el('div','callrec');{const ci=el('span','callrec-i');ci.append(svgI(v?'i-video':'i-phone'));w.append(ci)}
     const t=el('div','callrec-t');t.append(el('b',null,'Групповой '+(v?'видеозвонок':'звонок')),el('small',null,(m.sender===me?'Вы начали':nameOf(m.sender)+' начал(а)')));
     w.append(t);
     if(fresh&&m.group_id){const b=el('button','primary sm-btn','Войти');b.onclick=e=>{e.stopPropagation();joinGroupCall(m.group_id,x[1],v)};w.append(b)}

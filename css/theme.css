@@ -565,9 +565,10 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),
 .stories::-webkit-scrollbar{display:none}
 .st-it{display:flex;flex-direction:column;align-items:center;gap:5px;flex:none;width:66px;padding:0;background:none;border-radius:16px}
 .st-it small{font-size:11.5px;font-weight:600;color:var(--text);max-width:66px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.st-ring{position:relative;padding:3px;border-radius:50%;background:conic-gradient(from 200deg,var(--acc2),var(--acc),var(--acc2));transition:transform .2s var(--spring)}
+.st-ring{position:relative;padding:3px;border-radius:50%;background:conic-gradient(from 200deg,#16a34a,#4ade80,#22c55e,#16a34a);box-shadow:0 0 10px rgba(34,197,94,.35);transition:transform .2s var(--spring)}
 .st-ring .ava{box-shadow:0 0 0 2.5px var(--side)}
-.st-ring.seen{background:color-mix(in srgb,var(--dim) 45%,transparent)}
+.st-ring.seen{background:color-mix(in srgb,var(--dim) 45%,transparent);box-shadow:none}
+@supports not (background:color-mix(in srgb,red,blue)){.st-ring.seen{background:rgba(127,127,127,.45)}}
 .st-it.add .st-ring{background:transparent}
 .st-it:active .st-ring{transform:scale(.92)}
 .st-plus{position:absolute;right:0;bottom:0;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--acc);color:#fff;box-shadow:0 0 0 2.5px var(--side)}
@@ -601,5 +602,49 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),
 .stv.paused .stv-bars,.stv.paused .stv-top{opacity:.4;transition:opacity .2s}
 .st-edit .stv-top{top:calc(14px + env(safe-area-inset-top,0px))}
 
-/* Окно просмотров истории — поверх экрана истории */
-.modal.over-stv{z-index:70}
+
+/* Шторка «Просмотры» внутри экрана истории */
+.stv-sheet{position:absolute;inset:0;z-index:5;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;animation:fade .18s;touch-action:auto}
+.stv-sheet.out{opacity:0;transition:opacity .2s}
+.stv-sh{width:100%;max-width:440px;max-height:70%;display:flex;flex-direction:column;background:var(--surface);color:var(--text);border-radius:24px 24px 0 0;padding:16px 16px calc(14px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,.35);animation:stvUp .26s var(--ease)}
+.stv-sheet.out .stv-sh{transform:translateY(30px);transition:transform .2s}
+.stv-list{overflow-y:auto;margin:0 -6px}
+@keyframes stvUp{from{transform:translateY(100%)}to{transform:none}}
+@media (min-width:761px){.stv-sheet{align-items:center}.stv-sh{border-radius:24px;max-height:60%}}
+
+/* ============ Иконки в стиле «нити» вместо эмодзи ============ */
+svg.ii{width:1.15em;height:1.15em;flex:none;vertical-align:-.22em;margin-right:.3em;fill:none;stroke:currentColor}
+.ict{display:inline-flex;align-items:center}
+.tick svg.ii{width:15px;height:15px;margin:0;vertical-align:-3px}
+.tick{letter-spacing:0!important}
+.crow .tick svg.ii{width:16px;height:16px}
+.pv-t svg.ii,#pinText svg.ii,#rbText svg.ii,.fwd-prev svg.ii{opacity:.8}
+.file-ic{display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:color-mix(in srgb,var(--acc) 14%,transparent);color:var(--acc)}
+.m.me .file-ic{background:rgba(255,255,255,.18);color:#fff}
+.file-ic svg{width:24px;height:24px}
+.die svg,.coin svg,.rps svg{width:58px;height:58px;display:block}
+.die,.coin,.rps{color:var(--acc)}
+.m.me .die,.m.me .coin,.m.me .rps{color:#fff}
+.ttt-g .cell svg{width:30px;height:30px}
+.ttt-g .cell.x{color:#ef4444}.ttt-g .cell.o{color:#3b82f6}
+.callrec-i{display:grid;place-items:center}
+.callrec-i svg{width:24px;height:24px}
+.sm-btn svg{width:18px;height:18px}
+.burst{color:#ff4d6d}
+.burst svg{width:56px;height:56px;fill:#ff4d6d;stroke:#ff4d6d;filter:drop-shadow(0 4px 12px rgba(255,77,109,.45))}
+.eye{display:grid;place-items:center;color:var(--text)}
+.eye svg{width:20px;height:20px}
+.mail-ic{color:var(--acc)}
+.mail-ic svg{width:52px;height:52px}
+svg.ii.love{color:#ff4d6d;fill:#ff4d6d;stroke:#ff4d6d;margin:0 0 0 .1em}
+.opt-i{display:flex;align-items:center;gap:2px}
+.opt-i svg.ii{width:20px;height:20px;margin-right:10px}
+.popt-c svg.ii{width:14px;height:14px;margin:0}
+.stv-views svg{width:18px;height:18px}
+.chip-x{display:inline-flex;align-items:center}
+.gi-chip i svg.ii,.st-del svg.ii,.nc-btn svg.ii{margin:0;width:12px;height:12px}
+.st-del{display:grid;place-items:center}
+.blockbar svg.ii{width:16px;height:16px}
+.slike{display:inline-flex;align-items:center;font-weight:600}
+.slike svg.ii{color:#ff4d6d;fill:#ff4d6d;stroke:#ff4d6d;width:20px;height:20px}
+.m.me .slike svg.ii{color:#fff;fill:#fff;stroke:#fff}

@@ -9,7 +9,7 @@ let authView='login',authEmail='',resendAt=0;
 function fld(label,type,ph,extra={}){
   const l=el('label','fld');const h=el('span',null,label);l.append(h);
   const wrap=el('div','fld-in');const i=document.createElement('input');i.type=type;i.placeholder=ph||'';Object.assign(i,extra);wrap.append(i);
-  if(type==='password'){const eye=el('button','eye','👁');eye.type='button';eye.title='Показать пароль';
+  if(type==='password'){const eye=el('button','eye');eye.append(svgI('i-eye'));eye.type='button';eye.title='Показать пароль';
     eye.onclick=()=>{i.type=i.type==='password'?'text':'password';eye.classList.toggle('on',i.type==='text')};wrap.append(eye)}
   l.append(wrap);l.input=i;l.head=h;return l;
 }
@@ -95,7 +95,7 @@ function viewRegister(box){
     const v=n.input.value=n.input.value.toLowerCase().replace(/[^a-z0-9_]/g,'');nickFree=null;nickSt.className='nick-st';nickSt.textContent='';
     clearTimeout(nt);if(v.length<3)return;
     nt=setTimeout(async()=>{const {data,error}=await sb.rpc('username_free',{u:v});if(n.input.value!==v||error)return;
-      nickFree=!!data;nickSt.textContent=data?'✓ свободен':'✕ занят';nickSt.classList.add(data?'ok':'bad')},350);
+      nickFree=!!data;fillRich(nickSt,data?PI('i-check')+'свободен':PI('i-x')+'занят');nickSt.classList.add(data?'ok':'bad')},350);
   };
   p.input.oninput=()=>{const s=p.input.value?pwScore(p.input.value):0;meter.dataset.s=s;
     mt.textContent=p.input.value?['Очень слабый','Слабый','Средний','Хороший','Надёжный'][s]:''};
@@ -123,7 +123,7 @@ function viewRegister(box){
 }
 
 function viewCheck(box){
-  const c=el('div','mailbox');c.append(el('div','mail-ic','✉️'),el('h3',null,'Подтвердите почту'));
+  const c=el('div','mailbox');{const mi=el('div','mail-ic');mi.append(svgI('i-mail'));c.append(mi)}c.append(el('h3',null,'Подтвердите почту'));
   const p=el('p','sm');p.append(document.createTextNode('Мы отправили письмо на '),el('b',null,authEmail||'вашу почту'),
     document.createTextNode('. Откройте его и нажмите «Подтвердить» — после этого вы сразу войдёте. Письма нет? Загляните в «Спам».'));
   c.append(p);box.append(c);
@@ -210,7 +210,7 @@ let recovering=/type=recovery/.test(location.hash)||/[?&]type=recovery/.test(loc
     const {error}=await sb.auth.verifyOtp({token_hash:th,type:ty==='magiclink'?'email':ty});
     if(error){if(typeof hideSplash==='function')hideSplash();$('auth').classList.remove('hide');showAuth('login');
       aerr(/expired|invalid|not found/i.test(error.message)?'Ссылка из письма устарела или уже использована. Запросите новую.':authErr(error));return}
-    if(ty==='email_change')setTimeout(()=>toast('Почта подтверждена ✓'),1500);
+    if(ty==='email_change')setTimeout(()=>toast('Почта подтверждена'),1500);
   },0);
 })();
 (function(){

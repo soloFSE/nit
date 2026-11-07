@@ -75,7 +75,7 @@ $('log').addEventListener('dblclick',e=>{
   clearTimeout(tapTimer);d.classList.remove('open');d.querySelector('.acts')?.remove();
   const id=+d.dataset.id;if(!msgs[id]||msgs[id].deleted_at)return;
   if(!(reacts[id]||[]).some(r=>r.user_id===me&&r.emoji==='❤️'))toggleReact(id,'❤️');
-  const h=el('span','burst','❤️');d.append(h);setTimeout(()=>h.remove(),700);
+  const h=el('span','burst');h.append(svgI('i-heart'));d.append(h);setTimeout(()=>h.remove(),700);
   window.getSelection?.()?.removeAllRanges();
 });
 // Свайп сообщения вправо — ответить (на телефоне). С самого левого края — это «назад», не ответ

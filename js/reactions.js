@@ -51,7 +51,7 @@ function quoteEl(m){
   if(!src&&!quoteMiss.has(m.reply_to))needQuote(m.reply_to);
   if(gone)q.classList.add('gone');
   q.append(el('b',null,src?(src.sender===me?'Вы':nameOf(src.sender)):'Ответ'),
-    el('span',null,!src?(quoteMiss.has(m.reply_to)?'Сообщение недоступно':'…'):gone?'Сообщение удалено':preview(src)));
+    fillRich(el('span'),!src?(quoteMiss.has(m.reply_to)?'Сообщение недоступно':'…'):gone?'Сообщение удалено':preview(src)));
   q.onclick=e=>{e.stopPropagation();if(!gone)jumpTo(m.reply_to)};
   return q;
 }
@@ -73,7 +73,7 @@ function needQuote(id){
 function startReply(m){
   cancelEdit();replyTo=m.id;
   $('rbWho').textContent=m.sender===me?'Ответ себе':'Ответ: '+nameOf(m.sender);
-  $('rbText').textContent=preview(m);
+  fillRich($('rbText'),preview(m));
   $('replybar').classList.remove('hide');$('msg').focus();
 }
 function cancelReply(){replyTo=null;$('replybar').classList.add('hide')}

@@ -50,7 +50,7 @@ function renderGroups(){
   if(gs.length)list.append(el('h2',null,'Группы · '+gs.length));
   gs.forEach(g=>{
     const k='g:'+g.id,n=(gm[g.id]||[]).length;
-    const sub=hasDraft(k)&&cur!==k?'✏️ черновик':g.description||n+' '+plural(n,'участник','участника','участников');
+    const sub=hasDraft(k)&&cur!==k?'черновик':g.description||n+' '+plural(n,'участник','участника','участников');
     const r=row(groupAvatar(g,40),g.name,sub,badge(k),cur===k);
     r.onclick=()=>openChat(k);list.append(r);
   });
@@ -140,7 +140,7 @@ async function setGroupFlag(gid,what,on){
 function editGroup(g){
   let newAva=null;
   openModal(s=>{
-    const top=el('div','sheet-top');top.append(el('h3',null,'Группа'));const x=el('button','icon','✕');x.onclick=closeModal;top.append(x);s.append(top);
+    const top=el('div','sheet-top');top.append(el('h3',null,'Группа'));const x=el('button','icon');x.append(svgI('i-x'));x.onclick=closeModal;top.append(x);s.append(top);
     const ava=el('div','ava-edit');const holder=el('div');holder.append(groupAvatar(g,96));ava.append(holder);
     const pick=el('button','ghost','Сменить фото');const f=document.createElement('input');f.type='file';f.accept='image/*';f.hidden=true;
     pick.onclick=()=>f.click();

@@ -71,10 +71,10 @@ function chatRow(it){
   if(isTyping){pv.classList.add('typing');pv.textContent=(it.group?nameOf(t.from)+' печатает':'печатает');const d=el('span','dots');d.append(el('i'),el('i'),el('i'));pv.append(d)}
   else if(draft){pv.append(el('em','draft','Черновик: '),document.createTextNode(draft))}
   else if(m){
-    if(m.sender===me&&!m.deleted_at&&typeof tickEl==='function'){const tk=tickEl(m);if(tk.textContent)bot.append(tk)}
+    if(m.sender===me&&!m.deleted_at&&typeof tickEl==='function'){const tk=tickEl(m);if(tk.childNodes.length)bot.append(tk)}
     const who=m.sender===me?'Вы: ':it.group?nameOf(m.sender)+': ':'';
     if(who)pv.append(el('em','who',who));
-    pv.append(document.createTextNode(preview(m).replace(/\s+/g,' ')));
+    pv.append(fillRich(el('span','pv-t'),preview(m).replace(/\s+/g,' ')));
   }else pv.textContent=it.group?(gm[it.g.id]||[]).length+' '+plural((gm[it.g.id]||[]).length,'участник','участника','участников'):'@'+(people[k]||'?');
   bot.append(pv);
   if(mentionOf[k])bot.append(el('span','badge at','@'));
@@ -103,7 +103,7 @@ function renderChats(){
   if(!list.children.length){
     const e=el('div','list-empty');e.append(svgI('i-chats'));
     e.append(el('b',null,q?'Ничего не нашлось':folder==='unread'?'Всё прочитано':folder==='groups'?'Групп пока нет':'Чатов пока нет'));
-    e.append(el('span',null,q?'Попробуйте другое имя или ник':'Нажмите ✎, чтобы добавить друга или создать группу'));
+    if(q)e.append(el('span',null,'Попробуйте другое имя или ник'));else{const hs=el('span');hs.append('Нажмите ',ico('i-pencil'),', чтобы добавить друга или создать группу');e.append(hs)}
     list.append(e);
   }
   list.scrollTop=keep;

@@ -27,12 +27,12 @@ function preview(m){
   if(m.deleted_at)return 'Сообщение удалено';
   const sp=specialOf(m.body);if(sp)return sp.s.preview(sp.x,m);
   const cut=t=>t.length>80?t.slice(0,80)+'…':t;
-  if(m.body&&m.image_path&&!isAudio(m.image_path)&&!isCircle(m.image_path))return (isFile(m.image_path)&&!VIDEO_EXT.test(m.image_path)?'📎 ':VIDEO_EXT.test(m.image_path)?'🎬 ':'🖼 ')+cut(m.body);
+  if(m.body&&m.image_path&&!isAudio(m.image_path)&&!isCircle(m.image_path))return (isFile(m.image_path)&&!VIDEO_EXT.test(m.image_path)?PI('i-file'):VIDEO_EXT.test(m.image_path)?PI('i-film'):PI('i-image'))+cut(m.body);
   if(m.body)return cut(m.body);
-  if(isFile(m.image_path))return VIDEO_EXT.test(m.image_path)?'🎬 Видео':'📎 '+fileName(m.image_path);
-  if(isCircle(m.image_path))return 'Кружок';
-  if(isAudio(m.image_path))return 'Голосовое сообщение';
-  if(m.image_path)return 'Фото';
+  if(isFile(m.image_path))return VIDEO_EXT.test(m.image_path)?PI('i-film')+'Видео':PI('i-file')+fileName(m.image_path);
+  if(isCircle(m.image_path))return PI('i-circle')+'Кружок';
+  if(isAudio(m.image_path))return PI('i-mic')+'Голосовое сообщение';
+  if(m.image_path)return PI('i-image')+'Фото';
   return 'Сообщение';
 }
 const timeStr=t=>new Date(t).toLocaleString('ru',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
@@ -71,7 +71,7 @@ function draw(m){
 
   // Время, «изменено», таймер исчезновения, галочки
   const s=el('small','meta');
-  if(m.expires_at&&!m.deleted_at){const t=el('span','ttl');t.dataset.exp=m.expires_at;t.textContent='⏱ '+ttlLeft(m.expires_at);s.append(t)}
+  if(m.expires_at&&!m.deleted_at){const t=el('span','ttl');t.dataset.exp=m.expires_at;fillRich(t,PI('i-timer')+ttlLeft(m.expires_at));s.append(t)}
   if(m.edited_at&&!m.deleted_at)s.append(el('span','edited','изменено'));
   s.append(document.createTextNode(clockStr(m.created_at)));
   if(m.sender===me&&!m.deleted_at)s.append(tickEl(m));
@@ -141,7 +141,7 @@ function line(m,prepend,quiet){
   nodes[m.id]=d;
   const log=$('log'),near=bulk||prepend||distBottom()<120;
   if(prepend)log.insertBefore(d,log.querySelector('.m'));else log.append(d);
-  try{draw(m)}catch(err){console.error('draw',m.id,err);d.className='m '+(m.sender===me?'me':'them');d.textContent=m.body&&!m.body.startsWith('::')?m.body:preview(m)}
+  try{draw(m)}catch(err){console.error('draw',m.id,err);d.className='m '+(m.sender===me?'me':'them');fillRich(d,m.body&&!m.body.startsWith('::')?m.body:preview(m))}
   placed(d,m,prepend,quiet,near);
 }
 

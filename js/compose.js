@@ -102,14 +102,14 @@ async function loadChatTtl(k){
 function noteTtl(m){const x=/^::ttl:(\d+)::$/.exec(m?.body||'');if(!x)return;const k=chatKey(m);chatTtl[k]=+x[1];if(cur===k)updateTtlChip()}
 function updateTtlChip(){
   const s=cur?ttlOf(cur):0;$('ttlchip').classList.toggle('hide',!s);
-  $('ttlchip').textContent='⏱ '+(TTLS.find(t=>t[0]===s)?.[1]||'');
+  fillRich($('ttlchip'),PI('i-timer')+(TTLS.find(t=>t[0]===s)?.[1]||''));
 }
 $('ttlchip').onclick=()=>openTtlMenu();
 function openTtlMenu(){
   if(!cur)return;
   if(isGroupKey(cur)&&!canDo(gidOf(cur),'edit')){toast('Таймер в этой группе меняют только админы');return}
   openModal(s=>{
-    const top=el('div','sheet-top');top.append(el('h3',null,'Исчезающие сообщения'));const x=el('button','icon','✕');x.onclick=closeModal;top.append(x);s.append(top);
+    const top=el('div','sheet-top');top.append(el('h3',null,'Исчезающие сообщения'));const x=el('button','icon');x.append(svgI('i-x'));x.onclick=closeModal;top.append(x);s.append(top);
     s.append(el('p','sm','Новые сообщения в этом чате будут удаляться у всех через выбранное время после отправки. Настройка общая — её видят все участники. Записи о звонках и служебные сообщения не удаляются.'));
     const now=ttlOf(cur),k=cur;
     TTLS.forEach(([v,t])=>{const b=el('button','opt'+(v===now?' on':''),t);b.onclick=async()=>{
@@ -119,9 +119,9 @@ function openTtlMenu(){
 }
 // Служебная строка в чате: «Вы включили исчезающие сообщения · 1 день»
 SPECIAL.push({re:/^::ttl:(\d+)::$/,cls:'gev',forward:false,
-  preview:x=>+x[1]?'⏱ Исчезающие сообщения: '+ttlName(+x[1]):'⏱ Исчезающие сообщения выключены',
+  preview:x=>+x[1]?PI('i-timer')+'Исчезающие сообщения: '+ttlName(+x[1]):PI('i-timer')+'Исчезающие сообщения выключены',
   render:(m,d,x)=>{const s=+x[1],who=m.sender===me?'Вы':nameOf(m.sender);
-    d.append(el('span','gev-t',s?'⏱ '+who+' '+(m.sender===me?'включили':'включил(а)')+' исчезающие сообщения: '+ttlName(s):'⏱ '+who+' '+(m.sender===me?'выключили':'выключил(а)')+' исчезающие сообщения'))}});
+    d.append(fillRich(el('span','gev-t'),PI('i-timer')+(s?who+' '+(m.sender===me?'включили':'включил(а)')+' исчезающие сообщения: '+ttlName(s):who+' '+(m.sender===me?'выключили':'выключил(а)')+' исчезающие сообщения')))}});
 function ttlLeft(exp){
   const s=Math.max(0,Math.round((new Date(exp)-Date.now())/1000));
   return s>=86400?Math.round(s/86400)+' д':s>=3600?Math.round(s/3600)+' ч':s>=60?Math.round(s/60)+' мин':s+' с';
@@ -132,7 +132,7 @@ setInterval(()=>{
     const exp=t.dataset.exp;
     if(new Date(exp)<=new Date()){const d=t.closest('.m');const id=Object.keys(nodes).find(k=>nodes[k]===d);
       if(d){d.classList.add('vanish');setTimeout(()=>d.remove(),400)}if(id)delete nodes[id];}
-    else t.textContent='⏱ '+ttlLeft(exp);
+    else fillRich(t,PI('i-timer')+ttlLeft(exp));
   });
 },1000);
 

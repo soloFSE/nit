@@ -10,6 +10,18 @@ const SUPABASE_KEY='sb_publishable_I6_9GkOyKCJc6WnsjY9nQg_RFuL-oUY';
 const $=id=>document.getElementById(id);
 // Иконка из набора <symbol> в index.html
 const svgI=id=>{const s=document.createElementNS('http://www.w3.org/2000/svg','svg');const u=document.createElementNS('http://www.w3.org/2000/svg','use');u.setAttribute('href','#'+id);s.append(u);return s};
+// Иконки в стиле «нити» вместо эмодзи. ico('i-eye') — значок для вставки рядом с текстом.
+// В строках (превью чата, закреп, цитата) значок кодируется как PI('i-film')+'Видео'; fillRich(узел, строка) рисует его,
+// stripIcons(строка) — убирает (для системных уведомлений, где картинок нет).
+const ico=(id,cls)=>{const s=svgI(id);s.setAttribute('class','ii'+(cls?' '+cls:''));return s};
+const PI=id=>'\u2063'+id+'\u2063';
+const PI_RE=/\u2063(i-[a-z0-9-]+)\u2063/g;
+function fillRich(node,str){node.textContent='';let last=0;str=String(str??'');
+  for(const m of str.matchAll(PI_RE)){if(m.index>last)node.append(str.slice(last,m.index));node.append(ico(m[1]));last=m.index+m[0].length}
+  if(last<str.length)node.append(str.slice(last));return node}
+const stripIcons=s=>String(s??'').replace(PI_RE,'').trim();
+// Текст с иконкой впереди: icoText('i-check','свободен')
+function icoText(id,text,cls){const sp=el('span','ict'+(cls?' '+cls:''));sp.append(ico(id),document.createTextNode(text));return sp}
 let sb,me=null,myName='',people={},fr=[],cur=null,seen=new Set(),unread={},reg=false,lastId=0,poll=null,tc=0,lastDel='1970-01-01T00:00:00Z',hidden=new Set(),nodes={},msgs={},sig={};
 
 let setupErr='';

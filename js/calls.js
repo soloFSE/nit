@@ -62,7 +62,7 @@ async function onSig(p){
     if(call||gc){csig(p.from,{t:'busy',id:p.id});return}
     call={id:p.id,peer:p.from,video:!!p.video,role:'callee',state:'ringing',offer:p.sdp,ice:[],camOn:false,remoteCam:!!p.video};
     showCall(true);setCallState(p.video?'Входящий видеозвонок':'Входящий звонок');tone('in');
-    if(document.hidden)sysNotify(nameOf(p.from),{body:p.video?'📹 Входящий видеозвонок':'📞 Входящий звонок',tag:'call',call:true,chat:p.from});
+    if(document.hidden)sysNotify(nameOf(p.from),{body:p.video?'Входящий видеозвонок':'Входящий звонок',tag:'call',call:true,chat:p.from});
     call.ring=setTimeout(()=>{if(call&&call.state==='ringing')endCall('missed',false)},45000);
     return;
   }
@@ -204,15 +204,15 @@ function tone(kind){
 
 // ---------- Запись о звонке в чате ----------
 SPECIAL.push({re:/^::call:(\d+):([01])::$/,cls:'call-m',forward:false,
-  preview:x=>(+x[1]?(x[2]==='1'?'📹 Видеозвонок · ':'📞 Звонок · ')+fmt(+x[1]):'📞 Пропущенный звонок'),
+  preview:x=>(+x[1]?(x[2]==='1'?PI('i-video')+'Видеозвонок · ':PI('i-phone')+'Звонок · ')+fmt(+x[1]):PI('i-phone')+'Пропущенный звонок'),
   render:(m,d,x)=>{
     const secs=+x[1],v=x[2]==='1',mine=m.sender===me;
     const w=el('div','callrec'+(secs?'':' missed'));
-    w.append(el('span','callrec-i',v?'📹':'📞'));
+    {const ci=el('span','callrec-i');ci.append(svgI(v?'i-video':'i-phone'));w.append(ci)}
     const t=el('div','callrec-t');
     t.append(el('b',null,secs?(mine?'Исходящий ':'Входящий ')+(v?'видеозвонок':'звонок'):(mine?'Отменённый звонок':'Пропущенный звонок')),el('small',null,secs?fmt(secs):'—'));
     w.append(t);
     const peer=mine?m.recipient:m.sender;
-    if(peer&&!m.group_id){const b=el('button','icon sm-btn','↻');b.title='Перезвонить';b.onclick=e=>{e.stopPropagation();startCall(peer,v)};w.append(b)}
+    if(peer&&!m.group_id){const b=el('button','icon sm-btn');b.append(svgI('i-redial'));b.title='Перезвонить';b.onclick=e=>{e.stopPropagation();startCall(peer,v)};w.append(b)}
     d.append(w);
   }});

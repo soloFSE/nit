@@ -54,8 +54,8 @@ function onReadEvent(r){
 const isReadByPeer=m=>Object.values(peerReads).some(v=>v>=m.id);
 function tickEl(m){
   const t=el('span','tick');
-  if(!readsOk){t.textContent='';return t}
-  const r=isReadByPeer(m);t.textContent=r?'✓✓':'✓';t.classList.toggle('read',r);
+  if(!readsOk)return t;
+  const r=isReadByPeer(m);t.append(ico(r?'i-check2':'i-check'));t.classList.toggle('read',r);
   t.title=r?'Прочитано':'Доставлено';return t;
 }
 function refreshTicks(){
@@ -91,7 +91,7 @@ function notify(m){
   if(!sys&&soundOn()){ping();if(!document.hidden&&navigator.userActivation?.hasBeenActive)navigator.vibrate?.(40)}
   if(!sys)return;
   const title=isGroupKey(k)?chatName(k)+' · '+nameOf(m.sender):nameOf(m.sender);
-  sysNotify(title,{body:preview(m),icon:prof[m.sender]?.avatar_path?avatarUrl(prof[m.sender].avatar_path):undefined,tag:k,chat:k});
+  sysNotify(title,{body:stripIcons(preview(m)),icon:prof[m.sender]?.avatar_path?avatarUrl(prof[m.sender].avatar_path):undefined,tag:k,chat:k});
 }
 // Число непрочитанных во вкладке браузера и на значке
 function updateBadge(){

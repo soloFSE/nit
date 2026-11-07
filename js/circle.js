@@ -33,11 +33,11 @@ async function camStream(){
   const v=$('camv');v.srcObject=cam.stream;v.classList.toggle('mirror',cam.facing==='user');v.play().catch(()=>{});
 }
 // Состояния: idle — ждём начала, rec — пишем, pause — на паузе, видно записанное (можно продолжить / отправить / удалить)
-const CAM_HINT={idle:'Нажмите, чтобы начать запись. До 60 секунд.',rec:'Нажмите — пауза. ➤ — отправить.',pause:'Пауза: посмотрите, что получилось. ● — продолжить, ➤ — отправить, ✕ — удалить.'};
+const CAM_HINT={idle:'Нажмите, чтобы начать запись. До 60 секунд.',rec:'Нажмите — пауза. '+PI('i-send')+'— отправить.',pause:'Пауза: посмотрите, что получилось. '+PI('i-circle')+'— продолжить, '+PI('i-send')+'— отправить, '+PI('i-trash')+'— удалить.'};
 function camState(s){
   $('cam').dataset.s=s;
   $('camgo').title=s==='rec'?'Пауза':s==='pause'?'Продолжить запись':'Записать';
-  $('camhint').textContent=CAM_HINT[s];
+  fillRich($('camhint'),CAM_HINT[s]);
   if(s==='idle'){$('camt').textContent='0:00';camRing(0)}
 }
 const camSecs=()=>cam.elapsed+(cam.rec&&cam.rec.state==='recording'?(Date.now()-cam.start)/1000:0);

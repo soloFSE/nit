@@ -8,12 +8,12 @@ async function openAccount(){
   const email=isFakeEmail(user.email)?'':user.email,pending=user.new_email;
   const hasPass=ids.some(i=>i.provider==='email')||!ids.length;
   openModal(s=>{
-    const top=el('div','sheet-top');top.append(el('h3',null,'Аккаунт и безопасность'));const x=el('button','icon','✕');x.onclick=closeModal;top.append(x);s.append(top);
+    const top=el('div','sheet-top');top.append(el('h3',null,'Аккаунт и безопасность'));const x=el('button','icon');x.append(svgI('i-x'));x.onclick=closeModal;top.append(x);s.append(top);
     const err=el('p','err');
 
     // Почта
     const em=el('div','acc-card');em.append(el('span','acc-l','Почта'));
-    if(email)em.append(el('b',null,email),el('small','ok-t','✓ подтверждена'));
+    if(email)em.append(el('b',null,email),icoText('i-check','подтверждена','ok-t'));
     else em.append(el('b',null,'Не привязана'),el('small','sm','Без почты нельзя восстановить пароль, если вы его забудете.'));
     if(pending)em.append(el('small','sm','Ждёт подтверждения: '+pending+' — откройте письмо.'));
     const ei=document.createElement('input');ei.type='email';ei.placeholder=email?'Новая почта':'you@mail.com';
@@ -86,13 +86,13 @@ async function checkUsername(){
   const {data,error}=await sb.from('profiles').select('username_set').eq('id',me).maybeSingle();
   if(error||!data||data.username_set!==false)return;
   openModal(s=>{
-    s.append(el('h3',null,'Добро пожаловать в Нить! 👋'),el('p','sm','Выберите ник — по нему вас будут находить друзья. Его можно выбрать только один раз.'));
+    s.append((()=>{const h=el('h3',null,'Добро пожаловать в Нить! ');h.append(ico('i-wave'));return h})(),el('p','sm','Выберите ник — по нему вас будут находить друзья. Его можно выбрать только один раз.'));
     const l=el('label','fld');const h=el('span',null,'Ник');const st=el('small','nick-st');h.append(st);l.append(h);
     const i=document.createElement('input');i.maxLength=20;i.value=myName;i.autocapitalize='none';l.append(i);s.append(l);
     const err=el('p','err');const go=el('button','primary wide','Готово');s.append(err,go);
     let t=0;i.oninput=()=>{i.value=i.value.toLowerCase().replace(/[^a-z0-9_]/g,'');st.textContent='';st.className='nick-st';clearTimeout(t);
       if(i.value.length<3||i.value===myName)return;
-      t=setTimeout(async()=>{const {data}=await sb.rpc('username_free',{u:i.value});st.textContent=data?'✓ свободен':'✕ занят';st.classList.add(data?'ok':'bad')},350)};
+      t=setTimeout(async()=>{const {data}=await sb.rpc('username_free',{u:i.value});fillRich(st,data?PI('i-check')+'свободен':PI('i-x')+'занят');st.classList.add(data?'ok':'bad')},350)};
     go.onclick=async()=>{
       const v=i.value;if(!/^[a-z0-9_]{3,20}$/.test(v)){err.textContent='Ник: 3–20 символов, латиница, цифры, _';return}
       go.disabled=true;const {error}=await sb.rpc('set_username',{u:v});go.disabled=false;
