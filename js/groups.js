@@ -144,7 +144,7 @@ function editGroup(g){
     const ava=el('div','ava-edit');const holder=el('div');holder.append(groupAvatar(g,96));ava.append(holder);
     const pick=el('button','ghost','Сменить фото');const f=document.createElement('input');f.type='file';f.accept='image/*';f.hidden=true;
     pick.onclick=()=>f.click();
-    f.onchange=async()=>{const file=f.files[0];f.value='';if(!file)return;newAva=await squareJpeg(file,320);
+    f.onchange=async()=>{const file=f.files[0];f.value='';if(!file)return;newAva=await cropImage(file,320,false);if(!newAva)return;
       const sp=el('span','ava sq');sp.style.setProperty('--s','96px');const i=document.createElement('img');i.src=URL.createObjectURL(newAva);sp.append(i);holder.innerHTML='';holder.append(sp)};
     const bt=el('div','ava-btns');bt.append(pick,f);ava.append(bt);s.append(ava);
     const nl=el('label','fld');nl.append(el('span',null,'Название'));const ni=document.createElement('input');ni.maxLength=40;ni.value=g.name;nl.append(ni);s.append(nl);

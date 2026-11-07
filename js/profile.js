@@ -64,7 +64,7 @@ function openSettings(){
     const f=document.createElement('input');f.type='file';f.accept='image/*';f.hidden=true;
     pick.onclick=()=>f.click();
     f.onchange=async()=>{const file=f.files[0];f.value='';if(!file)return;
-      try{newAva=await squareJpeg(file,320);dropAva=false;
+      try{const b=await cropImage(file,320,true);if(!b)return;newAva=b;dropAva=false;
         const img=document.createElement('img');img.src=URL.createObjectURL(newAva);
         const sp=el('span','ava');sp.style.setProperty('--s','96px');sp.append(img);holder.innerHTML='';holder.append(sp);
       }catch(e){err.textContent=e.message}};
