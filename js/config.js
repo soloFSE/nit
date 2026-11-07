@@ -2,7 +2,7 @@
 // Два пути до сервера: напрямую и через посредника (Cloudflare Worker, tools/cloudflare-worker.js) —
 // для России, где адреса *.supabase.co блокируются. Работающий путь запоминается, см. probeRoute ниже.
 const SUPA_DIRECT='https://lojlwcsqbbthmpetmbmq.supabase.co';
-const SUPA_PROXY=''; // адрес воркера, например https://nit-proxy.имя.workers.dev
+const SUPA_PROXY='https://nit-proxy.mreldar-work.workers.dev'; // посредник (tools/cloudflare-worker.js)
 let ROUTE='direct';try{ROUTE=(localStorage.getItem('nit-route')==='proxy'&&SUPA_PROXY)?'proxy':'direct'}catch{}
 const SUPABASE_URL=ROUTE==='proxy'?SUPA_PROXY:SUPA_DIRECT;
 const FAKE_DOMAIN='nit-chat.com'; // служебный суффикс, почта не используется
