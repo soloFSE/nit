@@ -362,3 +362,53 @@ html,body{overscroll-behavior:none}
 .m.them.mentioned{box-shadow:var(--bubble-shadow),inset 3px 0 0 var(--acc)}
 .badge.at{background:var(--acc);font-weight:900}
 @media (max-width:760px){.mlist{left:6px;right:62px}}
+
+/* Свайп вправо — ответ: значок слева от пузыря */
+.m.swiping::after{right:auto!important;left:-44px;content:""!important;width:32px;height:32px;margin-top:-16px;border-radius:50%;
+  background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9.6 6.4 4.1 11.6l5.5 5M4.4 11.6c4.8-.3 9.4-.2 12.2 1.4 2.4 1.4 3.4 3.6 3.4 6' fill='none' stroke='%23e5172b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/18px no-repeat;
+  opacity:var(--sw,0);transform:scale(calc(.5 + var(--sw,0)*.5)) rotate(calc((1 - var(--sw,0)) * -90deg))}
+
+/* Волны голосовых — как в Telegram */
+.vbars{height:28px;gap:2px;align-items:center}
+.vbars i{flex:1;width:3px;min-width:2px;max-width:3px;border-radius:3px;opacity:1;background:color-mix(in srgb,currentColor 32%,transparent);transition:background .2s,transform .2s}
+.m.them .vbars i{background:color-mix(in srgb,var(--acc) 30%,transparent)}
+.m.them .vbars i.on{background:var(--acc)}
+.m.me .vbars i{background:rgba(255,255,255,.42)}
+.m.me .vbars i.on{background:#fff}
+.vmsg.playing .vbars i.on:last-of-type,.vmsg.playing .vbars i.on+ i:not(.on){transform:scaleY(1.15)}
+.vwave i{max-width:3px;width:3px;border-radius:3px}
+
+/* =====================================================================
+   Сообщения, версия 2: без хвостиков (они давали кривые уголки), мягкие скругления,
+   серии «сшиваются», свои — градиент из цвета темы, в группах — аватарка у последнего в серии.
+   ===================================================================== */
+:root{--acc2:#ff9466;--rb:20px;--rs:7px}
+.m.me:not(.more):not(.sticker):not(.big):not(.circle):not(.gev):not(.sk)::before,
+.m.them:not(.more):not(.sticker):not(.big):not(.circle):not(.gev):not(.sk)::before{content:none}
+.m{border-radius:var(--rb);padding:8px 12px 6px;line-height:1.45}
+.m.me{background:linear-gradient(135deg,color-mix(in srgb,var(--me) 55%,var(--acc2)) 0%,var(--me) 100%);
+  box-shadow:0 1px 1px rgba(0,0,0,.06),0 6px 16px -6px color-mix(in srgb,var(--me) 55%,transparent);
+  border-radius:var(--rb) var(--rb) var(--rs) var(--rb)}
+.m.them{background:var(--them);box-shadow:0 1px 1px rgba(0,0,0,.05),0 0 0 1px color-mix(in srgb,var(--line) 55%,transparent);
+  border-radius:var(--rb) var(--rb) var(--rb) var(--rs)}
+.m.me.cont{border-top-right-radius:var(--rs)}
+.m.them.cont{border-top-left-radius:var(--rs)}
+.m.me.more{border-bottom-right-radius:var(--rs)}
+.m.them.more{border-bottom-left-radius:var(--rs)}
+.m.me:not(.more){border-bottom-right-radius:var(--rs)}
+.m.them:not(.more){border-bottom-left-radius:var(--rs)}
+.m.me.cont:not(.more){border-bottom-right-radius:var(--rs)}
+.m.them.cont:not(.more){border-bottom-left-radius:var(--rs)}
+.m.media{border-radius:var(--rb)}
+.m.media.me{border-bottom-right-radius:var(--rs)}
+.m.media.them{border-bottom-left-radius:var(--rs)}
+.m.media img.photo,.m.media .mvid{border-radius:calc(var(--rb) - 3px)}
+/* Аватарка отправителя в группах */
+.m.them.g{margin-left:40px}
+.m .mava{position:absolute;left:-40px;bottom:0;display:none;cursor:pointer;animation:popIn .25s var(--spring)}
+.m.them.g:not(.more) .mava{display:grid}
+.m.sticker.g .mava,.m.circle.g .mava,.m.big.g .mava{bottom:18px}
+/* Наведение на ПК — пузырь чуть «приподнимается» */
+@media (hover:hover){.m:not(.open):not(.sticker):not(.big):not(.circle):hover{transform:translateY(-1px);transition:transform .18s var(--ease)}}
+.m small.meta{gap:3px;letter-spacing:.01em}
+.m.them small.meta{opacity:.8}

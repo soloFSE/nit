@@ -23,15 +23,15 @@ function voiceUI(on){
 }
 function drawLive(){
   // последние уровни бегут справа налево
-  const w=$('vwave'),n=Math.max(20,Math.floor(w.clientWidth/5)),lv=recLevels.slice(-n);
+  const w=$('vwave'),n=Math.max(20,Math.floor(w.clientWidth/5)),lv=norm(recLevels).slice(-n);
   if(w.children.length!==n){w.innerHTML='';for(let i=0;i<n;i++)w.append(el('i'))}
-  [...w.children].forEach((b,i)=>{const v=lv[i-(n-lv.length)];b.style.height=(v==null?8:12+v*88)+'%';b.classList.toggle('on',v!=null)});
+  [...w.children].forEach((b,i)=>{const v=lv[i-(n-lv.length)];b.style.height=(v==null?3:Math.max(3,v*28))+'px';b.classList.toggle('on',v!=null)});
 }
 function recTick(){
   if(!rec)return;
   if(!recPaused&&recAn){
     const buf=new Uint8Array(recAn.fftSize);recAn.getByteTimeDomainData(buf);
-    let s=0;for(const v of buf)s+=(v-128)**2;recLevels.push(Math.min(1,Math.sqrt(s/buf.length)/42));drawLive();
+    let s=0;for(const v of buf)s+=(v-128)**2;recLevels.push(Math.sqrt(s/buf.length));drawLive();
   }
   $('vtime').textContent=mmss(recSecs());
   if(recSecs()>=VOICE_MAX_SEC&&!recPaused)pauseRec();
@@ -61,8 +61,8 @@ function resumeRec(){
   rec.resume();recPaused=false;recResumeAt=Date.now();$('vpause').classList.remove('paused');$('vbar').classList.remove('paused');
 }
 function showPreview(){
-  const w=$('vwave');w.innerHTML='';const lv=squeeze(recLevels,40);
-  lv.forEach(v=>{const b=el('i');b.style.height=(12+v*88)+'%';w.append(b)});
+  const w=$('vwave');w.innerHTML='';const lv=squeeze(norm(recLevels),40);
+  lv.forEach(v=>{const b=el('i');b.style.height=Math.max(3,v*28)+'px';w.append(b)});
   $('vtime').textContent=mmss(recElapsed);
 }
 function previewStop(){if(recPrev){recPrev.pause();URL.revokeObjectURL(recPrev.src);recPrev=null}$('vplay').classList.remove('on')}
@@ -76,8 +76,13 @@ $('vplay').onclick=e=>{
   a.onended=()=>{previewStop();bars.forEach(b=>b.classList.remove('on'));$('vtime').textContent=mmss(recElapsed)};
   a.play().catch(()=>previewStop());
 };
-// Сжать уровни до n столбиков
-function squeeze(a,n){if(!a.length)return Array(n).fill(.15);const o=[];for(let i=0;i<n;i++){const s=Math.floor(i*a.length/n),e=Math.max(s+1,Math.floor((i+1)*a.length/n));let m=0;for(let j=s;j<e;j++)m=Math.max(m,a[j]||0);o.push(m)}return o}
+// Громкость → 0..1 относительно самого громкого места (иначе тихая речь даёт ровную полосу)
+function norm(a){
+  if(!a.length)return a;const sorted=[...a].sort((x,y)=>x-y),floor=sorted[Math.floor(a.length*.1)]||0,top=Math.max(sorted[Math.floor(a.length*.97)]||0,floor+2);
+  return a.map(v=>Math.min(1,Math.max(0,(v-floor)/(top-floor)))**.8);
+}
+// Сжать уровни до n столбиков (среднее с упором на пики)
+function squeeze(a,n){if(!a.length)return Array(n).fill(.15);const o=[];for(let i=0;i<n;i++){const s=Math.floor(i*a.length/n),e=Math.max(s+1,Math.floor((i+1)*a.length/n));let m=0,sum=0,c=0;for(let j=s;j<e;j++){const v=a[Math.min(j,a.length-1)]||0;m=Math.max(m,v);sum+=v;c++}o.push(m*.6+(sum/c)*.4)}return o}
 function finishRec(send){
   if(!rec)return;const r=rec,to=recTo,levels=recLevels.slice();
   const dur=recPaused?recElapsed:recSecs();
@@ -91,7 +96,7 @@ function finishRec(send){
 const stopRec=c=>finishRec(!c); // для совместимости
 
 async function sendVoice(blob,ext,to,dur,levels){
-  const hex=squeeze(levels,40).map(v=>Math.round(v*15).toString(16)).join('');
+  const hex=squeeze(norm(levels),40).map(v=>Math.round(v*15).toString(16)).join('');
   try{
     const path=me+'/'+crypto.randomUUID()+'_v'+Math.max(1,Math.round(dur))+'_'+hex+'.'+ext;
     const up=await sb.storage.from('photos').upload(path,blob,{contentType:blob.type.split(';')[0]});
@@ -112,14 +117,14 @@ function voiceMeta(path){
   const m=/_v(\d+)_([0-9a-f]{10,80})\.\w+$/.exec(path||'');
   if(m)return {dur:+m[1],lv:[...m[2]].map(c=>parseInt(c,16)/15)};
   // старые голосовые — волна «по отпечатку» имени файла
-  let h=2166136261;const lv=[];for(let i=0;i<40;i++){h=Math.imul(h^(path.charCodeAt(i%path.length)+i),16777619);lv.push(.25+((h>>>0)%70)/100)}
+  let h=2166136261;const lv=[];for(let i=0;i<40;i++){h=Math.imul(h^(path.charCodeAt(i%path.length)+i),16777619);const env=Math.sin(Math.PI*(i+1)/41)**.6;lv.push(Math.max(.08,env*(.2+((h>>>0)%80)/100)))}
   return {dur:0,lv};
 }
 function voiceEl(path){
   const {dur,lv}=voiceMeta(path);
   const w=el('div','vmsg'),play=el('button','vplay-b'),bars=el('div','vbars'),t=el('span','vtime-m',dur?mmss(dur):'0:00'),sp=el('button','vspeed','1×');
   play.append(svgI('i-play'));play.title='Слушать';sp.title='Скорость';
-  lv.forEach(v=>{const b=el('i');b.style.height=(14+v*86)+'%';bars.append(b)});
+  lv.forEach(v=>{const b=el('i');b.style.height=Math.max(3,Math.round(v*24))+'px';bars.append(b)});
   w.append(play,bars,t,sp);
   let a=null,speed=1;
   const paint=()=>{if(!a)return;const total=isFinite(a.duration)&&a.duration>0?a.duration:dur||1,p=a.currentTime/total;

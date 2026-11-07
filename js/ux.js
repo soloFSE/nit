@@ -78,23 +78,27 @@ $('log').addEventListener('dblclick',e=>{
   const h=el('span','burst','❤️');d.append(h);setTimeout(()=>h.remove(),700);
   window.getSelection?.()?.removeAllRanges();
 });
-// Свайп сообщения влево — ответить (на телефоне)
+// Свайп сообщения вправо — ответить (на телефоне). С самого левого края — это «назад», не ответ
 let sw=null;
 $('log').addEventListener('touchstart',e=>{
-  const d=e.target.closest('.m[data-id]');if(!d||e.touches.length>1||e.target.closest('button,input,.ttt-g,audio'))return;
+  const d=e.target.closest('.m[data-id]');if(!d||e.touches.length>1||e.target.closest('button,input,.ttt-g,audio,.vbars'))return;
+  if(e.touches[0].clientX<30)return;
   sw={d,x:e.touches[0].clientX,y:e.touches[0].clientY,dx:0,on:false};
 },{passive:true});
 $('log').addEventListener('touchmove',e=>{
   if(!sw)return;const t=e.touches[0],dx=t.clientX-sw.x,dy=t.clientY-sw.y;
-  if(!sw.on){if(Math.abs(dy)>12){sw=null;return}if(dx<-10&&Math.abs(dx)>Math.abs(dy))sw.on=true;else return}
-  sw.dx=Math.max(-90,Math.min(0,dx));sw.d.style.transform='translateX('+sw.dx+'px)';sw.d.classList.add('swiping');
-  sw.d.style.setProperty('--sw',Math.min(1,-sw.dx/60));
+  if(!sw.on){if(Math.abs(dy)>12){sw=null;return}if(dx>10&&Math.abs(dx)>Math.abs(dy)){sw.on=true;clearTimeout(lpT)}else return}
+  // тянется с «резинкой»: чем дальше, тем туже
+  const pull=Math.max(0,dx),eased=pull<70?pull:70+(pull-70)*.3;
+  sw.dx=Math.min(100,eased);sw.d.style.transform='translateX('+sw.dx+'px)';sw.d.classList.add('swiping');
+  const k=Math.min(1,sw.dx/64);sw.d.style.setProperty('--sw',k);
+  if(k>=1&&!sw.buzz){sw.buzz=true;navigator.vibrate?.(8)}else if(k<1)sw.buzz=false;
 },{passive:true});
 $('log').addEventListener('touchend',()=>{
   if(!sw)return;const {d,dx,on}=sw;sw=null;if(!on)return;
-  d.classList.remove('swiping');d.style.transition='transform .25s cubic-bezier(.2,.8,.2,1)';d.style.transform='';
-  setTimeout(()=>{d.style.transition='';d.style.removeProperty('--sw')},260);
-  if(dx<=-60){const m=msgs[d.dataset.id];if(m&&!m.deleted_at){startReply(m);navigator.vibrate?.(10)}}
+  d.classList.remove('swiping');d.style.transition='transform .35s cubic-bezier(.34,1.5,.64,1)';d.style.transform='';
+  setTimeout(()=>{d.style.transition='';d.style.removeProperty('--sw')},360);
+  if(dx>=64){const m=msgs[d.dataset.id];if(m&&!m.deleted_at){startReply(m);navigator.vibrate?.(10)}}
 });
 // Свайп от левого края — назад к списку (на телефоне)
 let back=null;

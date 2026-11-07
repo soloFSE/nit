@@ -51,7 +51,8 @@ function draw(m){
   if(!m.deleted_at&&!sp&&!m.image_path&&isBigEmoji(m.body))d.classList.add('big');
 
   // В группе над чужим сообщением — имя отправителя
-  if(m.group_id&&m.sender!==me){const w=el('b','who',nameOf(m.sender));w.style.setProperty('--h',hue(m.sender));d.append(w)}
+  if(m.group_id&&m.sender!==me){const w=el('b','who',nameOf(m.sender));w.style.setProperty('--h',hue(m.sender));d.append(w);
+    const av=avatar(m.sender,30);av.classList.add('mava');av.onclick=e=>{e.stopPropagation();showProfile(m.sender)};d.append(av);d.classList.add('g')}
   if(m.forwarded_from&&!m.deleted_at)d.append(el('div','fwd','Переслано от '+nameOf(m.forwarded_from)));
 
   if(m.deleted_at)d.append(document.createTextNode('Сообщение удалено'));
