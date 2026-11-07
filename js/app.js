@@ -55,7 +55,7 @@ $('splashOut').onclick=()=>{byUser=true;hideSplash();sb.auth.signOut().catch(()=
 // Если на GitHub обновили не все файлы, части кода не будет — предупреждаем сразу
 (function(){
   const need={'js/files.js':'isFile','js/reads.js':'markRead','js/msgtools.js':'startEdit','js/fun.js':'pollOf','js/appearance.js':'applyWall',
-    'js/calls.js':'startCall','js/gcall.js':'joinGroupCall','js/ux.js':'layoutNode','js/bg.js':'sysNotify','js/ginfo.js':'openGroupInfo','js/account.js':'openAccount','js/inbox.js':'renderChats','js/media.js':'openMediaPicker','js/crop.js':'cropImage','js/social.js':'loadBlocks','js/emoji.js':'closeEmoji','js/reactions.js':'loadReactions','js/circle.js':'circleEl',
+    'js/calls.js':'startCall','js/gcall.js':'joinGroupCall','js/ux.js':'layoutNode','js/bg.js':'sysNotify','js/ginfo.js':'openGroupInfo','js/account.js':'openAccount','js/inbox.js':'renderChats','js/media.js':'openMediaPicker','js/crop.js':'cropImage','js/mention.js':'linkMentions','js/social.js':'loadBlocks','js/emoji.js':'closeEmoji','js/reactions.js':'loadReactions','js/circle.js':'circleEl',
     'js/voice.js':'startRec','js/groups.js':'loadGroups','js/friends.js':'loadFriends','js/profile.js':'loadProfiles','js/compose.js':'sendMsg','js/pwa.js':'installEvt'};
   const miss=Object.entries(need).filter(([,fn])=>{try{return typeof eval(fn)==='undefined'}catch{return true}}).map(([f])=>f);
   if(miss.length){const b=document.createElement('div');b.className='filewarn';

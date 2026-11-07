@@ -64,6 +64,7 @@ function draw(m){
     // Фото и видео во весь пузырь; без подписи время лежит прямо на картинке
     const pic=m.image_path&&!sp&&!isAudio(m.image_path)&&!isCircle(m.image_path)&&(!isFile(m.image_path)||VIDEO_EXT.test(m.image_path));
     d.classList.toggle('media',!!pic);d.classList.toggle('cap',!!(pic&&m.body));
+    d.classList.toggle('mentioned',mentionsMe(m));
     if(!sp&&m.body)linkPreviews(m.body).forEach(p=>d.append(p));
   }
 
@@ -146,7 +147,7 @@ const chatQuery=k=>{let q=sb.from('messages').select('*');
 const PAGE=100;
 
 async function openChat(id){
-  saveDraft();
+  saveDraft();mentionOf[id]=false;hideMentions?.();
   cur=id;nodes={};cancelReply();cancelEdit();closeEmoji();closeSearch();closeAttach();
   setHead(id);$('head').classList.remove('hide');applyBlockUI();
   $('gmem').classList.toggle('hide',!isGroupKey(id));$('gpanel').classList.add('hide');

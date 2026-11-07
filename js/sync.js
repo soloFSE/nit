@@ -79,7 +79,7 @@ function onMsg(m){
   if(m.expires_at&&new Date(m.expires_at)<=new Date())return;
   if(other===cur){const e=$('log').querySelector('.empty');if(e)e.remove();line(m);if(document.hidden&&isNew&&m.sender!==me){unread[other]=(+unread[other]||0)+1;updateBadge()}markRead()}
   else if(isNew&&m.sender!==me&&!m.deleted_at){unread[other]=(+unread[other]||0)+1;render();updateBadge()}
-  if(isNew&&m.sender!==me&&!m.deleted_at){notify(m);fxFor(m.body)}
+  if(isNew&&m.sender!==me&&!m.deleted_at){if(other!==cur&&mentionsMe(m)){mentionOf[other]=true;scheduleChats()}notify(m);fxFor(m.body)}
 }
 // Обновить последние сообщения открытого чата (правки, ходы в игре) — запасной путь, если realtime не дошёл
 async function refreshRecent(k){

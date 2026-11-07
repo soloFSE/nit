@@ -77,6 +77,7 @@ function chatRow(it){
     pv.append(document.createTextNode(preview(m).replace(/\s+/g,' ')));
   }else pv.textContent=it.group?(gm[it.g.id]||[]).length+' '+plural((gm[it.g.id]||[]).length,'участник','участника','участников'):'@'+(people[k]||'?');
   bot.append(pv);
+  if(mentionOf[k])bot.append(el('span','badge at','@'));
   if(n)bot.append(el('span','badge',n>99?'99+':String(n)));
   body.append(top,bot);r.append(body);
   r.onclick=()=>openChat(k);

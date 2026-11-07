@@ -348,3 +348,17 @@ html,body{overscroll-behavior:none}
   #head{flex:none}
   #msg{font-size:16px} /* меньше 16px — iPhone приближает страницу при вводе */
 }
+
+/* ============ Упоминания @ ============ */
+.mlist{position:absolute;left:clamp(8px,3vw,48px);right:calc(clamp(8px,3vw,48px) + 58px);bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:6;max-height:300px;overflow-y:auto;padding:6px;border-radius:20px;
+  background:color-mix(in srgb,var(--surface) 96%,transparent);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:var(--menu-shadow);animation:popIn .2s var(--spring);transform-origin:bottom left}
+.mrow{display:flex;align-items:center;gap:10px;width:100%;padding:7px 10px;border-radius:14px;background:transparent;text-align:left}
+.mrow b{font-weight:700}.mrow small{color:var(--dim);font-weight:500}
+.mrow.on,.mrow:hover{background:color-mix(in srgb,var(--acc) 12%,transparent)}
+.mrow .ava svg{width:18px;height:18px}
+.mention{color:var(--acc);font-weight:700;cursor:pointer}
+.m.me .mention{color:#fff;text-decoration:underline;text-underline-offset:2px}
+.mention.me{background:color-mix(in srgb,var(--acc) 15%,transparent);border-radius:6px;padding:0 3px}
+.m.them.mentioned{box-shadow:var(--bubble-shadow),inset 3px 0 0 var(--acc)}
+.badge.at{background:var(--acc);font-weight:900}
+@media (max-width:760px){.mlist{left:6px;right:62px}}
