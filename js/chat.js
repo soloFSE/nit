@@ -107,9 +107,13 @@ function menuEl(m,sp){
     const {error}=await sb.from('message_hides').insert({message_id:m.id});
     if(!error){hidden.add(m.id);d.remove();delete nodes[m.id];refreshQuotes(m.id)}});
   if(m.sender===me&&!m.deleted_at)btn('Удалить у всех',async()=>{
-    if(m.image_path)await sb.storage.from('photos').remove([m.image_path]);
     const {error}=await sb.rpc('delete_for_all',{mid:m.id});
-    if(!error)line({...m,body:'',image_path:null,deleted_at:new Date().toISOString()});
+    if(error){toast('Не удалось удалить: '+error.message);return}
+    line({...m,body:'',image_path:null,deleted_at:new Date().toISOString()});
+    // Файл стираем, только если на него больше никто не ссылается (пересланные копии сохраняют фото).
+    // Нет функции file_in_use (не запущен supabase/fix_forward_delete.sql) — файл просто остаётся.
+    if(m.image_path){const {data:used,error:e2}=await sb.rpc('file_in_use',{p:m.image_path,except_id:m.id});
+      if(!e2&&used===false)sb.storage.from('photos').remove([m.image_path])}
   },'danger-soft');
   // Админ группы может удалить чужое сообщение
   if(m.group_id&&m.sender!==me&&!m.deleted_at&&isAdminOf(m.group_id))btn('Удалить у всех (админ)',async()=>{
