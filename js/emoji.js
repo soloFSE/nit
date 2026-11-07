@@ -28,18 +28,19 @@ function insertAtCursor(t){
   m.dispatchEvent(new Event('input'));
 }
 
-// Свои стикеры (общие для всех): хранилище 'stickers', сообщение ::cs:<путь>::
+// Свои стикеры: у каждого свой набор (строки custom_stickers с owner = я), файлы — в хранилище 'stickers',
+// сообщение ::cs:<путь>::. Удаление убирает стикер из набора, но файл остаётся — отправленные стикеры не ломаются.
 const CS_RE=/^::cs:([\w\/.-]{5,200})::$/;
 const csUrl=p=>SUPABASE_URL+'/storage/v1/object/public/stickers/'+p;
 let customs=[],customsOk=true;
 async function loadCustoms(){
-  const {data,error}=await sb.from('custom_stickers').select('id,owner,path').order('created_at',{ascending:false}).limit(200);
+  const {data,error}=await sb.from('custom_stickers').select('id,owner,path').eq('owner',me).order('created_at',{ascending:false}).limit(300);
   if(error){customsOk=false;return}customs=data||[];
 }
 async function buildStickers(force){
   const g=$('stickTab');if(g.children.length&&!force)return;
   await loadCustoms();g.innerHTML='';
-  g.append(el('h2','st-h','Общие стикеры'));
+  g.append(el('h2','st-h','Мои стикеры'+(customs.length?' · '+customs.length:'')));
   const add=el('button','stick add-st');add.title='Добавить свой стикер';add.append(el('span',null,'+'));
   const f=document.createElement('input');f.type='file';f.accept='image/png,image/webp,image/gif,image/jpeg';f.hidden=true;
   add.onclick=()=>{if(!customsOk){alert('Чтобы добавлять стикеры, запустите supabase/more.sql в Supabase.');return}f.click()};
@@ -48,9 +49,13 @@ async function buildStickers(force){
   customs.forEach(c=>{
     const b=el('button','stick');const i=document.createElement('img');i.loading='lazy';i.alt='';i.src=csUrl(c.path);b.append(i);
     b.onclick=()=>{closeEmoji();sendMsg(cur,{body:'::cs:'+c.path+'::'}).catch(e=>alert(e.message))};
-    if(c.owner===me){const x=el('span','st-del','✕');x.title='Удалить мой стикер';
-      x.onclick=async e=>{e.stopPropagation();if(!confirm('Удалить этот стикер для всех?'))return;
-        await sb.from('custom_stickers').delete().eq('id',c.id);await sb.storage.from('stickers').remove([c.path]);buildStickers(true)};b.append(x)}
+    const x=el('span','st-del','✕');x.title='Убрать из моих стикеров';
+    x.onclick=async e=>{e.stopPropagation();if(!confirm('Убрать стикер из ваших? В отправленных сообщениях он останется.'))return;
+      const {error}=await sb.from('custom_stickers').delete().eq('id',c.id);if(error){toast('Не удалось: '+error.message);return}
+      toast('Стикер убран');buildStickers(true)};b.append(x);
+    // Долгое нажатие на телефоне — тоже убрать
+    let lp=0;b.addEventListener('touchstart',()=>{lp=setTimeout(()=>{lp=-1;x.click()},600)},{passive:true});
+    b.addEventListener('touchend',e=>{if(lp===-1){e.preventDefault()}clearTimeout(lp)});
     g.append(b);
   });
   g.append(el('h2','st-h','Анимированные'));
@@ -79,7 +84,14 @@ async function uploadSticker(file){
     toast('Стикер добавлен');buildStickers(true);
   }catch(e){alert('Не удалось добавить стикер: '+(e.message||e))}
 }
-SPECIAL.push({re:CS_RE,cls:'sticker',preview:()=>'Стикер',render:(m,d,x)=>{
+// Сохранить чужой (или свой убранный) стикер из чата к себе
+async function saveSticker(path){
+  if(customs.some(c=>c.path===path)){toast('Этот стикер уже у вас');return}
+  const {error}=await sb.from('custom_stickers').insert({owner:me,path});
+  if(error){toast('Не удалось сохранить: '+error.message);return}
+  toast('Стикер сохранён в «Мои стикеры»');await loadCustoms();if($('stickTab').children.length)buildStickers(true);
+}
+SPECIAL.push({re:CS_RE,cls:'sticker',preview:()=>'Стикер',menu:(m,btn,x)=>btn('Сохранить стикер',()=>saveSticker(x[1])),render:(m,d,x)=>{
   const i=document.createElement('img');i.className='st-img';i.alt='стикер';i.loading='lazy';i.decoding='async';i.src=csUrl(x[1]);d.append(i)}});
 async function sendSticker(code){
   try{await sendMsg(cur,{body:'::st:'+code+'::'})}catch(e){alert('Не удалось отправить стикер: '+e.message)}

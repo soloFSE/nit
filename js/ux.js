@@ -129,6 +129,28 @@ function placeMenu(d){
     a.scrollIntoView({block:'nearest',behavior:reduceMotion?'auto':'smooth'});
   });
 }
-function closeMenus(){document.querySelectorAll('.m.open').forEach(o=>{o.classList.remove('open','up');o.querySelector('.acts')?.remove()})}
+function closeMenus(){document.querySelectorAll('.m.open').forEach(o=>{o.classList.remove('open','up','quick');o.querySelector('.acts')?.remove()})}
 document.addEventListener('pointerdown',e=>{if(!e.target.closest('.m.open'))closeMenus()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenus()});
+
+// ---------- Нажатие = реакции, зажатие = всё меню (как в Telegram) ----------
+let longFired=false,lpT=0,lpXY=null;
+function openMenu(d,mode){
+  const mm=msgs[d.dataset.id];if(!mm)return;
+  if(mm.deleted_at)mode='full'; // у удалённого реакций нет
+  const same=d.classList.contains('open')&&(mode==='full'?!d.classList.contains('quick'):d.classList.contains('quick'));
+  closeMenus();if(same)return;
+  d.classList.add('open');d.classList.toggle('quick',mode==='quick');
+  const a=menuEl(mm,!mm.deleted_at&&specialOf(mm.body));d.append(a);
+  // «⋯» в строке реакций — открыть всё меню
+  const qr=a.querySelector('.qreact');
+  if(qr){const more=el('button','more-btn','⋯');more.title='Ещё';more.onclick=e=>{e.stopPropagation();d.classList.remove('quick');placeMenu(d)};qr.append(more)}
+  placeMenu(d);
+}
+$('log').addEventListener('touchstart',e=>{
+  const d=e.target.closest('.m[data-id]');if(!d||e.touches.length>1||e.target.closest('a,button,video,audio,input,.acts,.ttt-g'))return;
+  lpXY=[e.touches[0].clientX,e.touches[0].clientY];clearTimeout(lpT);
+  lpT=setTimeout(()=>{longFired=true;clearTimeout(tapTimer);navigator.vibrate?.(15);openMenu(d,'full')},430);
+},{passive:true});
+$('log').addEventListener('touchmove',e=>{if(!lpXY)return;const t=e.touches[0];if(Math.abs(t.clientX-lpXY[0])>10||Math.abs(t.clientY-lpXY[1])>10){clearTimeout(lpT);lpXY=null}},{passive:true});
+$('log').addEventListener('touchend',()=>{clearTimeout(lpT);lpXY=null;setTimeout(()=>{longFired=false},400)});

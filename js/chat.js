@@ -37,7 +37,8 @@ const timeStr=t=>new Date(t).toLocaleString('ru',{day:'numeric',month:'short',ho
 const clockStr=t=>new Date(t).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}); // в пузыре — только время, дата в разделителе дня
 
 function draw(m){
-  msgs[m.id]=m;
+  const was=msgs[m.id];msgs[m.id]=m;
+  if(was&&(!!was.deleted_at!==!!m.deleted_at||was.body!==m.body))refreshQuotes(m.id);
   const d=nodes[m.id];if(!d)return;
   const sp=!m.deleted_at&&specialOf(m.body);
   const keep=['open','cont','more','new'].filter(c=>d.classList.contains(c)).join(' ');
@@ -84,7 +85,7 @@ function mediaEl(path){
 }
 
 // Меню сообщения: реакции и действия
-const MENU_IC={'Ответить':'i-reply','Изменить':'i-pencil','Переслать':'i-forward','Закрепить':'i-pin','Открепить':'i-pin','Копировать':'i-copy'};
+const MENU_IC={'Сохранить стикер':'i-heart','Ответить':'i-reply','Изменить':'i-pencil','Переслать':'i-forward','Закрепить':'i-pin','Открепить':'i-pin','Копировать':'i-copy'};
 function menuEl(m,sp){
   const a=el('div','acts'),d=nodes[m.id];
   const btn=(t,f,cls)=>{const b=el('button',cls||'g');const ic=MENU_IC[t.replace(/ \(.*\)$/,'')]||(/^Удалить/.test(t)?'i-trash':null);if(ic)b.append(svgI(ic));b.append(el('span',null,t));b.onclick=e=>{e.stopPropagation();d.classList.remove('open');a.remove();f()};a.append(b);return b};
@@ -93,12 +94,13 @@ function menuEl(m,sp){
     btn('Ответить',()=>startReply(m));
     if(m.sender===me&&!sp&&m.body)btn('Изменить',()=>startEdit(m));
     if(!sp||sp.s.forward!==false)btn('Переслать',()=>forwardMsg(m));
+    if(sp?.s.menu)sp.s.menu(m,btn,sp.x);
     btn(pinnedId===m.id?'Открепить':'Закрепить',()=>pinnedId===m.id?unpin():pinMsg(m));
     if(m.body&&!sp)btn('Копировать',()=>navigator.clipboard?.writeText(m.body));
   }
   btn('Удалить у меня',async()=>{
     const {error}=await sb.from('message_hides').insert({message_id:m.id});
-    if(!error){hidden.add(m.id);d.remove();delete nodes[m.id]}});
+    if(!error){hidden.add(m.id);d.remove();delete nodes[m.id];refreshQuotes(m.id)}});
   if(m.sender===me&&!m.deleted_at)btn('Удалить у всех',async()=>{
     if(m.image_path)await sb.storage.from('photos').remove([m.image_path]);
     const {error}=await sb.rpc('delete_for_all',{mid:m.id});
@@ -120,15 +122,13 @@ function line(m,prepend,quiet){
   if(nodes[m.id]){try{draw(m)}catch(err){console.error('draw',m.id,err)}return}
   if(m.expires_at&&new Date(m.expires_at)<=new Date())return;
   const d=document.createElement('div');d.className='m';d.dataset.id=m.id;d.dataset.t=m.created_at;d.dataset.s=m.sender;
-  d.onclick=e=>{if(e.target.closest('a,button,video,audio,input'))return;
+  // Нажатие — только реакции; зажатие (или правая кнопка мыши) — всё меню. См. openMenu в ux.js
+  d.onclick=e=>{if(e.target.closest('a,button,video,audio,input,.acts'))return;
+    if(longFired){longFired=false;return}
     clearTimeout(tapTimer);
-    tapTimer=setTimeout(()=>{
-      document.querySelectorAll('.m.open').forEach(o=>{if(o!==d){o.classList.remove('open');o.querySelector('.acts')?.remove()}});
-      const open=d.classList.toggle('open');
-      if(open){const mm=msgs[d.dataset.id];if(mm&&!d.querySelector('.acts'))d.append(menuEl(mm,!mm.deleted_at&&specialOf(mm.body)));placeMenu(d)}
-      else d.querySelector('.acts')?.remove();
-    },e.detail>1?0:190);
+    tapTimer=setTimeout(()=>openMenu(d,'quick'),e.detail>1?0:190);
   };
+  d.oncontextmenu=e=>{if(e.target.closest('a,video,audio,input,.acts'))return;e.preventDefault();clearTimeout(tapTimer);openMenu(d,'full')};
   nodes[m.id]=d;
   const log=$('log'),near=bulk||prepend||distBottom()<120;
   if(prepend)log.insertBefore(d,log.querySelector('.m'));else log.append(d);

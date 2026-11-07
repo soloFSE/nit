@@ -43,11 +43,32 @@ function reactPicker(m){
 }
 
 // ---------- Ответы ----------
+// Цитата в ответе. Если исходное сообщение удалено (у всех или «у меня») — так и пишем,
+// если оно старое и ещё не загружено — подгружаем и перерисовываем цитату.
 function quoteEl(m){
-  const q=el('div','quote');const src=msgs[m.reply_to];
-  q.append(el('b',null,src?(src.sender===me?'Вы':nameOf(src.sender)):'Ответ'),el('span',null,preview(src)));
-  q.onclick=e=>{e.stopPropagation();jumpTo(m.reply_to)};
+  const q=el('div','quote');q.dataset.rid=m.reply_to;const src=msgs[m.reply_to];
+  const gone=src&&(src.deleted_at||hidden.has(src.id));
+  if(!src&&!quoteMiss.has(m.reply_to))needQuote(m.reply_to);
+  if(gone)q.classList.add('gone');
+  q.append(el('b',null,src?(src.sender===me?'Вы':nameOf(src.sender)):'Ответ'),
+    el('span',null,!src?(quoteMiss.has(m.reply_to)?'Сообщение недоступно':'…'):gone?'Сообщение удалено':preview(src)));
+  q.onclick=e=>{e.stopPropagation();if(!gone)jumpTo(m.reply_to)};
   return q;
+}
+// Перерисовать все цитаты на сообщение id (его удалили или подгрузили)
+function refreshQuotes(id){
+  document.querySelectorAll('.quote[data-rid="'+id+'"]').forEach(q=>{const d=q.closest('.m[data-id]'),m=d&&msgs[d.dataset.id];if(m)q.replaceWith(quoteEl(m))});
+}
+const quoteWait=new Set(),quoteMiss=new Set();let quoteT=0;
+function needQuote(id){
+  if(quoteWait.has(id))return;quoteWait.add(id);clearTimeout(quoteT);
+  quoteT=setTimeout(async()=>{
+    const ids=[...quoteWait];quoteWait.clear();
+    const {data}=await sb.from('messages').select('*').in('id',ids);
+    const got=new Set((data||[]).map(m=>m.id));
+    (data||[]).forEach(m=>{if(!msgs[m.id])msgs[m.id]=m});
+    ids.forEach(i=>{if(!got.has(i))quoteMiss.add(i);refreshQuotes(i)});
+  },60);
 }
 function startReply(m){
   cancelEdit();replyTo=m.id;
