@@ -650,3 +650,51 @@ button{transition:background .15s var(--ease),color .15s var(--ease),transform .
 @keyframes splashPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.92);opacity:.6}}
 .splash p{margin:0;max-width:320px}
 .splash-b{display:flex;flex-direction:column;gap:8px;min-width:220px}
+
+/* ============ Вход и регистрация ============ */
+.auth-card{max-width:400px}
+.auth-view{animation:fadeUp .25s var(--ease)}
+.auth-view h3{font-size:20px;font-weight:800;margin:0 0 6px}
+.auth-view>p.sm{margin:0 0 14px}
+.oauth{display:flex;flex-direction:column;gap:8px}
+.obtn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:11px 14px;border-radius:14px;font-weight:700;
+  background:var(--surface);color:var(--text);box-shadow:0 0 0 1.5px var(--line)}
+.obtn:hover{box-shadow:0 0 0 1.5px var(--dim)}
+.obtn svg{width:20px;height:20px;flex:none}
+.obtn.github{background:#24292f;color:#fff;box-shadow:none}
+.obtn.github:hover{background:#000}
+.or{display:flex;align-items:center;gap:10px;color:var(--dim);font-size:12.5px;margin:16px 0 14px}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.fld-in{position:relative}
+.fld-in input{width:100%}
+.fld-in input[type=password],.fld-in input.pw{padding-right:44px}
+.eye{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:36px;height:36px;padding:0;background:none;opacity:.45;font-size:16px}
+.eye.on{opacity:1}
+.nick-st{font-weight:700}
+.nick-st.ok,.ok-t{color:#16a34a}
+.nick-st.bad{color:var(--bad)}
+.pwm{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:8px}
+.pwm i{height:4px;border-radius:2px;background:var(--line);transition:background .25s var(--ease)}
+.pwm[data-s="1"] i:nth-child(-n+1){background:#ef4444}
+.pwm[data-s="2"] i:nth-child(-n+2){background:#f59e0b}
+.pwm[data-s="3"] i:nth-child(-n+3){background:#84cc16}
+.pwm[data-s="4"] i{background:#16a34a}
+.pwm-t{display:block;font-size:12px;color:var(--dim);margin-top:4px;min-height:14px}
+.alinks{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:14px}
+.alink{background:none;padding:2px 0;color:var(--acc);font-weight:700;font-size:13.5px}
+.hint2{margin-top:12px}
+#aerr.ok{color:#16a34a}
+.mailbox{text-align:center;margin-bottom:14px}
+.mail-ic{font-size:44px;animation:popIn .4s var(--spring)}
+.mailbox b{color:var(--text)}
+/* Аккаунт и безопасность */
+.acc-btn{margin-top:2px}
+.acc-card{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:16px;background:var(--surface2);margin-bottom:10px}
+.acc-card input{width:100%}
+.acc-l{font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.04em}
+.acc-row{display:flex;gap:8px}
+.acc-row input{flex:1;min-width:0}
+.acc-prov{display:flex;align-items:center;gap:12px}
+.acc-prov svg{width:22px;height:22px;flex:none}
+.acc-prov>div{flex:1;min-width:0;display:flex;flex-direction:column}
+.acc-prov small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

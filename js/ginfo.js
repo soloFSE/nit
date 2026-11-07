@@ -31,7 +31,6 @@ $('gmem').onclick=()=>cur&&isGroupKey(cur)&&openGroupInfo(gidOf(cur));
 $('peer').onclick=()=>{if(!cur)return;if(isGroupKey(cur))openGroupInfo(gidOf(cur));else showProfile(cur)};
 
 // ---------- Отрисовка ----------
-const svgI=id=>{const s=document.createElementNS('http://www.w3.org/2000/svg','svg');const u=document.createElementNS('http://www.w3.org/2000/svg','use');u.setAttribute('href','#'+id);s.append(u);return s};
 function giRow(icon,title,sub,cls){
   const r=el('button','gi-row'+(cls?' '+cls:''));
   if(icon){const i=el('span','gi-ic');typeof icon==='string'?i.append(icon.startsWith('i-')?svgI(icon):document.createTextNode(icon)):i.append(icon);r.append(i)}

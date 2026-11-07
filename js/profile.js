@@ -17,7 +17,7 @@ async function loadProfiles(ids,force){
   (data||[]).forEach(p=>{prof[p.id]=p;people[p.id]=p.username});
 }
 const nameOf=id=>prof[id]?.display_name||people[id]||'?';
-const avatarUrl=p=>p?SUPABASE_URL+'/storage/v1/object/public/avatars/'+p:'';
+const avatarUrl=p=>!p?'':/^https:\/\//.test(p)?p:SUPABASE_URL+'/storage/v1/object/public/avatars/'+p; // https — фото из Google/GitHub
 
 // Кружок с фото или с первой буквой на цветном фоне (цвет зависит от id)
 function hue(s){let h=2166136261;for(const c of String(s||''))h=Math.imul(h^c.charCodeAt(0),16777619);return (h>>>0)%360}
@@ -34,11 +34,12 @@ function avatar(id,size,label){
 }
 
 // ---------- Модальное окно ----------
-function openModal(build){const s=$('sheet');s.innerHTML='';build(s);$('modal').classList.remove('hide')}
+function openModal(build){const s=$('sheet');$('modal').classList.remove('closing');s.innerHTML='';build(s);$('modal').classList.remove('hide')}
 function closeModal(){
   const m=$('modal');if(m.classList.contains('hide')||m.classList.contains('closing'))return;
   m.classList.add('closing');
-  setTimeout(()=>{m.classList.add('hide');m.classList.remove('closing');$('sheet').innerHTML=''},180);
+  setTimeout(()=>{if(!m.classList.contains('closing'))return; // за это время открыли новое окно
+    m.classList.add('hide');m.classList.remove('closing');$('sheet').innerHTML=''},180);
 }
 $('modal').onclick=e=>{if(e.target.id==='modal')closeModal()};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('modal').classList.contains('hide'))closeModal()});
@@ -75,7 +76,7 @@ function openSettings(){
 
     const nk=el('label','fld');nk.append(el('span',null,'Ник'));
     const nki=document.createElement('input');nki.value='@'+myName;nki.disabled=true;nk.append(nki);
-    nk.append(el('small','sm','По нику вас находят друзья и вы входите в аккаунт. Его нельзя изменить.'));s.append(nk);
+    nk.append(el('small','sm','По нику вас находят друзья. Его нельзя изменить.'));s.append(nk);
 
     const bi=el('label','fld');const cnt=el('small','sm');
     const bh=el('span');bh.append(document.createTextNode('О себе '),cnt);bi.append(bh);
@@ -97,8 +98,8 @@ function openSettings(){
       const b=el('button',v===th0?'':'g',t);b.onclick=()=>{setTheme(v);[...seg.children].forEach(c=>c.className='g');b.className=''};seg.append(b)});
     th.append(seg);s.append(th);
 
-    const pw=el('label','fld');pw.append(el('span',null,'Новый пароль'));
-    const pwi=document.createElement('input');pwi.type='password';pwi.autocomplete='new-password';pwi.placeholder='Оставьте пустым, чтобы не менять';pw.append(pwi);s.append(pw);
+    const acc=el('button','ghost wide acc-btn','🔐 Аккаунт и безопасность');acc.onclick=()=>openAccount();
+    const ah=el('div','fld');ah.append(el('span',null,'Почта, пароль, вход через Google и GitHub'),acc);s.append(ah);
 
     appearanceSection(s);
     const nt=el('div','fld');nt.append(el('span',null,'Уведомления'));notifySection(nt);s.append(nt);
@@ -120,10 +121,6 @@ function openSettings(){
         const {data,error}=await sb.from('profiles').update(patch).eq('id',me).select(PROFILE_COLS).single();
         if(error)throw error;
         if(old&&old!==data.avatar_path)sb.storage.from('avatars').remove([old]);
-        if(pwi.value){
-          if(pwi.value.length<6)throw new Error('Пароль — от 6 символов');
-          const r=await sb.auth.updateUser({password:pwi.value});if(r.error)throw r.error;
-        }
         prof[me]=data;renderMe();render();closeModal();
       }catch(e){err.textContent='Не удалось сохранить: '+(e.message||e);save.disabled=false;save.textContent='Сохранить'}
     };

@@ -42,7 +42,7 @@
 
 - Все `const/let/function` на верхнем уровне — **общие глобальные** имена для всех файлов. **Имена не должны повторяться** между файлами (однажды `sig` в `calls.js` совпал с `sig` в `config.js` и сломал звонки). Проверка: см. «Как проверять».
 - **Порядок скриптов важен**: код, который выполняется сразу при загрузке файла, может использовать только то, что объявлено в файлах выше. Функции из файлов ниже можно вызывать внутри обработчиков (к моменту вызова всё уже загружено). `app.js` — последним.
-- Порядок сейчас: `config, profile, auth, friends, groups, chat, ux, files, reads, compose, voice, circle, social, emoji, reactions, msgtools, fun, appearance, calls, gcall, bg, ginfo, sync, pwa, app`.
+- Порядок сейчас: `config, profile, auth, friends, groups, chat, ux, files, reads, compose, voice, circle, social, emoji, reactions, msgtools, fun, appearance, calls, gcall, bg, ginfo, account, sync, pwa, app`.
 
 ### Файлы
 
@@ -51,7 +51,8 @@
 | `index.html` | Разметка, SVG-иконки (`<symbol id="i-…">`), порядок скриптов |
 | `css/style.css` | Все стили. Цвета — переменные в `:root` (светлая/тёмная тема по системе или по выбору `data-theme`) |
 | `js/config.js` | Адрес и публичный ключ Supabase, `$()` = `getElementById`, общие переменные состояния |
-| `js/auth.js` | Вход/регистрация по нику (почта фиктивная: `ник@nit-chat.com`), понятные тексты ошибок `authErr()` |
+| `js/auth.js` | **Вход и регистрация** (экраны рисуются в `#authBody`, `showAuth(view)`: login / register / check / forgot / otp / newpass). Регистрация по настоящей почте с подтверждением письмом (`emailRedirectTo: SITE_URL`), ник проверяется RPC `username_free`, пароль 8+ с буквами и цифрами. Google/GitHub — `signInWithOAuth`. Вход по почте или по нику (старые аккаунты: служебная почта `ник@nit-chat.com`, `isFakeEmail`). «Забыли пароль» → `resetPasswordForEmail` → событие PASSWORD_RECOVERY → экран «Новый пароль» (флаг `recovering`). Вход по коду — `signInWithOtp` + `verifyOtp`. Тексты ошибок `authErr()` |
+| `js/account.js` | «Аккаунт и безопасность» (`openAccount`): привязать/сменить почту, задать/сменить пароль (с кодом reauthenticate, если включено), привязать/отвязать Google и GitHub (`linkIdentity`), выйти на всех устройствах. `checkUsername()` — после входа через Google/GitHub просит выбрать ник (RPC `set_username`) |
 | `js/profile.js` | Профили (`prof`, `nameOf`, `avatar()`), окно настроек профиля, карточка собеседника, тема, `el()` — хелпер создания элементов, модальное окно `openModal/closeModal` |
 | `js/friends.js` | Друзья и заявки, строка списка `row()`, счётчик `badge()`, вкладки «Друзья/Группы» |
 | `js/groups.js` | Группы: список, создание, редактирование, **роли** (`grole[gid][uid]`, `roleOf()` → owner/admin/member, `isAdminOf()`, `canDo(gid,'send'|'edit'|'add')` по флагам `groups.only_admins_*`), действия: `addMembers/removeMember/setRole/transferGroup/leaveGroup/deleteGroup/setGroupFlag`, `groupAvatar()`. Если колонки `role` нет (не запущен admins.sql) — грузит без неё (`roleCols`) |
@@ -109,7 +110,7 @@ SPECIAL.push({re:/^::dice:([1-6])::$/, cls:'game-m', forward:false,
 
 ## База данных (Supabase)
 
-Проект: `https://lojlwcsqbbthmpetmbmq.supabase.co`, публичный ключ в `js/config.js` (он публичный по задумке, защита — правила RLS). В Supabase должно быть **выключено Confirm email**.
+Проект: `https://lojlwcsqbbthmpetmbmq.supabase.co`, публичный ключ в `js/config.js` (он публичный по задумке, защита — правила RLS). Настройка входа (Confirm email **включён**, свой SMTP, Google, GitHub, шаблоны писем из `supabase/emails/`) — пошагово в **`docs/AUTH_SETUP.md`**. `supabaseClient` создаётся с `detectSessionInUrl:true, flowType:'implicit'` — вход из ссылок писем и после Google/GitHub приходит в адресе.
 
 ### Таблицы, которые были до этого чата (их схему мы не видели, а знаем по коду)
 - `profiles(id, username, …)` — создаётся при регистрации (триггер на стороне Supabase).
@@ -128,6 +129,7 @@ SPECIAL.push({re:/^::dice:([1-6])::$/, cls:'game-m', forward:false,
 | `social.sql` | `blocks`, `is_blocked_between()`, запрет писать/дружить при блокировке, удаление дружбы любой стороной, `messages.reply_to`, `reactions` |
 | `more.sql` | `messages.edited_at/forwarded_from/expires_at`, правило «скрыть истёкшие», RPC `edit_message`, `can_see_chat()`, `reads` + RPC `unread_counts`, `pins`, `poll_votes`, RPC `ttt_move`, `custom_stickers` + хранилище `stickers`, любые файлы до 50 МБ в `photos`, `profiles.status`, `groups.avatar_path/description`, RPC `transfer_group` |
 | `admins.sql` | `group_members.role`, `groups.only_admins_edit/send/add`, `is_group_admin()`, RPC `set_group_role`, `admin_delete_message`, новый `transfer_group` (бывший создатель остаётся админом), триггер: создатель вышел → права самому давнему админу/участнику, триггер-защита от смены создателя/настроек не-админом, правило «писать только админам» |
+| `auth.sql` | `profiles.username_set`, новый обработчик регистрации `nit_new_user` (удаляет старый триггер на auth.users, создающий профиль): ник из метаданных или придуманный для Google/GitHub, имя и аватарка оттуда же (`avatar_path` может быть https-ссылкой); RPC `username_free`, `set_username` (один раз) |
 
 Пользователь подтвердил, что запускал SQL по ходу работы; точно проверить состояние базы агент не может — код рассчитан на то, что части может не быть.
 

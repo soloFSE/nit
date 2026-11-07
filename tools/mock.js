@@ -94,6 +94,8 @@ window.supabase={createClient(){return{
   rpc:async(n,a)=>{(window.__REQ||=[]).push('rpc:'+n);
     if(n==='unread_counts')return {data:[{chat:'dm:u1:u4',n:2}],error:null};
     if(n==='edit_message'){const m=DB.messages.find(x=>x.id===a.mid);m.body=a.new_body;m.edited_at=new Date().toISOString();return {error:null}}
+    if(n==='username_free')return {data:!['ivan','petr','israfil'].includes(a.u),error:null};
+    if(n==='set_username'){DB.profiles.find(x=>x.id==='u1').username=a.u;return {error:null}}
     if(n==='set_group_role'){DB.group_members.find(x=>x.group_id===a.gid&&x.user_id===a.uid).role=a.new_role;return {error:null}}
     if(n==='admin_delete_message'){const m=DB.messages.find(x=>x.id===a.mid);Object.assign(m,{body:'',image_path:null,deleted_at:new Date().toISOString()});return {error:null}}
     if(n==='transfer_group'){DB.groups.find(g=>g.id===a.gid).owner=a.uid;return {error:null}}
@@ -102,7 +104,16 @@ window.supabase={createClient(){return{
       const L=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];let w='';L.forEach(l=>{if(l.every(i=>b[i]===st.t))w=st.t});if(!w&&!b.includes('-'))w='d';
       const ns={b:b.join(''),t:st.t==='x'?'o':'x',x:st.x,o:st.o,w};m.body='::ttt::'+JSON.stringify(ns);return {data:JSON.stringify(ns),error:null}}
     return {error:null}},
-  auth:{onAuthStateChange(f){cb=f;setTimeout(()=>f('SIGNED_IN',{user:{id:'u1'}}),50)},signOut:async()=>cb('SIGNED_OUT',null),refreshSession:async()=>(window.__refresh?.()||{data:{session:null},error:{message:'Failed to fetch'}}),getSession:async()=>({data:{session:null}}),updateUser:async()=>({error:null}),signInWithPassword:async()=>({error:null}),signUp:async()=>({data:{},error:null})},
+  auth:{onAuthStateChange(f){cb=f;setTimeout(()=>f('SIGNED_IN',{user:{id:'u1'}}),50)},signOut:async()=>cb('SIGNED_OUT',null),signInWithOAuth:async o=>{(window.__AUTH||=[]).push(['oauth',o.provider,o.options?.redirectTo]);return {error:null}},
+    resend:async o=>{(window.__AUTH||=[]).push(['resend',o.email]);return {error:null}},
+    resetPasswordForEmail:async e=>{(window.__AUTH||=[]).push(['reset',e]);return {error:null}},
+    signInWithOtp:async o=>{(window.__AUTH||=[]).push(['otp',o.email]);return {error:null}},
+    verifyOtp:async o=>o.token==='123456'?(cb('SIGNED_IN',{user:{id:'u1'}}),{error:null}):{error:{message:'Token has expired or is invalid'}},
+    getUser:async()=>({data:{user:{id:'u1',email:'u1@nit-chat.com'}}}),
+    getUserIdentities:async()=>({data:{identities:[{provider:'email',identity_data:{}}]}}),
+    linkIdentity:async o=>{(window.__AUTH||=[]).push(['link',o.provider]);return {error:null}},
+    unlinkIdentity:async()=>({error:null}),reauthenticate:async()=>({error:null}),
+    refreshSession:async()=>(window.__refresh?.()||{data:{session:null},error:{message:'Failed to fetch'}}),getSession:async()=>({data:{session:null}}),updateUser:async()=>({error:null}),signInWithPassword:async()=>({error:null}),signUp:async o=>{(window.__AUTH||=[]).push(['signup',o.email,o.options?.data?.username]);return {data:{user:{identities:[{}]},session:null},error:null}}},
   channel(n){const c={on(t,f,h){if(t==='presence')c._p=h;if(t==='broadcast')c._b=h;return c},subscribe(cb){setTimeout(()=>{cb&&cb('SUBSCRIBED');c._p&&c._p()},10);if(n==='nit-live')window.__live=c;return c},track:async()=>{},send(){},presenceState:()=>({u1:[{}],u2:[{}]})};return c},removeAllChannels(){},
   storage:{from:()=>({createSignedUrl:async p=>{(window.__REQ||=[]).push('storage:sign');return {data:{signedUrl:FILES[p]||''}}},createSignedUrls:async ps=>{(window.__REQ||=[]).push('storage:signMany');return {data:ps.map(p=>({path:p,signedUrl:FILES[p]||''}))}},upload:async(p,b)=>{FILES[p]=URL.createObjectURL(b);return {error:null}},remove:async()=>({})})}
 }}};
