@@ -7,7 +7,7 @@ http.createServer((q,r)=>{
   // /__test — та же страница, но с подставным Supabase вместо настоящего
   if(u==='/__test'){
     let h=fs.readFileSync(path.join(root,'index.html'),'utf8');
-    h=h.replace(/<script src="https:\/\/cdn\.jsdelivr[^>]*><\/script>/,'<script src="/__mock.js"></script>');
+    h=h.replace(/<script src="(https:\/\/cdn\.jsdelivr[^"]*|js\/vendor\/supabase\.min\.js)"><\/script>/,'<script src="/__mock.js"></script>');
     r.writeHead(200,{'Content-Type':T['.html']});r.end(h);return;
   }
   if(u==='/__mock.js'){r.writeHead(200,{'Content-Type':T['.js']});r.end(fs.readFileSync(path.join(__dirname,'mock.js')));return}

@@ -198,7 +198,21 @@ function authErr(e){
 }
 
 // Ошибка, с которой Supabase вернул нас обратно (просроченная ссылка, отмена входа через Google и т. п.)
-let recovering=/type=recovery/.test(location.hash);
+let recovering=/type=recovery/.test(location.hash)||/[?&]type=recovery/.test(location.search);
+// Ссылка из письма вида  …/nit/?token_hash=…&type=signup|email|recovery|email_change|invite
+// Подтверждаем её сами (через тот путь до сервера, что работает) — так ссылки работают и в России.
+(function(){
+  const q=new URLSearchParams(location.search),th=q.get('token_hash'),ty=q.get('type');
+  if(!th||!ty||!sb)return;
+  history.replaceState(null,'',location.pathname);
+  setTimeout(async()=>{
+    if(typeof showSplash==='function')showSplash(ty==='recovery'?'Открываю сброс пароля…':'Подтверждаю почту…');
+    const {error}=await sb.auth.verifyOtp({token_hash:th,type:ty==='magiclink'?'email':ty});
+    if(error){if(typeof hideSplash==='function')hideSplash();$('auth').classList.remove('hide');showAuth('login');
+      aerr(/expired|invalid|not found/i.test(error.message)?'Ссылка из письма устарела или уже использована. Запросите новую.':authErr(error));return}
+    if(ty==='email_change')setTimeout(()=>toast('Почта подтверждена ✓'),1500);
+  },0);
+})();
 (function(){
   const q=new URLSearchParams(location.hash.slice(1)+'&'+location.search.slice(1));
   const d=q.get('error_description');if(!d)return;
