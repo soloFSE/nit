@@ -73,6 +73,7 @@ $('add').onclick=async()=>{
   const {error}=await sb.from('friendships').insert({a:me,b:data.id});
   if(error){$('ferr').textContent='Не получилось отправить';return}
   people[data.id]=data.username;$('find').value='';loadFriends();toast('Заявка отправлена @'+data.username);
+  if(typeof toggleNew==='function')toggleNew(false);
 };
 
 // Вкладки «Друзья / Группы»

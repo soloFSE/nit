@@ -13,7 +13,7 @@ function openMediaPicker(files,to=cur){
 }
 function addPicked(files,open){
   files.forEach(f=>{if(pick.items.length<20)pick.items.push({file:f,url:URL.createObjectURL(f),video:/^video\//.test(f.type)||VIDEO_EXT.test(f.name)})});
-  if(open)openModal(buildPicker);else{const s=$('sheet');s.innerHTML='';buildPicker(s)}
+  if(open)openModal(buildPicker);else{if(typeof stashNew==='function')stashNew();const s=$('sheet');s.innerHTML='';buildPicker(s)}
 }
 function closePicker(){if(!pick)return;pick.items.forEach(i=>URL.revokeObjectURL(i.url));pick=null;closeModal()}
 function buildPicker(s){

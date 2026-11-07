@@ -34,12 +34,12 @@ function avatar(id,size,label){
 }
 
 // ---------- Модальное окно ----------
-function openModal(build){const s=$('sheet');s.className='sheet';$('modal').classList.remove('closing');s.innerHTML='';build(s);$('modal').classList.remove('hide')}
+function openModal(build){if(typeof stashNew==='function')stashNew();const s=$('sheet');s.className='sheet';$('modal').classList.remove('closing');s.innerHTML='';build(s);$('modal').classList.remove('hide')}
 function closeModal(){
   const m=$('modal');if(m.classList.contains('hide')||m.classList.contains('closing'))return;
   m.classList.add('closing');
   setTimeout(()=>{if(!m.classList.contains('closing'))return; // за это время открыли новое окно
-    m.classList.add('hide');m.classList.remove('closing');$('sheet').innerHTML=''},180);
+    m.classList.add('hide');m.classList.remove('closing');if(typeof stashNew==='function')stashNew();$('sheet').innerHTML=''},180);
 }
 $('modal').onclick=e=>{if(e.target.id==='modal')closeModal()};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('modal').classList.contains('hide'))closeModal()});

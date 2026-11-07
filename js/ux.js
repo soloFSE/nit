@@ -165,11 +165,13 @@ $('log').addEventListener('touchend',()=>{clearTimeout(lpT);lpXY=null;setTimeout
   const vv=window.visualViewport,root=document.documentElement;
   let wasStick=true;
   const fit=()=>{
-    const h=vv?vv.height:innerHeight;root.style.setProperty('--app-h',Math.round(h)+'px');
+    const h=vv?vv.height:innerHeight,t=vv?vv.offsetTop:0;
+    root.style.setProperty('--app-h',Math.round(h)+'px');
+    root.style.setProperty('--vv-top',Math.round(t)+'px'); // iPhone при клавиатуре сдвигает видимую область, а не страницу
     if(window.scrollY||document.documentElement.scrollTop)window.scrollTo(0,0);
     if(wasStick&&cur)toBottom(false);
   };
-  if(vv){vv.addEventListener('resize',()=>{wasStick=stick;requestAnimationFrame(fit)});vv.addEventListener('scroll',()=>{if(vv.offsetTop)window.scrollTo(0,0)})}
+  if(vv){vv.addEventListener('resize',()=>{wasStick=stick;requestAnimationFrame(fit)});vv.addEventListener('scroll',()=>requestAnimationFrame(fit))}
   window.addEventListener('resize',fit);fit();
   $('msg').addEventListener('focus',()=>{wasStick=stick;setTimeout(fit,60);setTimeout(fit,350)});
 })();

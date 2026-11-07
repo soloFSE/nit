@@ -122,6 +122,7 @@ function voiceMeta(path){
 }
 function voiceEl(path){
   const {dur,lv}=voiceMeta(path);
+  imgUrl(path).catch(()=>{}); // ссылка готова заранее: iPhone разрешает play() только сразу после нажатия
   const w=el('div','vmsg'),play=el('button','vplay-b'),bars=el('div','vbars'),t=el('span','vtime-m',dur?mmss(dur):'0:00'),sp=el('button','vspeed','1×');
   play.append(svgI('i-play'));play.title='Слушать';sp.title='Скорость';
   lv.forEach(v=>{const b=el('i');b.style.height=Math.max(3,Math.round(v*24))+'px';bars.append(b)});
@@ -133,10 +134,12 @@ function voiceEl(path){
   const ensure=async()=>{if(a)return a;const u=await imgUrl(path);if(!u)return null;a=new Audio(u);a.preload='auto';a.playbackRate=speed;
     a.ontimeupdate=paint;a.onended=()=>{stop();a.currentTime=0;paint();[...bars.children].forEach(b=>b.classList.remove('on'));t.textContent=mmss(dur||a.duration)};
     a.onloadedmetadata=()=>{if(!dur&&isFinite(a.duration))t.textContent=mmss(a.duration)};return a};
-  play.onclick=async e=>{e.stopPropagation();const au=await ensure();if(!au)return;
+  play.onclick=async e=>{e.stopPropagation();
+    if(/\.webm$/i.test(path)&&!document.createElement('audio').canPlayType('audio/webm')){toast('Это голосовое записано в webm — ваш телефон его не проигрывает (нужен iOS 18.4 или новее)');return}
+    const au=await ensure();if(!au)return;
     if(!au.paused){stop();return}
     if(vNow&&vNow!==stop)vNow();vNow=stop;
-    au.play().then(()=>{w.classList.add('playing');play.innerHTML='';play.append(svgI('i-pause'))}).catch(()=>{})};
+    au.play().then(()=>{w.classList.add('playing');play.innerHTML='';play.append(svgI('i-pause'))}).catch(()=>toast('Нажмите ещё раз, чтобы воспроизвести'))};
   bars.onclick=async e=>{e.stopPropagation();const au=await ensure();if(!au)return;const r=bars.getBoundingClientRect(),p=(e.clientX-r.left)/r.width;
     const total=isFinite(au.duration)&&au.duration>0?au.duration:dur;if(!total)return;au.currentTime=Math.max(0,Math.min(total-.05,p*total));paint();if(au.paused)play.click()};
   sp.onclick=e=>{e.stopPropagation();speed=speed===1?1.5:speed===1.5?2:1;sp.textContent=speed+'×';if(a)a.playbackRate=speed};

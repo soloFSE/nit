@@ -113,11 +113,27 @@ function renderChats(){
 // ---------- Поиск и «новый чат» ----------
 $('csearch').addEventListener('input',scheduleChats);
 $('csx').onclick=e=>{e.preventDefault();$('csearch').value='';scheduleChats();$('csearch').focus()};
-function toggleNew(on){
-  const b=$('newbox');on=on??b.classList.contains('hide');
-  b.classList.toggle('hide',!on);$('newchat').classList.toggle('on',on);$('fab').classList.toggle('on',on);
-  if(on){document.querySelector('.side-scroll').scrollTop=0;setTimeout(()=>$('find').focus(),60)}
+// «Добавить друга» и «Новая группа» открываются в отдельном окне. Блок #newbox остаётся тем же
+// (кнопки и обработчики привязаны к его элементам), его только переносят в окно и обратно.
+let newHome=null,newNext=null;
+function stashNew(){ // вернуть блок на место до того, как окно очистится
+  const b=$('newbox');if(!newHome||b.parentNode===newHome)return;
+  newHome.insertBefore(b,newNext&&newNext.parentNode===newHome?newNext:null);b.classList.add('hide');
 }
+function toggleNew(on){
+  const b=$('newbox'),m=$('modal');
+  if(!newHome){newHome=b.parentNode;newNext=b.nextSibling}
+  const open=b.parentNode!==newHome&&!m.classList.contains('hide')&&!m.classList.contains('closing');
+  on=on??!open;
+  if(!on){if(open)closeModal();return}
+  openModal(s=>{
+    const top=el('div','sheet-top'),x=el('button','icon','✕');x.onclick=closeModal;
+    top.append(el('h3',null,'Новый чат'),x);
+    b.classList.remove('hide');s.append(top,b);
+  });
+  if(!matchMedia('(pointer:coarse)').matches)setTimeout(()=>$('find').focus(),80);
+}
+$('find').addEventListener('keydown',e=>{if(e.key==='Enter')$('add').click()});
 $('newchat').onclick=()=>toggleNew();
 $('fab').onclick=()=>toggleNew();
 

@@ -344,7 +344,6 @@ button.primary:hover,button.icon.primary:hover{filter:brightness(1.06);backgroun
 html,body{overscroll-behavior:none}
 @media (max-width:760px){
   html,body{overflow:hidden;position:fixed;inset:0;width:100%}
-  .app{height:var(--app-h,100dvh)}
   #head{flex:none}
   #msg{font-size:16px} /* меньше 16px — iPhone приближает страницу при вводе */
 }
@@ -460,3 +459,39 @@ html,body{overscroll-behavior:none}
 .acc-pick:hover{background:var(--acc-soft)}
 .acc-pick-t{display:flex;flex-direction:column;min-width:0}
 .acc-pick-t small{color:var(--dim);font-weight:500}
+
+/* ============ iPhone и iOS ============ */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+*{-webkit-tap-highlight-color:transparent}
+button,a,select,label,input,textarea,.crow,.fold,.fab{touch-action:manipulation} /* без приближения двойным нажатием */
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),textarea{-webkit-appearance:none;appearance:none}
+.m{-webkit-touch-callout:none}
+#log,.side-scroll,.sheet{overscroll-behavior:contain}
+#log{overflow-x:hidden} /* из-за этого «гулял» экран: пузырь шире ленты */
+/* iPhone приближает страницу при вводе, если шрифт поля меньше 16px */
+@media (pointer:coarse){input,textarea,select{font-size:16px}}
+
+/* Голосовое помещается в пузырь: время и скорость больше не выталкивают его за экран */
+.vmsg{min-width:0;max-width:100%}
+.vbars{min-width:0;overflow:hidden}
+.vbars i{min-width:0}
+.vplay-b,.vspeed{flex:none}
+.vtime-m{flex:none;min-width:34px;text-align:right}
+
+/* Вход и регистрация: экран листается, форма не обрезается клавиатурой */
+.auth{position:fixed;left:0;right:0;top:var(--vv-top,0px);bottom:auto;height:var(--app-h,100%);min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;
+  display:flex;padding:calc(24px + env(safe-area-inset-top,0px)) 16px calc(24px + env(safe-area-inset-bottom,0px))}
+.auth-card{margin:auto}
+
+/* Телефон и планшет: страница закреплена и равна видимой области — iPhone при клавиатуре сдвигает
+   видимую область (--vv-top), и приложение едет за ней, шапка и поле ввода остаются на виду */
+@media (pointer:coarse){
+  html,body{overflow:hidden;position:fixed;inset:0;width:100%}
+  .app{position:fixed;left:0;right:0;top:var(--vv-top,0px);height:var(--app-h,100dvh)}
+  .modal{top:var(--vv-top,0px);bottom:auto;height:var(--app-h,100%)}
+}
+
+/* Старые iPhone (iOS до 16.2) не знают color-mix: полоски голосового оставались бы невидимыми */
+@supports not (background:color-mix(in srgb,red,blue)){
+  .vbars i,.vwave i{background:rgba(127,127,127,.45)}
+}
