@@ -192,6 +192,7 @@ function authErr(e){
   if(/provider is not enabled|unsupported provider/.test(m))return 'Этот способ входа ещё не включён в Supabase (см. docs/AUTH_SETUP.md).';
   if(/weak|pwned|password should/.test(m))return 'Пароль слишком простой или встречался в утечках. Придумайте другой.';
   if(/same password|different from the old/.test(m))return 'Новый пароль должен отличаться от старого.';
+  if(/sending.*(email|mail)|smtp|unexpected_failure/.test(m)||st===500)return 'Сервер не смог отправить письмо. Попробуйте позже или сообщите администратору «Нити».';
   return 'Ошибка: '+(e?.message||e);
 }
 
