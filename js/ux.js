@@ -138,12 +138,16 @@ document.addEventListener('pointerdown',e=>{if(!e.target.closest('.m.open'))clos
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenus()});
 
 // ---------- Нажатие = реакции, зажатие = всё меню (как в Telegram) ----------
-let longFired=false,lpT=0,lpXY=null;
-function openMenu(d,mode){
+let longFired=false,lpT=0,lpXY=null,menuAt=0;
+// keep=true — зажатие: меню только открывается, никогда не закрывается повторным сигналом.
+// (Android после зажатия шлёт ещё и contextmenu — раньше он тут же закрывал только что открытое меню.)
+function openMenu(d,mode,keep){
   const mm=msgs[d.dataset.id];if(!mm)return;
   if(mm.deleted_at)mode='full'; // у удалённого реакций нет
   const same=d.classList.contains('open')&&(mode==='full'?!d.classList.contains('quick'):d.classList.contains('quick'));
+  if(same&&(keep||Date.now()-menuAt<900))return;
   closeMenus();if(same)return;
+  menuAt=Date.now();
   d.classList.add('open');d.classList.toggle('quick',mode==='quick');
   const a=menuEl(mm,!mm.deleted_at&&specialOf(mm.body));d.append(a);
   // «⋯» в строке реакций — открыть всё меню
@@ -154,7 +158,7 @@ function openMenu(d,mode){
 $('log').addEventListener('touchstart',e=>{
   const d=e.target.closest('.m[data-id]');if(!d||e.touches.length>1||e.target.closest('a,button,video,audio,input,.acts,.ttt-g'))return;
   lpXY=[e.touches[0].clientX,e.touches[0].clientY];clearTimeout(lpT);
-  lpT=setTimeout(()=>{longFired=true;clearTimeout(tapTimer);navigator.vibrate?.(15);openMenu(d,'full')},430);
+  lpT=setTimeout(()=>{longFired=true;clearTimeout(tapTimer);navigator.vibrate?.(15);openMenu(d,'full',true)},430);
 },{passive:true});
 $('log').addEventListener('touchmove',e=>{if(!lpXY)return;const t=e.touches[0];if(Math.abs(t.clientX-lpXY[0])>10||Math.abs(t.clientY-lpXY[1])>10){clearTimeout(lpT);lpXY=null}},{passive:true});
 $('log').addEventListener('touchend',()=>{clearTimeout(lpT);lpXY=null;setTimeout(()=>{longFired=false},400)});

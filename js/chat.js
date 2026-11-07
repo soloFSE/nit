@@ -137,7 +137,7 @@ function line(m,prepend,quiet){
     clearTimeout(tapTimer);
     tapTimer=setTimeout(()=>openMenu(d,'quick'),e.detail>1?0:190);
   };
-  d.oncontextmenu=e=>{if(e.target.closest('a,video,audio,input,.acts'))return;e.preventDefault();clearTimeout(tapTimer);openMenu(d,'full')};
+  d.oncontextmenu=e=>{if(e.target.closest('a,video,audio,input,.acts'))return;e.preventDefault();clearTimeout(tapTimer);openMenu(d,'full',longFired||!!lpXY)};
   nodes[m.id]=d;
   const log=$('log'),near=bulk||prepend||distBottom()<120;
   if(prepend)log.insertBefore(d,log.querySelector('.m'));else log.append(d);

@@ -600,3 +600,6 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),
 .stv-err{position:absolute;color:#fff;opacity:.8}
 .stv.paused .stv-bars,.stv.paused .stv-top{opacity:.4;transition:opacity .2s}
 .st-edit .stv-top{top:calc(14px + env(safe-area-inset-top,0px))}
+
+/* Окно просмотров истории — поверх экрана истории */
+.modal.over-stv{z-index:70}

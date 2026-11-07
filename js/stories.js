@@ -161,13 +161,14 @@ function nextStory(){if(!sv)return;const list=sv.g[sv.owners[sv.oi]]||[];if(sv.s
 function prevStory(){if(!sv)return;if(sv.si>0){sv.si--;showStory()}else if(sv.oi>0){sv.oi--;sv.si=Math.max(0,(sv.g[sv.owners[sv.oi]]||[]).length-1);showStory()}else showStory()}
 function storyViewers(list){
   pauseStory(true);
+  $('modal').classList.add('over-stv'); // поверх экрана истории, а не под ним
   openModal(s=>{
     const top=el('div','sheet-top');top.append(el('h3',null,'Просмотры · '+list.length));const x=el('button','icon','✕');x.onclick=closeModal;top.append(x);s.append(top);
     if(!list.length)s.append(el('p','sm','Пока никто не посмотрел.'));
     loadProfiles(list.map(v=>v.viewer)).then(()=>list.forEach(v=>s.append(row(avatar(v.viewer,40),nameOf(v.viewer),agoStr(v.viewed_at)))));
   });
-  const iv=setInterval(()=>{if($('modal').classList.contains('hide')){clearInterval(iv);pauseStory(false)}},300);
+  const iv=setInterval(()=>{if($('modal').classList.contains('hide')){clearInterval(iv);$('modal').classList.remove('over-stv');pauseStory(false)}},300);
 }
-const agoStr=t=>{const s=(Date.now()-new Date(t))/1000;return s<60?'только что':s<3600?Math.floor(s/60)+' мин назад':Math.floor(s/3600)+' ч назад'};
-document.addEventListener('keydown',e=>{if(!sv||e.target.matches?.('input'))return;if(e.key==='Escape')closeStory();if(e.key==='ArrowRight')nextStory();if(e.key==='ArrowLeft')prevStory()});
+const agoStr=t=>{const s=(Date.now()-new Date(t))/1000;return !(s>=60)?'только что':s<3600?Math.floor(s/60)+' мин назад':Math.floor(s/3600)+' ч назад'};
+document.addEventListener('keydown',e=>{if(!sv||e.target.matches?.('input')||!$('modal').classList.contains('hide'))return;if(e.key==='Escape')closeStory();if(e.key==='ArrowRight')nextStory();if(e.key==='ArrowLeft')prevStory()});
 setInterval(()=>{if(me&&!document.hidden)loadStories()},60000);
