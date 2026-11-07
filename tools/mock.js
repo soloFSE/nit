@@ -83,11 +83,11 @@ class Q{
 }
 let cb;const FILES={};window.__FILES=FILES;
 // Подставная камера: анимированный холст + тон вместо микрофона
-navigator.mediaDevices.getUserMedia=async()=>{
+navigator.mediaDevices.getUserMedia=async(cn={audio:true,video:true})=>{
   const c=document.createElement('canvas');c.width=c.height=480;const x=c.getContext('2d');let t=0;
   (function draw(){t++;x.fillStyle='hsl('+(t*3%360)+' 70% 45%)';x.fillRect(0,0,480,480);x.fillStyle='#fff';x.font='bold 90px sans-serif';x.fillText(String(t),140,270);requestAnimationFrame(draw)})();
   const v=c.captureStream(30);const ac=new AudioContext();const o=ac.createOscillator();const d=ac.createMediaStreamDestination();o.connect(d);o.start();
-  return new MediaStream([...v.getVideoTracks(),...d.stream.getAudioTracks()]);
+  return new MediaStream([...(cn.video?v.getVideoTracks():[]),...(cn.audio?d.stream.getAudioTracks():[])]);
 };
 window.supabase={createClient(){return{
   from:t=>new Q(t),

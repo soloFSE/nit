@@ -1,10 +1,11 @@
-// Голосовые сообщения: запись с микрофона и отправка.
-// Файл кладётся в то же хранилище 'photos' и в то же поле image_path, что и фото,
-// только с аудио-расширением — так не нужно менять базу.
-const VOICE_MAX_SEC=120;
+// Голосовые сообщения как в Telegram: запись с «живыми» волнами, пауза, прослушивание перед отправкой,
+// удаление; в чате — свой плеер с волнами, перемоткой и скоростью.
+// Файл лежит в хранилище 'photos' в поле image_path (как фото), только с аудио-расширением.
+// В имя файла вшиты длительность и волна: <id>/<uuid>_v<секунды>_<40 шестнадцатеричных уровней>.<ext>
+const VOICE_MAX_SEC=600;
 const AUDIO_EXT=/\.(webm|ogg|mp4|m4a)$/i;
 const isAudio=p=>AUDIO_EXT.test(p||'');
-let rec=null,recChunks=[],recStart=0,recTimer=null,recCancel=false;
+let rec=null,recChunks=[],recStream=null,recCtx=null,recAn=null,recLevels=[],recPaused=false,recElapsed=0,recResumeAt=0,recTimer=null,recTo=null,recPrev=null;
 
 function pickAudioType(){
   // Chrome/Firefox пишут webm/ogg, Safari — mp4
@@ -12,45 +13,127 @@ function pickAudioType(){
   for(const [mime,ext] of t)if(window.MediaRecorder&&MediaRecorder.isTypeSupported(mime))return {mime,ext};
   return {mime:'',ext:'webm'};
 }
-function recUI(on){
-  $('bv').classList.toggle('rec',on);$('send').classList.toggle('recording',on);
-  $('vc').classList.toggle('hide',!on);
-  $('msg').disabled=on;$('bp').disabled=on;$('bs').disabled=on;$('bc').disabled=on;$('be').disabled=on;
-  if(!on){$('msg').placeholder='Сообщение';clearInterval(recTimer)}
+const recSecs=()=>recElapsed+(recPaused||!recResumeAt?0:(Date.now()-recResumeAt)/1000);
+const mmss=s=>{s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+
+// ---------- Полоска записи ----------
+function voiceUI(on){
+  $('send').classList.toggle('voice',on);$('vbar').classList.toggle('hide',!on);
+  if(!on){clearInterval(recTimer);$('vwave').innerHTML='';previewStop()}
+}
+function drawLive(){
+  // последние уровни бегут справа налево
+  const w=$('vwave'),n=Math.max(20,Math.floor(w.clientWidth/5)),lv=recLevels.slice(-n);
+  if(w.children.length!==n){w.innerHTML='';for(let i=0;i<n;i++)w.append(el('i'))}
+  [...w.children].forEach((b,i)=>{const v=lv[i-(n-lv.length)];b.style.height=(v==null?8:12+v*88)+'%';b.classList.toggle('on',v!=null)});
 }
 function recTick(){
-  const s=Math.floor((Date.now()-recStart)/1000);
-  $('msg').placeholder='● Запись '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
-  if(s>=VOICE_MAX_SEC)stopRec(false);
+  if(!rec)return;
+  if(!recPaused&&recAn){
+    const buf=new Uint8Array(recAn.fftSize);recAn.getByteTimeDomainData(buf);
+    let s=0;for(const v of buf)s+=(v-128)**2;recLevels.push(Math.min(1,Math.sqrt(s/buf.length)/42));drawLive();
+  }
+  $('vtime').textContent=mmss(recSecs());
+  if(recSecs()>=VOICE_MAX_SEC&&!recPaused)pauseRec();
 }
 async function startRec(){
-  if(!cur)return;
+  if(!cur||rec)return;
   if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){alert('Этот браузер не умеет записывать звук.');return}
-  let stream;
-  try{stream=await navigator.mediaDevices.getUserMedia({audio:true})}
+  try{recStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}})}
   catch(e){alert(e.name==='NotAllowedError'?'Нет доступа к микрофону. Разрешите его в настройках сайта.':'Микрофон недоступен: '+e.message);return}
-  const {mime,ext}=pickAudioType(),to=cur;
-  rec=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);
-  recChunks=[];recCancel=false;
+  const {mime,ext}=pickAudioType();recTo=cur;
+  rec=new MediaRecorder(recStream,mime?{mimeType:mime}:undefined);rec._ext=ext;rec._mime=mime||'audio/webm';
+  recChunks=[];recLevels=[];recPaused=false;recElapsed=0;recResumeAt=Date.now();
   rec.ondataavailable=e=>{if(e.data.size)recChunks.push(e.data)};
-  rec.onstop=()=>{
-    stream.getTracks().forEach(t=>t.stop());
-    const dur=(Date.now()-recStart)/1000;rec=null;recUI(false);
-    if(recCancel||dur<0.7||!recChunks.length)return; // слишком короткая — случайное нажатие
-    sendVoice(new Blob(recChunks,{type:mime||'audio/webm'}),ext,to);
-  };
-  rec.start();recStart=Date.now();recUI(true);recTick();recTimer=setInterval(recTick,250);
+  try{recCtx=new (window.AudioContext||window.webkitAudioContext)();recAn=recCtx.createAnalyser();recAn.fftSize=512;recCtx.createMediaStreamSource(recStream).connect(recAn)}catch{recAn=null}
+  rec.start(250);voiceUI(true);$('vpause').classList.remove('paused');$('vbar').classList.remove('paused');
+  recTimer=setInterval(recTick,80);navigator.vibrate?.(20);
 }
-function stopRec(cancel){if(rec&&rec.state!=='inactive'){recCancel=cancel;rec.stop()}}
+// Пауза: запись приостановлена, можно прослушать то, что уже есть, и продолжить
+function pauseRec(){
+  if(!rec||recPaused)return;
+  rec.pause();rec.requestData?.();recPaused=true;recElapsed+=(Date.now()-recResumeAt)/1000;
+  $('vpause').classList.add('paused');$('vbar').classList.add('paused');
+  setTimeout(()=>{if(rec&&recPaused){showPreview()}},150);
+}
+function resumeRec(){
+  if(!rec||!recPaused)return;previewStop();
+  rec.resume();recPaused=false;recResumeAt=Date.now();$('vpause').classList.remove('paused');$('vbar').classList.remove('paused');
+}
+function showPreview(){
+  const w=$('vwave');w.innerHTML='';const lv=squeeze(recLevels,40);
+  lv.forEach(v=>{const b=el('i');b.style.height=(12+v*88)+'%';w.append(b)});
+  $('vtime').textContent=mmss(recElapsed);
+}
+function previewStop(){if(recPrev){recPrev.pause();URL.revokeObjectURL(recPrev.src);recPrev=null}$('vplay').classList.remove('on')}
+$('vplay').onclick=e=>{
+  e.stopPropagation();if(!recPaused)return;
+  if(recPrev){previewStop();return}
+  const a=recPrev=new Audio(URL.createObjectURL(new Blob(recChunks,{type:rec._mime})));
+  $('vplay').classList.add('on');
+  const bars=[...$('vwave').children];
+  a.ontimeupdate=()=>{const p=a.currentTime/Math.max(.1,recElapsed);bars.forEach((b,i)=>b.classList.toggle('on',i/bars.length<=p));$('vtime').textContent=mmss(a.currentTime)};
+  a.onended=()=>{previewStop();bars.forEach(b=>b.classList.remove('on'));$('vtime').textContent=mmss(recElapsed)};
+  a.play().catch(()=>previewStop());
+};
+// Сжать уровни до n столбиков
+function squeeze(a,n){if(!a.length)return Array(n).fill(.15);const o=[];for(let i=0;i<n;i++){const s=Math.floor(i*a.length/n),e=Math.max(s+1,Math.floor((i+1)*a.length/n));let m=0;for(let j=s;j<e;j++)m=Math.max(m,a[j]||0);o.push(m)}return o}
+function finishRec(send){
+  if(!rec)return;const r=rec,to=recTo,levels=recLevels.slice();
+  const dur=recPaused?recElapsed:recSecs();
+  r.onstop=()=>{
+    recStream?.getTracks().forEach(t=>t.stop());recCtx?.close().catch(()=>{});recStream=recCtx=recAn=null;
+    if(send&&dur>=0.7&&recChunks.length)sendVoice(new Blob(recChunks,{type:r._mime}),r._ext,to,dur,levels);
+  };
+  rec=null;voiceUI(false);
+  try{r.state!=='inactive'?r.stop():r.onstop()}catch{r.onstop()}
+}
+const stopRec=c=>finishRec(!c); // для совместимости
 
-async function sendVoice(blob,ext,to){
+async function sendVoice(blob,ext,to,dur,levels){
+  const hex=squeeze(levels,40).map(v=>Math.round(v*15).toString(16)).join('');
   try{
-    const path=me+'/'+crypto.randomUUID()+'.'+ext;
+    const path=me+'/'+crypto.randomUUID()+'_v'+Math.max(1,Math.round(dur))+'_'+hex+'.'+ext;
     const up=await sb.storage.from('photos').upload(path,blob,{contentType:blob.type.split(';')[0]});
     if(up.error)throw up.error;
     await sendMsg(to,{image_path:path});
   }catch(err){alert('Не удалось отправить голосовое: '+(err.message||err))}
 }
 
-$('bv').onclick=()=>rec?stopRec(false):startRec();
-$('vc').onclick=()=>stopRec(true);
+$('bv').onclick=()=>rec?finishRec(true):startRec();
+$('vdel').onclick=()=>{finishRec(false);toast('Голосовое удалено')};
+$('vpause').onclick=()=>recPaused?resumeRec():pauseRec();
+// «Отправить» во время записи отправляет голосовое
+{const prev=$('bs').onclick;$('bs').onclick=e=>{if(rec)return finishRec(true);prev?.(e)}}
+
+// ---------- Плеер голосового в чате ----------
+let vNow=null; // сейчас играющее — одновременно только одно
+function voiceMeta(path){
+  const m=/_v(\d+)_([0-9a-f]{10,80})\.\w+$/.exec(path||'');
+  if(m)return {dur:+m[1],lv:[...m[2]].map(c=>parseInt(c,16)/15)};
+  // старые голосовые — волна «по отпечатку» имени файла
+  let h=2166136261;const lv=[];for(let i=0;i<40;i++){h=Math.imul(h^(path.charCodeAt(i%path.length)+i),16777619);lv.push(.25+((h>>>0)%70)/100)}
+  return {dur:0,lv};
+}
+function voiceEl(path){
+  const {dur,lv}=voiceMeta(path);
+  const w=el('div','vmsg'),play=el('button','vplay-b'),bars=el('div','vbars'),t=el('span','vtime-m',dur?mmss(dur):'0:00'),sp=el('button','vspeed','1×');
+  play.append(svgI('i-play'));play.title='Слушать';sp.title='Скорость';
+  lv.forEach(v=>{const b=el('i');b.style.height=(14+v*86)+'%';bars.append(b)});
+  w.append(play,bars,t,sp);
+  let a=null,speed=1;
+  const paint=()=>{if(!a)return;const total=isFinite(a.duration)&&a.duration>0?a.duration:dur||1,p=a.currentTime/total;
+    [...bars.children].forEach((b,i)=>b.classList.toggle('on',(i+.5)/lv.length<=p));t.textContent=mmss(a.paused&&!a.currentTime?total:a.currentTime)};
+  const stop=()=>{if(!a)return;a.pause();w.classList.remove('playing');play.innerHTML='';play.append(svgI('i-play'))};
+  const ensure=async()=>{if(a)return a;const u=await imgUrl(path);if(!u)return null;a=new Audio(u);a.preload='auto';a.playbackRate=speed;
+    a.ontimeupdate=paint;a.onended=()=>{stop();a.currentTime=0;paint();[...bars.children].forEach(b=>b.classList.remove('on'));t.textContent=mmss(dur||a.duration)};
+    a.onloadedmetadata=()=>{if(!dur&&isFinite(a.duration))t.textContent=mmss(a.duration)};return a};
+  play.onclick=async e=>{e.stopPropagation();const au=await ensure();if(!au)return;
+    if(!au.paused){stop();return}
+    if(vNow&&vNow!==stop)vNow();vNow=stop;
+    au.play().then(()=>{w.classList.add('playing');play.innerHTML='';play.append(svgI('i-pause'))}).catch(()=>{})};
+  bars.onclick=async e=>{e.stopPropagation();const au=await ensure();if(!au)return;const r=bars.getBoundingClientRect(),p=(e.clientX-r.left)/r.width;
+    const total=isFinite(au.duration)&&au.duration>0?au.duration:dur;if(!total)return;au.currentTime=Math.max(0,Math.min(total-.05,p*total));paint();if(au.paused)play.click()};
+  sp.onclick=e=>{e.stopPropagation();speed=speed===1?1.5:speed===1.5?2:1;sp.textContent=speed+'×';if(a)a.playbackRate=speed};
+  return w;
+}

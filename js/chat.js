@@ -76,10 +76,7 @@ function draw(m){
 function mediaEl(path){
   if(isFile(path))return fileEl(path);
   if(isCircle(path))return circleEl(path);
-  if(isAudio(path)){
-    const au=document.createElement('audio');au.controls=true;au.preload='none';
-    au.onclick=e=>e.stopPropagation();imgUrl(path).then(u=>{if(u)au.src=u});return au;
-  }
+  if(isAudio(path))return voiceEl(path);
   const i=document.createElement('img');i.alt='фото';i.className='photo';i.loading='lazy';i.decoding='async';
   imgUrl(path).then(u=>{if(u){i.src=u;i.onclick=e=>{e.stopPropagation();openViewer(u)}}});return i;
 }

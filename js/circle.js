@@ -6,7 +6,7 @@ const circleIO=new IntersectionObserver(es=>es.forEach(e=>{const v=e.target;v._v
   else if(v.muted)v.pause();
 }),{threshold:.25});
 const isCircle=p=>/\.circle\.(webm|mp4)$/i.test(p||'');
-let cam={stream:null,rec:null,chunks:[],start:0,timer:null,facing:'user',to:null,cancel:false};
+let cam={stream:null,rec:null,chunks:[],start:0,elapsed:0,timer:null,facing:'user',to:null,cancel:false,prevUrl:null};
 
 function pickVideoType(){
   const t=[['video/webm;codecs=vp9,opus','webm'],['video/webm;codecs=vp8,opus','webm'],['video/mp4','mp4'],['video/webm','webm']];
@@ -32,11 +32,29 @@ async function camStream(){
   }
   const v=$('camv');v.srcObject=cam.stream;v.classList.toggle('mirror',cam.facing==='user');v.play().catch(()=>{});
 }
+// Состояния: idle — ждём начала, rec — пишем, pause — на паузе, видно записанное (можно продолжить / отправить / удалить)
+const CAM_HINT={idle:'Нажмите, чтобы начать запись. До 60 секунд.',rec:'Нажмите — пауза. ➤ — отправить.',pause:'Пауза: посмотрите, что получилось. ● — продолжить, ➤ — отправить, ✕ — удалить.'};
 function camState(s){
   $('cam').dataset.s=s;
-  $('camgo').title=s==='rec'?'Отправить':'Записать';
-  if(s!=='rec'){$('camt').textContent='0:00';camRing(0)}
+  $('camgo').title=s==='rec'?'Пауза':s==='pause'?'Продолжить запись':'Записать';
+  $('camhint').textContent=CAM_HINT[s];
+  if(s==='idle'){$('camt').textContent='0:00';camRing(0)}
 }
+const camSecs=()=>cam.elapsed+(cam.rec&&cam.rec.state==='recording'?(Date.now()-cam.start)/1000:0);
+function camPause(){
+  if(!cam.rec||cam.rec.state!=='recording')return;
+  cam.rec.pause();cam.rec.requestData?.();cam.elapsed+=(Date.now()-cam.start)/1000;camState('pause');
+  // Показываем записанное в кружке, по кругу и со звуком
+  setTimeout(()=>{if(cam.rec?.state!=='paused')return;
+    const v=$('camv');if(cam.prevUrl)URL.revokeObjectURL(cam.prevUrl);cam.prevUrl=URL.createObjectURL(new Blob(cam.chunks,{type:cam.mime}));
+    v.srcObject=null;v.src=cam.prevUrl;v.muted=false;v.loop=true;v.play().catch(()=>{v.muted=true;v.play().catch(()=>{})})},200);
+}
+function camResume(){
+  if(cam.rec?.state!=='paused')return;
+  const v=$('camv');v.pause();v.removeAttribute('src');v.muted=true;v.loop=false;v.srcObject=cam.stream;v.play().catch(()=>{});
+  cam.rec.resume();cam.start=Date.now();camState('rec');
+}
+function camSend(){if(cam.rec&&cam.rec.state!=='inactive'){cam.cancel=false;cam.rec.stop()}}
 function camRing(p){$('camring').style.strokeDashoffset=String(100-p*100)}
 
 function camRecStart(){
@@ -45,23 +63,25 @@ function camRecStart(){
   cam.chunks=[];cam.cancel=false;
   cam.rec.ondataavailable=e=>{if(e.data.size)cam.chunks.push(e.data)};
   cam.rec.onstop=()=>{
-    const dur=(Date.now()-cam.start)/1000,blob=new Blob(cam.chunks,{type:cam.mime}),to=cam.to,cancel=cam.cancel;
+    const dur=camSecs()+(cam.rec?.state==='inactive'&&$('cam').dataset.s==='rec'?(Date.now()-cam.start)/1000:0),blob=new Blob(cam.chunks,{type:cam.mime}),to=cam.to,cancel=cam.cancel;
     camClose();
     if(!cancel&&dur>=1&&blob.size)sendCircle(blob,cam.ext,to,Math.round(dur));
   };
-  cam.rec.start(250);cam.start=Date.now();camState('rec');
+  cam.elapsed=0;cam.rec.start(250);cam.start=Date.now();camState('rec');
   cam.timer=setInterval(()=>{
-    const s=(Date.now()-cam.start)/1000;
+    if(!cam.rec)return;const s=camSecs();
     $('camt').textContent=Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
     camRing(Math.min(1,s/CIRCLE_MAX_SEC));
-    if(s>=CIRCLE_MAX_SEC)cam.rec.stop();
+    if(s>=CIRCLE_MAX_SEC&&cam.rec.state==='recording')camPause();
   },100);
 }
 function camClose(){
   clearInterval(cam.timer);
   if(cam.rec&&cam.rec.state!=='inactive'){cam.cancel=true;cam.rec.stop();return} // onstop вызовет camClose ещё раз
   cam.rec=null;cam.stream?.getTracks().forEach(t=>t.stop());cam.stream=null;
-  $('camv').srcObject=null;$('cam').classList.add('hide');
+  const v=$('camv');v.pause();v.removeAttribute('src');v.srcObject=null;v.muted=true;v.loop=false;
+  if(cam.prevUrl){URL.revokeObjectURL(cam.prevUrl);cam.prevUrl=null}
+  $('cam').classList.add('hide');
 }
 
 async function sendCircle(blob,ext,to,secs){
@@ -117,6 +137,7 @@ const fmt=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
 
 $('bc').onclick=camOpen;
 $('camx').onclick=camClose;
-$('camgo').onclick=()=>cam.rec?cam.rec.stop():cam.stream&&camRecStart();
+$('camgo').onclick=()=>!cam.rec?cam.stream&&camRecStart():cam.rec.state==='recording'?camPause():camResume();
+$('camsend').onclick=camSend;
 $('camflip').onclick=()=>{if(cam.rec)return;cam.facing=cam.facing==='user'?'environment':'user';camStream()};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('cam').classList.contains('hide'))camClose()});
