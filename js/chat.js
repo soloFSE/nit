@@ -26,8 +26,10 @@ function preview(m){
   if(!m)return 'Сообщение';
   if(m.deleted_at)return 'Сообщение удалено';
   const sp=specialOf(m.body);if(sp)return sp.s.preview(sp.x,m);
-  if(m.body)return m.body.length>80?m.body.slice(0,80)+'…':m.body;
-  if(isFile(m.image_path))return '📎 '+fileName(m.image_path);
+  const cut=t=>t.length>80?t.slice(0,80)+'…':t;
+  if(m.body&&m.image_path&&!isAudio(m.image_path)&&!isCircle(m.image_path))return (isFile(m.image_path)&&!VIDEO_EXT.test(m.image_path)?'📎 ':VIDEO_EXT.test(m.image_path)?'🎬 ':'🖼 ')+cut(m.body);
+  if(m.body)return cut(m.body);
+  if(isFile(m.image_path))return VIDEO_EXT.test(m.image_path)?'🎬 Видео':'📎 '+fileName(m.image_path);
   if(isCircle(m.image_path))return 'Кружок';
   if(isAudio(m.image_path))return 'Голосовое сообщение';
   if(m.image_path)return 'Фото';
@@ -56,8 +58,12 @@ function draw(m){
   else{
     if(m.reply_to)d.append(quoteEl(m));
     if(sp)sp.s.render(m,d,sp.x);
-    else if(m.body)d.append(richText(m.body));
+    // Фото/видео — сверху, подпись — под ними (как в Telegram)
     if(m.image_path)d.append(mediaEl(m.image_path));
+    if(!sp&&m.body){const tx=richText(m.body);if(m.image_path){const c=el('div','caption');c.append(tx);d.append(c)}else d.append(tx)}
+    // Фото и видео во весь пузырь; без подписи время лежит прямо на картинке
+    const pic=m.image_path&&!sp&&!isAudio(m.image_path)&&!isCircle(m.image_path)&&(!isFile(m.image_path)||VIDEO_EXT.test(m.image_path));
+    d.classList.toggle('media',!!pic);d.classList.toggle('cap',!!(pic&&m.body));
     if(!sp&&m.body)linkPreviews(m.body).forEach(p=>d.append(p));
   }
 
@@ -74,7 +80,7 @@ function draw(m){
 
 // Фото, голосовое, кружок или файл
 function mediaEl(path){
-  if(isFile(path))return fileEl(path);
+  if(isFile(path))return VIDEO_EXT.test(fileName(path))?videoEl(path):fileEl(path);
   if(isCircle(path))return circleEl(path);
   if(isAudio(path))return voiceEl(path);
   const i=document.createElement('img');i.alt='фото';i.className='photo';i.loading='lazy';i.decoding='async';

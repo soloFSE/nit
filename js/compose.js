@@ -60,14 +60,16 @@ $('file').onchange=e=>{const fs=[...e.target.files];e.target.value='';fs.forEach
 // Вставка из буфера (Ctrl+V) — картинки и файлы
 $('msg').addEventListener('paste',e=>{
   const fs=[...(e.clipboardData?.files||[])];if(!fs.length||!cur)return;
-  e.preventDefault();fs.forEach(f=>sendFile(f));
+  e.preventDefault();routeFiles(fs);
 });
 // Перетаскивание файлов в окно чата
 let dragN=0;
 $('pane').addEventListener('dragenter',e=>{if(!cur||!e.dataTransfer?.types?.includes('Files'))return;dragN++;$('drop').classList.remove('hide')});
 $('pane').addEventListener('dragleave',()=>{if(--dragN<=0){dragN=0;$('drop').classList.add('hide')}});
 $('pane').addEventListener('dragover',e=>{if(cur)e.preventDefault()});
-$('pane').addEventListener('drop',e=>{e.preventDefault();dragN=0;$('drop').classList.add('hide');[...(e.dataTransfer?.files||[])].forEach(f=>sendFile(f))});
+$('pane').addEventListener('drop',e=>{e.preventDefault();dragN=0;$('drop').classList.add('hide');routeFiles([...(e.dataTransfer?.files||[])])});
+// Фото и видео — через просмотр с подписью, остальные файлы — сразу
+function routeFiles(fs){const media=fs.filter(isMediaFile);if(media.length)openMediaPicker(media);fs.filter(f=>!isMediaFile(f)).forEach(f=>sendFile(f))}
 
 // ---------- Меню вложений ---------
 function closeAttach(){$('attach').classList.add('hide');$('bp').classList.remove('on')}
@@ -76,6 +78,7 @@ document.addEventListener('click',e=>{if(!e.target.closest('#attach,#bp'))closeA
 document.querySelectorAll('#attach [data-a]').forEach(b=>b.onclick=e=>{
   e.stopPropagation();closeAttach();const a=b.dataset.a;
   if(a==='file')$('file').click();
+  else if(a==='gallery')$('gfile').click();
   else if(a==='poll')openPollEditor();
   else if(a==='ttl')openTtlMenu();
   else sendGame(a);

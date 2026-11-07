@@ -34,7 +34,7 @@ function avatar(id,size,label){
 }
 
 // ---------- Модальное окно ----------
-function openModal(build){const s=$('sheet');$('modal').classList.remove('closing');s.innerHTML='';build(s);$('modal').classList.remove('hide')}
+function openModal(build){const s=$('sheet');s.className='sheet';$('modal').classList.remove('closing');s.innerHTML='';build(s);$('modal').classList.remove('hide')}
 function closeModal(){
   const m=$('modal');if(m.classList.contains('hide')||m.classList.contains('closing'))return;
   m.classList.add('closing');

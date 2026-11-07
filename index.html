@@ -123,7 +123,8 @@
     <button id="tobottom" class="tobottom" title="Вниз"><svg><use href="#i-back"/></svg><span id="tbN" class="badge hide"></span></button>
     <div id="drop" class="drop hide"><div>Отпустите, чтобы отправить</div></div>
     <div id="attach" class="attach hide">
-      <button data-a="file"><svg><use href="#i-yarn"/></svg>Фото или файл</button>
+      <button data-a="gallery"><svg><use href="#i-yarn"/></svg>Фото и видео</button>
+      <button data-a="file"><svg><use href="#i-clip"/></svg>Файл</button>
       <button data-a="poll"><svg><use href="#i-poll"/></svg>Опрос</button>
       <button data-a="ttt"><svg><use href="#i-ttt"/></svg>Крестики-нолики</button>
       <button data-a="dice"><svg><use href="#i-dice"/></svg>Кубик</button>
@@ -151,6 +152,7 @@
         <button class="icon hide" id="vc" title="Отменить запись"><svg><use href="#i-x"/></svg></button>
         <button class="icon" id="bp" title="Вложения"><svg><use href="#i-clip"/></svg></button>
         <input type="file" id="file" multiple hidden>
+        <input type="file" id="gfile" multiple hidden accept="image/*,video/*">
         <button class="icon" id="bc" title="Кружок"><svg><use href="#i-circle"/></svg></button>
       </div>
       <div id="vbar" class="vbar hide">
@@ -240,6 +242,7 @@
 <script src="js/files.js"></script>
 <script src="js/reads.js"></script>
 <script src="js/compose.js"></script>
+<script src="js/media.js"></script>
 <script src="js/voice.js"></script>
 <script src="js/circle.js"></script>
 <script src="js/social.js"></script>
