@@ -97,9 +97,12 @@ function notify(m){
 function updateBadge(){
   const n=Object.values(unread).reduce((a,b)=>a+(+b||0),0);
   document.title=(n?'('+n+') ':'')+'Нить';
-  const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="%23e5172b"/><path d="M5 21c5 0 6-10 11-10s6 10 11 10" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/>${n?'<circle cx="25" cy="7" r="6" fill="%23ffd400" stroke="white" stroke-width="2"/>':''}</svg>`;
+  // Значок вкладки — логотип выбранного цвета (+ жёлтая точка, если есть непрочитанные)
+  const id=typeof curPalette==='function'?curPalette()[0]:'berry';
+  let svg=typeof logoSVG==='function'?logoSVG(id,'round','fav'):'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="23" fill="#3d0b52"/></svg>';
+  if(n)svg=svg.replace(/<\/svg>$/,'<circle cx="80" cy="20" r="17" fill="#ffd400" stroke="#fff" stroke-width="5"/></svg>');
   let l=document.querySelector('link[rel=icon]');if(!l){l=document.createElement('link');l.rel='icon';document.head.append(l)}
-  l.href='data:image/svg+xml,'+svg.replace(/#/g,'%23');
+  l.href='data:image/svg+xml,'+encodeURIComponent(svg);
 }
 updateBadge();
 

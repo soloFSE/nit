@@ -1,10 +1,7 @@
 // Оформление: палитра (два цвета для градиентов), обои, размер текста, скругление, анимации.
 // Всё хранится на этом устройстве (localStorage).
-const PALETTES=[
-  ['ruby','Рубин','#e5172b','#ff9466'],['sunset','Закат','#f43f5e','#fbbf24'],['violet','Фиалка','#7c3aed','#ec4899'],['ocean','Океан','#2563eb','#22d3ee'],
-  ['emerald','Изумруд','#059669','#a3e635'],['lavender','Лаванда','#8b5cf6','#93c5fd'],['neon','Неон','#06b6d4','#a855f7'],['graphite','Графит','#334155','#94a3b8'],
-  ['peach','Персик','#f97316','#fb7185'],['mint','Мята','#0d9488','#5eead4'],
-];
+// Цвета приложения берутся из выбранного логотипа (js/logo.js): [id, название, акцент, акцент2]
+const PALETTES=LOGOS.map(l=>[l[0],l[1],l[9],l[10]]);
 const ACCENTS=PALETTES.map(p=>[p[2],p[1]]); // для старого кода
 const WALLS=[
   ['dots','Точки',''],
@@ -19,16 +16,32 @@ const WALLS=[
 const ls={get:k=>{try{return localStorage.getItem(k)}catch{return null}},set:(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch{}}};
 
 function curPalette(){
-  const id=ls.get('nit-pal');let p=PALETTES.find(x=>x[0]===id);
-  if(!p){const old=ls.get('nit-accent');p=PALETTES.find(x=>x[2]===old)||PALETTES[0]}
-  return p;
+  const id=ls.get('nit-pal');return PALETTES.find(x=>x[0]===id)||PALETTES.find(x=>x[0]===LOGO_DEFAULT);
 }
 function applyAccent(){
   const [,,c,c2]=curPalette(),r=document.documentElement.style;
   r.setProperty('--acc',c);r.setProperty('--me',c);r.setProperty('--acc2',c2);
   r.setProperty('--acc-hover','color-mix(in srgb,'+c+' 85%,#000)');
   r.setProperty('--acc-soft','color-mix(in srgb,'+c+' 15%,var(--surface))');
-  document.querySelector('meta[name=theme-color]')?.setAttribute('content',c);
+  applyLogo(curPalette()[0]);
+}
+// Логотип везде: в приложении (символ #i-logo), вкладка браузера, иконка для экрана «Домой»
+function applyLogo(id){
+  const L=logoById(id),svg=logoSVG(L[0],'round','cur');
+  const sym=document.getElementById('i-logo');if(sym)sym.innerHTML=svg.slice(svg.indexOf('>')+1,svg.lastIndexOf('</svg>'));
+  document.querySelector('meta[name=theme-color]')?.setAttribute('content',L[3]);
+  const abs=f=>new URL(f,location.href).href;
+  const link=(rel,href)=>{let l=document.querySelector('link[rel="'+rel+'"]');if(!l){l=document.createElement('link');l.rel=rel;document.head.append(l)}l.href=href};
+  if(typeof updateBadge==='function')updateBadge();else link('icon',abs('icons/logo/'+L[0]+'-192.png'));
+  link('apple-touch-icon',abs('icons/logo/'+L[0]+'-180.png'));
+  // Манифест с иконками выбранного цвета — Android/Chrome возьмут их при установке на экран
+  if(location.protocol.startsWith('http')){
+    const mf={name:'Нить',short_name:'Нить',lang:'ru',start_url:abs('./'),scope:abs('./'),display:'standalone',background_color:L[3],theme_color:L[3],
+      icons:[{src:abs('icons/logo/'+L[0]+'-192.png'),sizes:'192x192',type:'image/png',purpose:'any'},{src:abs('icons/logo/'+L[0]+'-512.png'),sizes:'512x512',type:'image/png',purpose:'any'},{src:abs('icons/logo/'+L[0]+'-mask.png'),sizes:'512x512',type:'image/png',purpose:'maskable'}]};
+    const old=document.querySelector('link[rel="manifest"]');
+    if(old&&L[0]!==LOGO_DEFAULT){if(old.dataset.blob)URL.revokeObjectURL(old.href);old.href=URL.createObjectURL(new Blob([JSON.stringify(mf)],{type:'application/manifest+json'}));old.dataset.blob=1}
+    else if(old&&L[0]===LOGO_DEFAULT&&old.dataset.blob){URL.revokeObjectURL(old.href);old.href='manifest.webmanifest';delete old.dataset.blob}
+  }
 }
 // Размер текста, скругление сообщений, анимации
 function applyLook(){
@@ -48,12 +61,17 @@ function applyWall(){
 applyAccent();applyWall();
 
 function appearanceSection(s){
-  const ac=el('div','fld');ac.append(el('span',null,'Цветовая палитра'));
-  const row1=el('div','palettes');const curP=curPalette()[0];
-  PALETTES.forEach(([id,t,c,c2])=>{const b=el('button','pal'+(id===curP?' on':''));
-    const dot=el('i');dot.style.background='linear-gradient(135deg,'+c2+','+c+')';b.append(dot,el('span',null,t));
-    b.onclick=e=>{e.preventDefault();withFade(()=>{ls.set('nit-pal',id);applyAccent()});[...row1.children].forEach(x=>x.classList.remove('on'));b.classList.add('on')};row1.append(b)});
-  ac.append(row1);s.append(ac);
+  const ac=el('div','fld');ac.append(el('span',null,'Логотип и цвета'));
+  const row1=el('div','logos');const curP=curPalette()[0];
+  LOGOS.forEach(([id,t],i)=>{const b=el('button','lgo'+(id===curP?' on':''));
+    const ic=el('span','lgo-ic');ic.innerHTML=logoSVG(id,'round','pick'+i);b.append(ic,el('span',null,t));
+    b.onclick=e=>{e.preventDefault();withFade(()=>{ls.set('nit-pal',id);applyAccent()});[...row1.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');
+      if(id!==LOGO_DEFAULT||ls.get('nit-pal-tip')!=='1'){ls.set('nit-pal-tip','1');toast('Логотип и цвета «'+t+'» включены')}};row1.append(b)});
+  ac.append(row1);
+  const ios=/iPhone|iPad|iPod/.test(navigator.userAgent);
+  ac.append(el('p','sm lgo-note',ios?'Иконка на экране «Домой»: iPhone запоминает её при добавлении. Чтобы она сменилась — удалите «Нить» с экрана «Домой» и добавьте снова через «Поделиться» → «На экран „Домой“».'
+    :'Иконка на экране телефона обновится при следующей установке «Нити» на главный экран (Android иногда меняет её сам через какое-то время).'));
+  s.append(ac);
 
   const wl=el('div','fld');wl.append(el('span',null,'Обои чата'));
   const row2=el('div','walls');const curW=ls.get('nit-wall')||'dots';

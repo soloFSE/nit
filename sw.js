@@ -1,7 +1,7 @@
 // Service worker «Нити»: держит копию оболочки сайта, чтобы приложение открывалось быстро
 // и устанавливалось на главный экран. Данные чатов не кэшируются — они всегда свежие из Supabase.
-const CACHE='nit-v27';
-const SHELL=['./','index.html','css/style.css','manifest.webmanifest','icons/icon-192.png','icons/icon-512.png'];
+const CACHE='nit-v28';
+const SHELL=['./','index.html','css/style.css','manifest.webmanifest','icons/icon-192.png','icons/icon-512.png','icons/apple-touch-icon.png','js/logo.js'];
 
 self.addEventListener('install',e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()));

@@ -692,3 +692,21 @@ svg.ii.love{color:#ff4d6d;fill:#ff4d6d;stroke:#ff4d6d;margin:0 0 0 .1em}
 .t-cert b{font-size:19px;line-height:1.2}
 .t-cert p{font-size:13px;opacity:.9;margin:2px 0 0}
 .t-cert-by{margin-top:8px;font-size:11.5px;opacity:.75}
+
+/* ============ Логотип и цвета (js/logo.js) ============ */
+.logo{border-radius:22%}
+.splash .logo{width:84px;height:84px;filter:drop-shadow(0 10px 28px color-mix(in srgb,var(--acc) 45%,transparent))}
+/* Узоры обоев и фон чата чуть окрашены в цвет выбранного логотипа */
+@supports (background:color-mix(in srgb,red,blue)){
+  :root{--doodle:color-mix(in srgb,var(--acc) 9%,transparent);--chat-bg:color-mix(in srgb,var(--acc) 5%,#f6f3ef)}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--chat-bg:color-mix(in srgb,var(--acc) 6%,#0c0d11);--side:color-mix(in srgb,var(--acc) 3%,#121317)}}
+  :root[data-theme="dark"]{--chat-bg:color-mix(in srgb,var(--acc) 6%,#0c0d11);--side:color-mix(in srgb,var(--acc) 3%,#121317)}
+}
+.logos{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:8px}
+.lgo{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 4px;border-radius:16px;background:none;color:var(--text);font-size:11.5px;font-weight:600;line-height:1.2;text-align:center}
+.lgo-ic{width:58px;height:58px;display:block;border-radius:22%;transition:transform .2s var(--spring),box-shadow .2s}
+.lgo-ic svg{width:100%;height:100%;display:block}
+.lgo:active .lgo-ic{transform:scale(.92)}
+.lgo.on{background:var(--surface2)}
+.lgo.on .lgo-ic{box-shadow:0 0 0 2.5px var(--surface),0 0 0 4.5px var(--acc)}
+.lgo-note{margin-top:8px}
