@@ -43,6 +43,7 @@ function render(){
   $('tabF').classList.toggle('has',Object.keys(unread).some(k=>unread[k]&&!isGroupKey(k))||inc.length>0);
   renderGroups();
   if(typeof scheduleChats==='function')scheduleChats();
+  if(typeof refreshPeer==='function')refreshPeer();
 }
 
 // Принять или отклонить заявку: сразу показываем результат, не дожидаясь опроса

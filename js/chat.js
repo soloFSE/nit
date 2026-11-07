@@ -159,7 +159,7 @@ async function openChat(id){
   if(giGid&&'g:'+giGid!==id)closeGroupInfo();
   $('app').classList.add('open');$('log').innerHTML='';$('log').append(skeleton());$('log').classList.remove('enter');render();
   newBelow=0;stick=true;updateDown();
-  loadDraft(id);updateTtlChip();
+  loadDraft(id);updateTtlChip();loadChatTtl(id).catch(()=>{});
   let data,error;
   for(let attempt=0;attempt<3;attempt++){
     ({data,error}=await chatQuery(id).order('id',{ascending:false}).limit(PAGE));

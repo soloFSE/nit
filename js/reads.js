@@ -85,7 +85,7 @@ function ping(){
 }
 function notify(m){
   const k=chatKey(m);if(cur===k&&!document.hidden)return;
-  if(isBlocked(m.sender)||m.body?.startsWith('::gev:'))return;
+  if(isBlocked(m.sender)||/^::(gev|ttl):/.test(m.body||''))return;
   const sys=document.hidden&&notifyOn()&&('Notification' in window)&&Notification.permission==='granted';
   // Свёрнуто — системное уведомление со звуком телефона; открыто — свой короткий звук и лёгкая вибрация
   if(!sys&&soundOn()){ping();if(!document.hidden&&navigator.userActivation?.hasBeenActive)navigator.vibrate?.(40)}

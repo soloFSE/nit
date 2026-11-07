@@ -126,28 +126,7 @@ function squareJpeg(f,size){return new Promise((ok,no)=>{
   i.onerror=()=>no(new Error('Это не картинка'));i.src=URL.createObjectURL(f);
 })}
 
-// ---------- Чужой профиль ----------
-async function showProfile(id){
-  await loadProfiles([id],true);
-  const p=prof[id]||{};
-  openModal(s=>{
-    const top=el('div','sheet-top');top.append(el('span'));
-    const x=el('button','icon','✕');x.onclick=closeModal;top.append(x);s.append(top);
-    const c=el('div','card');c.append(avatar(id,112));
-    c.append(el('h3',null,nameOf(id)),el('div','sm','@'+(p.username||people[id]||'?')));
-    if(p.status)c.append(el('div','status-tag',p.status));
-    if(p.bio)c.append(el('p','bio',p.bio));
-    s.append(c);
-    const isFriend=fr.some(f=>f.status==='accepted'&&(f.a===id||f.b===id));
-    if(online.has(id))c.append(el('div','online-tag','в сети'));
-    if(isFriend&&cur!==id){const b=el('button','primary wide','Написать');b.onclick=()=>{closeModal();openChat(id)};s.append(b)}
-    if(id===me)return;
-    const acts=el('div','card-acts');s.append(acts);
-    if(isFriend){const b=el('button','ghost wide','Удалить из друзей');b.onclick=async()=>{if(await removeFriend(id))closeModal()};acts.append(b)}
-    const bb=el('button','ghost danger wide',isBlocked(id)?'Разблокировать':'Заблокировать');
-    bb.onclick=async()=>{if(await(isBlocked(id)?unblockUser(id):blockUser(id)))closeModal()};acts.append(bb);
-  });
-}
+// Чужой профиль — отдельный экран, см. peer.js (showProfile)
 
 // ---------- Тема ----------
 function getTheme(){try{return localStorage.getItem('nit-theme')||'auto'}catch{return 'auto'}}

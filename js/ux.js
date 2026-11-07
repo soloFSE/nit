@@ -163,17 +163,23 @@ $('log').addEventListener('touchend',()=>{clearTimeout(lpT);lpXY=null;setTimeout
 // Высота приложения = видимая часть экрана над клавиатурой; страницу браузер больше не сдвигает.
 (function(){
   const vv=window.visualViewport,root=document.documentElement;
-  let wasStick=true;
+  let wasStick=true,full=innerHeight;
   const fit=()=>{
     const h=vv?vv.height:innerHeight,t=vv?vv.offsetTop:0;
+    if(!document.activeElement?.matches?.('input,textarea'))full=Math.max(full,innerHeight); // высота без клавиатуры
     root.style.setProperty('--app-h',Math.round(h)+'px');
     root.style.setProperty('--vv-top',Math.round(t)+'px'); // iPhone при клавиатуре сдвигает видимую область, а не страницу
+    // Клавиатура открыта — убираем нижний «безопасный отступ» (на iPhone он остаётся и даёт пустую полосу над клавиатурой)
+    root.classList.toggle('kb',full-h>120);
     if(window.scrollY||document.documentElement.scrollTop)window.scrollTo(0,0);
     if(wasStick&&cur)toBottom(false);
   };
-  if(vv){vv.addEventListener('resize',()=>{wasStick=stick;requestAnimationFrame(fit)});vv.addEventListener('scroll',()=>requestAnimationFrame(fit))}
-  window.addEventListener('resize',fit);fit();
-  $('msg').addEventListener('focus',()=>{wasStick=stick;setTimeout(fit,60);setTimeout(fit,350)});
+  // Клавиатура выезжает/уезжает ~300 мс — подгоняем сразу и ещё несколько раз, чтобы не было «съезда» и пустоты
+  const burst=()=>{fit();[60,150,300,500,800].forEach(d=>setTimeout(fit,d))};
+  if(vv){vv.addEventListener('resize',()=>{wasStick=stick;fit()});vv.addEventListener('scroll',fit)}
+  window.addEventListener('resize',fit);window.addEventListener('orientationchange',()=>{full=0;burst()});fit();
+  document.addEventListener('focusin',e=>{if(e.target.matches?.('input,textarea')){wasStick=stick;burst()}});
+  document.addEventListener('focusout',e=>{if(e.target.matches?.('input,textarea'))burst()});
 })();
 // Кнопки рядом с полем ввода не забирают фокус — клавиатура не закрывается и не открывается заново
 ['bs','bv'].forEach(id=>$(id).addEventListener('pointerdown',e=>{if(document.activeElement===$('msg'))e.preventDefault()}));

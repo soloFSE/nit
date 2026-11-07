@@ -73,7 +73,7 @@ async function tick(){
 function setNet(ok){$('net').classList.toggle('hide',!!ok)}
 function onMsg(m){
   if(m.id>lastId)lastId=m.id;
-  const other=chatKey(m),isNew=!seen.has(m.id);seen.add(m.id);noteLast(m);
+  const other=chatKey(m),isNew=!seen.has(m.id);seen.add(m.id);noteLast(m);noteTtl(m);
   if(m.group_id&&!groups[m.group_id])loadGroups(); // нас только что добавили в группу
   if(hidden.has(m.id)||(m.deleted_at&&!nodes[m.id]))return;
   if(m.expires_at&&new Date(m.expires_at)<=new Date())return;

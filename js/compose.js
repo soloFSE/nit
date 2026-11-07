@@ -2,7 +2,7 @@
 // Единая точка отправки — все виды сообщений идут через sendMsg
 async function sendMsg(to,fields,opt={}){
   if(!to)return null;
-  const row={sender:me,...target(to),body:'',...fields,...(opt.noReply?{}:takeReply()),...ttlField(to)};
+  const row={sender:me,...target(to),body:'',...fields,...(opt.noReply?{}:takeReply()),...ttlField(to,fields.body)};
   const {data,error}=await sb.from('messages').insert(row).select().single();
   if(error)throw error;
   seen.add(data.id);noteLast(data);
@@ -86,8 +86,20 @@ document.querySelectorAll('#attach [data-a]').forEach(b=>b.onclick=e=>{
 
 // ---------- Исчезающие сообщения (настройка на чат) ----------
 const TTLS=[[0,'Выключены'],[10,'10 секунд'],[60,'1 минута'],[3600,'1 час'],[86400,'1 день'],[604800,'1 неделя']];
-const ttlOf=k=>{try{return +localStorage.getItem('nit-ttl:'+k)||0}catch{return 0}};
-const ttlField=k=>{const s=ttlOf(k);return s?{expires_at:new Date(Date.now()+s*1000).toISOString()}:{}};
+// Таймер — общая настройка чата: последнее служебное сообщение ::ttl:<секунды>:: в этом чате.
+// Его видят и соблюдают все участники. Исчезают только обычные сообщения, служебные (звонки, ::gev::, сам ::ttl::) — нет.
+let chatTtl={};
+const ttlOf=k=>chatTtl[k]||0;
+const TTL_SKIP=/^::(call|gcall|gev|ttl):/;
+const ttlField=(k,body)=>{const s=ttlOf(k);return s&&!TTL_SKIP.test(body||'')?{expires_at:new Date(Date.now()+s*1000).toISOString()}:{}};
+const ttlName=s=>(TTLS.find(t=>t[0]===s)?.[1]||'').toLowerCase();
+// При открытии чата узнаём текущий таймер (последнее ::ttl:: в чате)
+async function loadChatTtl(k){
+  const {data}=await chatQuery(k).like('body','::ttl:%').order('id',{ascending:false}).limit(1);
+  const m=(data||[])[0];chatTtl[k]=m?+(/^::ttl:(\d+)::$/.exec(m.body)||[])[1]||0:0;
+  if(cur===k)updateTtlChip();
+}
+function noteTtl(m){const x=/^::ttl:(\d+)::$/.exec(m?.body||'');if(!x)return;const k=chatKey(m);chatTtl[k]=+x[1];if(cur===k)updateTtlChip()}
 function updateTtlChip(){
   const s=cur?ttlOf(cur):0;$('ttlchip').classList.toggle('hide',!s);
   $('ttlchip').textContent='⏱ '+(TTLS.find(t=>t[0]===s)?.[1]||'');
@@ -95,13 +107,21 @@ function updateTtlChip(){
 $('ttlchip').onclick=()=>openTtlMenu();
 function openTtlMenu(){
   if(!cur)return;
+  if(isGroupKey(cur)&&!canDo(gidOf(cur),'edit')){toast('Таймер в этой группе меняют только админы');return}
   openModal(s=>{
     const top=el('div','sheet-top');top.append(el('h3',null,'Исчезающие сообщения'));const x=el('button','icon','✕');x.onclick=closeModal;top.append(x);s.append(top);
-    s.append(el('p','sm','Новые сообщения в этом чате будут удаляться у всех через выбранное время после отправки.'));
-    const now=ttlOf(cur);
-    TTLS.forEach(([v,t])=>{const b=el('button','opt'+(v===now?' on':''),t);b.onclick=()=>{try{v?localStorage.setItem('nit-ttl:'+cur,v):localStorage.removeItem('nit-ttl:'+cur)}catch{}updateTtlChip();closeModal()};s.append(b)});
+    s.append(el('p','sm','Новые сообщения в этом чате будут удаляться у всех через выбранное время после отправки. Настройка общая — её видят все участники. Записи о звонках и служебные сообщения не удаляются.'));
+    const now=ttlOf(cur),k=cur;
+    TTLS.forEach(([v,t])=>{const b=el('button','opt'+(v===now?' on':''),t);b.onclick=async()=>{
+      closeModal();if(v===now)return;
+      try{await sendMsg(k,{body:'::ttl:'+v+'::'},{noReply:true});chatTtl[k]=v;updateTtlChip()}catch(e){toast('Не удалось: '+e.message)}};s.append(b)});
   });
 }
+// Служебная строка в чате: «Вы включили исчезающие сообщения · 1 день»
+SPECIAL.push({re:/^::ttl:(\d+)::$/,cls:'gev',forward:false,
+  preview:x=>+x[1]?'⏱ Исчезающие сообщения: '+ttlName(+x[1]):'⏱ Исчезающие сообщения выключены',
+  render:(m,d,x)=>{const s=+x[1],who=m.sender===me?'Вы':nameOf(m.sender);
+    d.append(el('span','gev-t',s?'⏱ '+who+' '+(m.sender===me?'включили':'включил(а)')+' исчезающие сообщения: '+ttlName(s):'⏱ '+who+' '+(m.sender===me?'выключили':'выключил(а)')+' исчезающие сообщения'))}});
 function ttlLeft(exp){
   const s=Math.max(0,Math.round((new Date(exp)-Date.now())/1000));
   return s>=86400?Math.round(s/86400)+' д':s>=3600?Math.round(s/3600)+' ч':s>=60?Math.round(s/60)+' мин':s+' с';

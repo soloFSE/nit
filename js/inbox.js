@@ -120,18 +120,11 @@ function stashNew(){ // вернуть блок на место до того, �
   const b=$('newbox');if(!newHome||b.parentNode===newHome)return;
   newHome.insertBefore(b,newNext&&newNext.parentNode===newHome?newNext:null);b.classList.add('hide');
 }
+// ✎ и плавающая кнопка открывают окно «Новый чат» (newchat.js); toggleNew(false) — закрыть его
 function toggleNew(on){
-  const b=$('newbox'),m=$('modal');
-  if(!newHome){newHome=b.parentNode;newNext=b.nextSibling}
-  const open=b.parentNode!==newHome&&!m.classList.contains('hide')&&!m.classList.contains('closing');
-  on=on??!open;
-  if(!on){if(open)closeModal();return}
-  openModal(s=>{
-    const top=el('div','sheet-top'),x=el('button','icon','✕');x.onclick=closeModal;
-    top.append(el('h3',null,'Новый чат'),x);
-    b.classList.remove('hide');s.append(top,b);
-  });
-  if(!matchMedia('(pointer:coarse)').matches)setTimeout(()=>$('find').focus(),80);
+  const open=!$('modal').classList.contains('hide')&&$('sheet').classList.contains('nc-sheet');
+  if(on===false||(on==null&&open)){if(open)closeModal();return}
+  openNewChat();
 }
 $('find').addEventListener('keydown',e=>{if(e.key==='Enter')$('add').click()});
 $('newchat').onclick=()=>toggleNew();

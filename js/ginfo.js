@@ -9,7 +9,7 @@ const GEV={add:'добавил(а)',kick:'удалил(а)',admin:'назнач�
   edit1:'разрешил(а) менять данные группы только админам',edit0:'разрешил(а) всем менять данные группы',
   add1:'разрешил(а) добавлять участников только админам',add0:'разрешил(а) всем добавлять участников'};
 const whoName=u=>u===me?'Вы':nameOf(u);
-function gevText(m,x){const verb=GEV[x[1]]||x[1],u=x[2];return whoName(m.sender)+' '+verb+(u?' '+(u===me?'вас':nameOf(u)):'')}
+function gevText(m,x){const v0=GEV[x[1]]||x[1],verb=m.sender===me?v0.replace(/л\(а\)/g,'ли'):v0,u=x[2];return whoName(m.sender)+' '+verb+(u?' '+(u===me?'вас':nameOf(u)):'')}
 SPECIAL.push({re:/^::gev:([a-z0-9]+):?([0-9a-zA-Z-]*)::$/,cls:'gev',forward:false,
   preview:x=>'ℹ️ '+(GEV[x[1]]?'Изменения в группе':''),
   render:(m,d,x)=>{d.append(el('span','gev-t',gevText(m,x)))}});

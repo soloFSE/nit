@@ -31,7 +31,7 @@ window.__DB=DB;let seq=100;
 function cond(r,s){ // "col.op.val" или and(...)
   if(s.startsWith('and(')){return split(s.slice(4,-1)).every(x=>cond(r,x))}
   const [c,op,...v]=s.split('.');const val=v.join('.');
-  const v2=val.replace(/^"|"$/g,'');if(op==='eq')return String(r[c])===v2;if(op==='gt')return r[c]!=null&&(typeof r[c]==='number'?r[c]>+v2:r[c]>v2);return false;
+  const v2=val.replace(/^"|"$/g,'');if(op==='eq')return String(r[c])===v2;if(op==='gt')return r[c]!=null&&(typeof r[c]==='number'?r[c]>+v2:r[c]>v2);if(op==='ilike'||op==='like')return likeRe(v2,op==='ilike'?'i':'').test(r[c]||'');return false;
 }
 function split(s){const o=[];let d=0,b='';for(const ch of s){if(ch==='('){d++}if(ch===')'){d--}if(ch===','&&!d){o.push(b);b=''}else b+=ch}if(b)o.push(b);return o}
 const esc=x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
@@ -66,6 +66,7 @@ class Q{
       return {data:list,error:null};
     }
     if(this.op==='insert'){
+      if(Array.isArray(this.val)){rows=this.val.map(v=>{const r={...v};if(!r.id)r.id=++seq;T.push(r);return r});return {data:rows,error:null}}
       const r={...this.val};if(this.tb==='groups'){r.id='g'+(++seq);r.created_at=new Date().toISOString();T.push(r);DB.group_members.push({group_id:r.id,user_id:r.owner})}
       else{if(!r.id)r.id=++seq;if(this.tb==='messages'){r.created_at=new Date().toISOString();r.deleted_at=null;r.image_path=r.image_path||null;r.group_id=r.group_id||null;r.recipient=r.recipient||null}T.push(r)}
       rows=[r];
