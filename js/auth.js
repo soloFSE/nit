@@ -47,6 +47,7 @@ function tabs(box){
 }
 
 function viewLogin(box){
+  if(typeof accountsOnAuth==='function')accountsOnAuth(box);
   oauthButtons(box);tabs(box);
   const u=fld('Почта или ник','text','you@mail.com',{autocomplete:'username',autocapitalize:'none'});
   const p=fld('Пароль','password','••••••••',{autocomplete:'current-password'});
@@ -205,5 +206,5 @@ let recovering=/type=recovery/.test(location.hash);
   history.replaceState(null,'',location.pathname);
 })();
 
-$('out').onclick=()=>{byUser=true;sb.auth.signOut()};
+$('out').onclick=()=>{byUser=true;if(typeof forgetAccount==='function')forgetAccount(me);sb.auth.signOut()};
 renderAuth();

@@ -13,7 +13,7 @@ if(sb){
   if(hasSaved()||/access_token=/.test(location.hash))showSplash('Подключаюсь…');
   // setTimeout — рекомендация Supabase: запросы к базе прямо внутри этого
   // обработчика могут подвисать, пока библиотека держит блокировку сессии.
-  sb.auth.onAuthStateChange((e,s)=>{ setTimeout(()=>{
+  sb.auth.onAuthStateChange((e,s)=>{ if(s&&typeof rememberAccount==='function')rememberAccount(s); setTimeout(()=>{
     // Перешли по ссылке «сбросить пароль» — сначала новый пароль, потом всё остальное
     if(s?.user&&(e==='PASSWORD_RECOVERY'||recovering)){recovering=true;hideSplash();$('app').classList.add('hide');$('auth').classList.remove('hide');showAuth('newpass');return}
     if(s?.user){safeBoot(s.user);return}
@@ -39,6 +39,7 @@ async function safeBoot(u){
   clearTimeout(retryT);
   try{
     await boot(u);hideSplash();
+    if(typeof rememberProfile==='function')rememberProfile();
     checkUsername().catch(()=>{});
     navigator.storage?.persist?.().catch(()=>{}); // просим браузер не чистить данные сайта (и сохранённый вход)
   }catch(e){
@@ -55,7 +56,7 @@ $('splashOut').onclick=()=>{byUser=true;hideSplash();sb.auth.signOut().catch(()=
 // Если на GitHub обновили не все файлы, части кода не будет — предупреждаем сразу
 (function(){
   const need={'js/files.js':'isFile','js/reads.js':'markRead','js/msgtools.js':'startEdit','js/fun.js':'pollOf','js/appearance.js':'applyWall',
-    'js/calls.js':'startCall','js/gcall.js':'joinGroupCall','js/ux.js':'layoutNode','js/bg.js':'sysNotify','js/ginfo.js':'openGroupInfo','js/account.js':'openAccount','js/inbox.js':'renderChats','js/media.js':'openMediaPicker','js/crop.js':'cropImage','js/mention.js':'linkMentions','js/social.js':'loadBlocks','js/emoji.js':'closeEmoji','js/reactions.js':'loadReactions','js/circle.js':'circleEl',
+    'js/calls.js':'startCall','js/gcall.js':'joinGroupCall','js/ux.js':'layoutNode','js/bg.js':'sysNotify','js/ginfo.js':'openGroupInfo','js/account.js':'openAccount','js/inbox.js':'renderChats','js/media.js':'openMediaPicker','js/crop.js':'cropImage','js/mention.js':'linkMentions','js/settings.js':'openSettings','js/accounts.js':'switchAccount','js/social.js':'loadBlocks','js/emoji.js':'closeEmoji','js/reactions.js':'loadReactions','js/circle.js':'circleEl',
     'js/voice.js':'startRec','js/groups.js':'loadGroups','js/friends.js':'loadFriends','js/profile.js':'loadProfiles','js/compose.js':'sendMsg','js/pwa.js':'installEvt'};
   const miss=Object.entries(need).filter(([,fn])=>{try{return typeof eval(fn)==='undefined'}catch{return true}}).map(([f])=>f);
   if(miss.length){const b=document.createElement('div');b.className='filewarn';

@@ -128,7 +128,7 @@ async function loadGroupMedia(gid,box){
 
 // ---------- Действия с участником (отдельное окошко) ----------
 function memberActions(gid,u){
-  if(u===me){openSettings();return}
+  if(u===me){openProfileEdit();return}
   const role=roleOf(gid,u),admin=isAdminOf(gid),owner=groups[gid]?.owner===me;
   const isFriend=fr.some(f=>f.status==='accepted'&&(f.a===u||f.b===u));
   openModal(s=>{

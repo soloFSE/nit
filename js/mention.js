@@ -64,7 +64,7 @@ function linkMentions(frag){
       if(!id&&!all)continue;
       f.append(document.createTextNode(s.slice(last,at)));
       const a=el('span','mention'+(id===me||all?' me':''),'@'+x[2]);
-      if(id){a.onclick=e=>{e.stopPropagation();id===me?openSettings():showProfile(id)}}
+      if(id){a.onclick=e=>{e.stopPropagation();id===me?openProfileEdit():showProfile(id)}}
       f.append(a);last=at+1+x[2].length;
     }
     if(!last)return;f.append(document.createTextNode(s.slice(last)));t.replaceWith(f);

@@ -50,9 +50,10 @@ function renderMe(){
   const a=$('meAva');a.innerHTML='';a.append(avatar(me,38));
   $('who').textContent=nameOf(me);$('whoNick').textContent='@'+myName;
 }
-$('meBtn').onclick=()=>openSettings();
+$('meBtn').onclick=()=>openSettings(); // окно настроек — settings.js
 
-function openSettings(){
+// Редактирование профиля: фото, имя, описание, статус
+function openProfileEdit(){
   const p=prof[me]||{};let newAva=null,dropAva=false;
   openModal(s=>{
     const top=el('div','sheet-top');top.append(el('h3',null,'Профиль'));
@@ -92,18 +93,7 @@ function openSettings(){
     stl.append(chips);s.append(stl);
     if(profCols>0)stl.append(el('small','sm','Чтобы сохранить статус, запустите supabase/more.sql.'));
 
-    const th=el('div','fld');th.append(el('span',null,'Тема'));
-    const seg=el('div','seg');const th0=getTheme();
-    [['auto','Как в системе'],['light','Светлая'],['dark','Тёмная']].forEach(([v,t])=>{
-      const b=el('button',v===th0?'':'g',t);b.onclick=()=>{setTheme(v);[...seg.children].forEach(c=>c.className='g');b.className=''};seg.append(b)});
-    th.append(seg);s.append(th);
 
-    const acc=el('button','ghost wide acc-btn','🔐 Аккаунт и безопасность');acc.onclick=()=>openAccount();
-    const ah=el('div','fld');ah.append(el('span',null,'Почта, пароль, вход через Google и GitHub'),acc);s.append(ah);
-
-    appearanceSection(s);
-    const nt=el('div','fld');nt.append(el('span',null,'Уведомления'));notifySection(nt);s.append(nt);
-    const bl=el('div','fld');s.append(bl);blockedSection(bl);
     const err=el('p','err');s.append(err);
     if(!profFull)err.textContent='Чтобы сохранять имя, описание и фото, запустите supabase/profile.sql в Supabase.';
     const save=el('button','primary wide','Сохранить');s.append(save);
@@ -121,7 +111,7 @@ function openSettings(){
         const {data,error}=await sb.from('profiles').update(patch).eq('id',me).select(PROFILE_COLS).single();
         if(error)throw error;
         if(old&&old!==data.avatar_path)sb.storage.from('avatars').remove([old]);
-        prof[me]=data;renderMe();render();closeModal();
+        prof[me]=data;renderMe();render();closeModal();refreshSettings?.();
       }catch(e){err.textContent='Не удалось сохранить: '+(e.message||e);save.disabled=false;save.textContent='Сохранить'}
     };
   });
