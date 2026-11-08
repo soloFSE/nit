@@ -1217,3 +1217,6 @@ input,textarea{transition:box-shadow .2s,background-color .2s}
 .tp-empty.big{flex:1;justify-content:center;padding-bottom:90px}
 .tp-ic{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--acc) 14%,transparent);animation:tFloat 3.6s ease-in-out infinite}
 .tp-ic svg{width:48px;height:48px}
+
+/* Анимированные эмодзи на canvas */
+.pem canvas{width:100%!important;height:100%!important;display:block}

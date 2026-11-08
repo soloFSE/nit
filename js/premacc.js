@@ -63,7 +63,7 @@ function pickStatusEmoji(){
     const box=el('div','pr-pick');
     const none=el('button','ghost wide','Убрать (показывать звезду)');none.onclick=async()=>{if(await savePremPrefs('',premMap[me]?.color))openPremium()};box.append(none);
     PREM_PACKS.forEach(p=>{box.append(el('div','prem-h',p.name));const g=el('div','prem-grid');
-      for(let i=0;i<p.n;i++){const b=el('button','prem-it');b.append(premEl(p.id,i));b.onclick=async()=>{if(await savePremPrefs(':'+p.id+i+':',premMap[me]?.color))openPremium()};g.append(b)}
+      for(let i=0;i<p.n;i++){const b=el('button','prem-it');b.append(premEl(p.id,i,'',true));b.onclick=async()=>{if(await savePremPrefs(':'+p.id+i+':',premMap[me]?.color))openPremium()};g.append(b)}
       box.append(g)});
     s.append(box);
   });

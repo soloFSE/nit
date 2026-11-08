@@ -28,22 +28,40 @@ function robotSvg(i){
    +'<circle cx="28" cy="64" r="4" fill="#ff8fab" fill-opacity=".6"/><circle cx="72" cy="64" r="4" fill="#ff8fab" fill-opacity=".6"/></svg>';
 }
 // Элемент одного эмодзи (картинка/видео/svg)
-function premEl(id,n,cls){
+function premEl(id,n,cls,still){
   const p=PREM_PACKS.find(x=>x.id===id);const w=document.createElement('span');w.className='pem'+(cls?' '+cls:'');w.dataset.code=':'+id+n+':';
   if(!p){w.textContent=':'+id+n+':';return w}
   if(p.kind==='svg'){w.innerHTML=robotSvg(n%p.n)}
-  else if(p.ext==='json'){lottieLazy(w,'emoji/'+id+'/'+n+'.json')}
+  else if(p.ext==='json'){lottieLazy(w,'emoji/'+id+'/'+n+'.json',still)}
   else if(p.ext==='webm'){const v=document.createElement('video');v.src='emoji/'+id+'/'+n+'.webm';v.autoplay=v.loop=v.muted=v.playsInline=true;w.append(v)}
   else{const i=document.createElement('img');i.src='emoji/'+id+'/'+n+'.'+p.ext;i.alt='';i.loading='lazy';w.append(i)}
   return w;
 }
-// Анимированные эмодзи (Lottie из .tgs): библиотека грузится при первой надобности, анимация стартует, когда эмодзи видно
+// Анимированные эмодзи (Lottie из .tgs). Чтобы не лагало: рисуем на canvas (легче SVG), анимируем только то, что видно,
+// одновременно играет не больше 10, а в панели эмодзи (режим still) показываем первый кадр и оживляем при наведении/нажатии.
 let lottieP=null;
-const lottieLib=()=>lottieP||(lottieP=new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie_light.min.js';s.onload=()=>ok(window.lottie);s.onerror=()=>{lottieP=null;no()};document.head.append(s)}));
-const lottieIO=new IntersectionObserver(es=>es.forEach(e=>{const w=e.target;if(!e.isIntersecting){w._an?.pause();return}
-  if(w._an){w._an.play();return}if(w._loading)return;w._loading=1;
-  Promise.all([lottieLib(),fetch(w._src).then(r=>r.json())]).then(([L,data])=>{w._an=L.loadAnimation({container:w,renderer:'svg',loop:true,autoplay:true,animationData:data})}).catch(()=>{w._loading=0})}),{threshold:.1});
-function lottieLazy(w,src){w._src=src;lottieIO.observe(w)}
+const lottieLib=()=>lottieP||(lottieP=new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie_canvas.min.js';s.onload=()=>ok(window.lottie);s.onerror=()=>{lottieP=null;no()};document.head.append(s)}));
+const lottieData={},playing=[];
+const getLottieJson=src=>lottieData[src]||(lottieData[src]=fetch(src).then(r=>r.json()));
+function lottiePlay(w){
+  const a=w._an;if(!a)return;const i=playing.indexOf(w);if(i>=0)playing.splice(i,1);playing.push(w);
+  while(playing.length>10){const o=playing.shift();o._an?.pause();if(o._still)o._an?.goToAndStop(0,true)}
+  a.play();
+}
+function lottieStop(w){const a=w._an;if(!a)return;a.pause();if(w._still)a.goToAndStop(0,true);const i=playing.indexOf(w);if(i>=0)playing.splice(i,1)}
+const lottieIO=new IntersectionObserver(es=>es.forEach(e=>{const w=e.target;
+  if(!e.isIntersecting){lottieStop(w);return}
+  if(w._an){if(!w._still)lottiePlay(w);return}
+  if(w._loading)return;w._loading=1;
+  Promise.all([lottieLib(),getLottieJson(w._src)]).then(([L,data])=>{
+    w._an=L.loadAnimation({container:w,renderer:'canvas',loop:true,autoplay:false,animationData:JSON.parse(JSON.stringify(data)),rendererSettings:{clearCanvas:true,progressiveLoad:true}});
+    if(w._still){w._an.addEventListener('DOMLoaded',()=>w._an.goToAndStop(0,true));w._an.goToAndStop(0,true)}else lottiePlay(w);
+  }).catch(()=>{w._loading=0})}),{threshold:.1});
+function lottieLazy(w,src,still){
+  w._src=src;w._still=!!still;lottieIO.observe(w);
+  if(still){const on=()=>lottiePlay(w),off=()=>lottieStop(w);
+    w.addEventListener('pointerenter',on);w.addEventListener('pointerleave',off);w.addEventListener('touchstart',on,{passive:true});w.addEventListener('touchend',()=>setTimeout(off,1200),{passive:true})}
+}
 // Текст сообщения → заменяем :rb7: на картинки (frag — фрагмент с текстовыми узлами)
 function premiumize(frag){
   if(!frag?.childNodes)return frag;
@@ -70,10 +88,10 @@ function buildPremium(force){
     const sec=el('section','prem-sec');secs[p.id]=sec;
     const h=el('div','prem-h');h.append(el('b',null,p.name),el('small',null,String(p.n)));sec.append(h);
     const g=el('div','prem-grid');
-    for(let i=0;i<p.n;i++){const b=el('button','prem-it'+(locked?' lk':''));b.append(premEl(p.id,i));
+    for(let i=0;i<p.n;i++){const b=el('button','prem-it'+(locked?' lk':''));b.append(premEl(p.id,i,'',true));
       b.onclick=()=>{if(locked){openPremium();return}insertAtCursor(':'+p.id+i+': ')};g.append(b)}
     sec.append(g);box.append(sec);
-    const ic=el('button','pk-ic');ic.title=p.name;ic.append(premEl(p.id,0));
+    const ic=el('button','pk-ic');ic.title=p.name;ic.append(premEl(p.id,0,'',true));
     ic.onclick=()=>{box.scrollTo({top:sec.offsetTop-box.offsetTop-(locked?44:0),behavior:'smooth'})};bar.append(ic);
   });
   // подсветка текущего набора по прокрутке
