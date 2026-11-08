@@ -57,55 +57,82 @@ function tkRoster(){
   if(tk.phase==='lobby')tkLobby();
 }
 // ---------- прямое соединение игроков (WebRTC DataChannel) ----------
-// Игроки соединяются друг с другом напрямую (пинг как до соседа), Supabase нужен только чтобы «познакомить» (обмен offer/answer/ice)
-// и как запасной путь: если прямое соединение не вышло (строгий NAT оператора), данные идут через Supabase, а с остальными — напрямую.
+// Цель: чтобы в большинстве случаев игра шла НАПРЯМУЮ между телефонами (низкий пинг, ноль нагрузки на сервер).
+//  • много STUN-серверов (разные компании, в т.ч. российский) + запасной бесплатный TURN-ретранслятор как последний шанс;
+//  • два канала: быстрый ненадёжный (состояние, выстрелы) и надёжный упорядоченный (попадания, убийства, мины, старт);
+//  • сигналы собираются в пачки, ICE перезапускается при обрыве, неудачные соединения пересоздаются с задержкой;
+//  • Supabase — только знакомство игроков и запасной путь; если им пользуемся, шлём реже и пачками.
+const TK_ICE=[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302','stun:stun2.l.google.com:19302','stun:stun.cloudflare.com:3478','stun:global.stun.twilio.com:3478','stun:stun.sipnet.net:3478','stun:stun.stunprotocol.org:3478']},
+  {urls:['turn:openrelay.metered.ca:80','turn:openrelay.metered.ca:443','turn:openrelay.metered.ca:443?transport=tcp'],username:'openrelayproject',credential:'openrelayproject'}];
+const TK_REL=new Set(['hit','h','k','m','mx','x','start','bots']); // эти события не должны теряться
 function p2pLink(selfId,peerId,signal,onMsg,onState){
   if(typeof RTCPeerConnection==='undefined')return null;
   const init=String(selfId)<String(peerId);
-  const pc=new RTCPeerConnection({iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302','stun:stun.cloudflare.com:3478']}]});
-  let dc=null,open=false,pending=[],remote=false;
-  const st=v=>{if(open!==v){open=v;onState&&onState(v)}};
-  const setDc=d=>{dc=d;d.onopen=()=>st(true);d.onclose=()=>st(false);d.onmessage=e=>onMsg(e.data)};
+  const pc=new RTCPeerConnection({iceServers:TK_ICE,iceCandidatePoolSize:4});
+  const dcs={};let open=false,pending=[],remote=false;
+  const api={kind:null};
+  const refresh=()=>{const v=!!dcs.u&&dcs.u.readyState==='open'&&!!dcs.r&&dcs.r.readyState==='open';if(v!==open){open=v;if(v)probe();onState&&onState(v)}};
+  const setDc=d=>{dcs[d.label]=d;d.onopen=refresh;d.onclose=refresh;d.onmessage=e=>onMsg(e.data)};
+  async function probe(){try{const st=await pc.getStats();let pair;st.forEach(r=>{if(r.type==='transport'&&r.selectedCandidatePairId)pair=st.get(r.selectedCandidatePairId)});
+    if(!pair)st.forEach(r=>{if(r.type==='candidate-pair'&&r.nominated&&r.state==='succeeded')pair=r});
+    const lc=pair&&st.get(pair.localCandidateId),rc=pair&&st.get(pair.remoteCandidateId);api.kind=(lc?.candidateType==='relay'||rc?.candidateType==='relay')?'relay':'direct';onState&&onState(open)}catch{}}
   pc.onicecandidate=e=>{if(e.candidate)signal({k:'ice',d:e.candidate})};
   pc.ondatachannel=e=>setDc(e.channel);
-  pc.onconnectionstatechange=()=>{if(['failed','closed','disconnected'].includes(pc.connectionState))st(false)};
+  pc.onconnectionstatechange=()=>{if(['failed','closed'].includes(pc.connectionState)){refresh()}};
+  pc.oniceconnectionstatechange=()=>{ // сеть «моргнула» — пробуем перезапустить ICE (инициатор делает новый offer)
+    if(pc.iceConnectionState==='failed'&&init){pc.createOffer({iceRestart:true}).then(o=>pc.setLocalDescription(o)).then(()=>signal({k:'offer',d:pc.localDescription})).catch(()=>{})}};
   const flush=()=>{remote=true;pending.forEach(c=>pc.addIceCandidate(c).catch(()=>{}));pending=[]};
-  if(init){setDc(pc.createDataChannel('tk',{ordered:false,maxRetransmits:0}));pc.createOffer().then(o=>pc.setLocalDescription(o)).then(()=>signal({k:'offer',d:pc.localDescription})).catch(()=>{})}
-  return {
+  if(init){
+    setDc(pc.createDataChannel('u',{ordered:false,maxRetransmits:0}));setDc(pc.createDataChannel('r',{ordered:true}));
+    pc.createOffer().then(o=>pc.setLocalDescription(o)).then(()=>signal({k:'offer',d:pc.localDescription})).catch(()=>{});
+  }
+  return Object.assign(api,{
     async handle(s){try{
       if(s.k==='offer'){await pc.setRemoteDescription(s.d);flush();const a=await pc.createAnswer();await pc.setLocalDescription(a);signal({k:'answer',d:pc.localDescription})}
       else if(s.k==='answer'){await pc.setRemoteDescription(s.d);flush()}
       else if(s.k==='ice'){remote?pc.addIceCandidate(s.d).catch(()=>{}):pending.push(s.d)}
     }catch{}},
-    send(str){if(open&&dc&&dc.readyState==='open'){try{dc.send(str);return true}catch{}}return false},
-    isOpen:()=>open&&!!dc&&dc.readyState==='open',
-    close(){try{dc?.close();pc.close()}catch{}}
-  };
+    send(str,rel){const d=rel?dcs.r:dcs.u;if(open&&d&&d.readyState==='open'){try{d.send(str);return true}catch{}}return false},
+    isOpen:()=>open,
+    close(){try{Object.values(dcs).forEach(d=>d.close());pc.close()}catch{}}
+  });
 }
-function tkBcast(p){try{tk.ch?.send({type:'broadcast',event:'tk',payload:p})}catch{}}
+function tkBcast(p){try{tk.ch?.send({type:'broadcast',event:'tk',payload:p});tk.srvN=(tk.srvN||0)+1}catch{}}
+// Сигналы (offer/answer/ice) к одному игроку копим 100 мс и шлём одним сообщением — это экономит трафик сервера
+function tkSignal(id){const link=tk.links[id];return s=>{link.sq=link.sq||[];link.sq.push(s);if(!link.st)link.st=setTimeout(()=>{link.st=0;const q=link.sq;link.sq=[];if(tk)tkBcast({t:'rtc',to:id,from:me,s:q})},s.k==='ice'?120:0)}}
 function tkLinkFor(id){
   if(!tk.links)tk.links={};let l=tk.links[id];if(l&&l.dead)l=null;
-  if(!l){try{l=tk.links[id]=p2pLink(me,id,s=>tkBcast({t:'rtc',to:id,from:me,s}),d=>{try{tkNet(JSON.parse(d))}catch{}},()=>tkPing());if(l)l.born=Date.now()}catch{l=null}}
+  if(!l){
+    try{let ref;l=p2pLink(me,id,s=>ref&&tkSignal(id)(s),d=>{try{tkNet(JSON.parse(d))}catch{}},()=>{tkPing();if(tk.phase==='lobby')tkLobby()});
+      if(l){ref=l;l.born=Date.now();l.tries=(tk.tries&&tk.tries[id])||0;tk.links[id]=l;
+        // p2pLink уже мог вызвать signal до присвоения — повторим через tkSignal, если очередь пуста
+      }}catch{l=null}
+  }
   return l;
 }
-function tkLinks(){ // создать/убрать прямые соединения под текущий список игроков
-  if(!tk)return;const ids=tk.roster.filter(x=>x.id!==me).map(x=>x.id);
-  ids.forEach(id=>{const l=tkLinkFor(id);if(l&&!l.isOpen()&&Date.now()-l.born>15000){l.close();delete tk.links[id];tkLinkFor(id)}}); // не вышло за 15 с — пробуем заново
+function tkLinks(){ // создать/убрать/пересоздать прямые соединения под текущий список игроков
+  if(!tk)return;const ids=tk.roster.filter(x=>x.id!==me).map(x=>x.id);if(!tk.tries)tk.tries={};
+  ids.forEach(id=>{const l=tkLinkFor(id);
+    if(l&&!l.isOpen()){const wait=12000+Math.min(3,l.tries)*6000; // не вышло — пробуем заново, каждый раз ждём дольше
+      if(Date.now()-l.born>wait&&l.tries<5){tk.tries[id]=l.tries+1;l.close();delete tk.links[id];tkLinkFor(id)}}});
   Object.keys(tk.links||{}).forEach(id=>{if(!ids.includes(id)){tk.links[id].close();delete tk.links[id]}});
 }
+// Отправка: напрямую всем, кому можно (по надёжному/быстрому каналу), остальным — запасным путём через Supabase (пачками)
 function tkSend(p){
-  const peers=tk.roster.filter(x=>x.id!==me);let direct=[];
-  if(tk.links&&peers.length){const str=JSON.stringify(p);for(const x of peers){const l=tk.links[x.id];if(l&&l.send(str))direct.push(x.id)}}
-  tk.direct=direct.length;tk.allDirect=peers.length>0&&direct.length===peers.length;
-  if(direct.length<peers.length||!peers.length){if(direct.length)p.sk=direct;tkBcast(p)} // остальным — запасным путём через Supabase
+  const peers=tk.roster.filter(x=>x.id!==me),rel=TK_REL.has(p.t);const direct=[];
+  if(tk.links&&peers.length){const str=JSON.stringify(p);for(const x of peers){const l=tk.links[x.id];if(l&&l.send(str,rel))direct.push(x.id)}}
+  tk.direct=direct.length;tk.allDirect=peers.length>0&&direct.length===peers.length;tk.srv=!tk.allDirect;
+  if(!tk.allDirect){if(direct.length)p.sk=direct;(tk.q=tk.q||[]).push(p);if(rel)tkFlush()}
 }
+function tkFlush(){if(!tk||!tk.q||!tk.q.length)return;const q=tk.q;tk.q=[];tkBcast(q.length===1?q[0]:{t:'b',m:q})}
 const tkOwd=id=>Math.min(.4,(tk.rtt[id]||100)/2000); // односторонняя задержка, сек
 
 // ---------- сеть ----------
 function tkNet(p){
   if(!tk||!p)return;
   if(p.sk&&p.sk.includes(me))return; // это уже пришло напрямую
-  if(p.t==='rtc'){if(p.to===me&&p.from){const l=tkLinkFor(p.from);l&&l.handle(p.s)}return}
+  if(p.t==='b'){p.m.forEach(tkNet);return}
+  if(p.t==='rtc'){if(p.to===me&&p.from){const l=tkLinkFor(p.from);if(l)(Array.isArray(p.s)?p.s:[p.s]).forEach(x=>l.handle(x))}return}
   if(p.t==='start'){tkStart(p.seed,p.list);return}
   if(p.t==='bots'){tk.botN=p.n|0;if(tk.phase==='lobby')tkLobby();return}
   if(p.t==='pg'){if(p.id!==me)tkSend({t:'pn',to:p.id,from:me,ts:p.ts});return}
@@ -269,12 +296,15 @@ function tkStep(dt){
   for(let i=tk.parts.length-1;i>=0;i--){const q=tk.parts[i];q.l-=dt;q.x+=q.vx*dt;q.y+=q.vy*dt;q.vx*=.96;q.vy*=.96;if(q.l<=0)tk.parts.splice(i,1)}
   tk.boom=tk.boom.filter(e=>(e.t+=dt)<.7);
   tk.shake=Math.max(0,tk.shake-dt);
-  tk.sendT-=dt;if(tk.sendT<=0){tk.sendT=TK.SEND;if(m)tkSendState(m);if(tk.host)pl.filter(p=>p.bot).forEach(tkSendState)}
-  tk.pingT-=dt;if(tk.pingT<=0){tk.pingT=2;tkSend({t:'pg',id:me,ts:performance.now()})}
+  tk.sendT-=dt;if(tk.sendT<=0){tk.sendT=tk.srv?.1:TK.SEND;if(m)tkSendState(m);if(tk.host)pl.filter(p=>p.bot).forEach(tkSendState)}
+  tk.pingT-=dt;if(tk.pingT<=0){tk.pingT=tk.srv?7:2;tkSend({t:'pg',id:me,ts:performance.now()})}
+  tk.flT=(tk.flT||0)-dt;if(tk.flT<=0){tk.flT=tk.srv?.1:.05;tkFlush()}
+  tk.lkT=(tk.lkT||0)-dt;if(tk.lkT<=0){tk.lkT=3;tkLinks()}
+  tk.cntT=(tk.cntT||0)-dt;if(tk.cntT<=0){tk.cntT=5;tk.srvRate=Math.round(((tk.srvN||0)-(tk.srvN0||0))/5);tk.srvN0=tk.srvN||0;tkPing()}
 }
 function tkSendState(p){
   const k=Math.round(p.x)+','+Math.round(p.y)+','+p.a.toFixed(2)+','+p.ba.toFixed(2)+','+p.hp+','+(p.al?1:0)+','+(p.sh&&p.shT>0?1:0)+','+Math.round(p.vx/30)+','+Math.round(p.vy/30),now=performance.now();
-  if(p.ls===k&&now-p.lsT<300)return;p.ls=k;p.lsT=now; // стоит на месте — только «пульс» раз в 0,3 с
+  if(p.ls===k&&now-p.lsT<(tk.srv?1000:300))return;p.ls=k;p.lsT=now; // стоит на месте — только «пульс» раз в 0,3 с
   tkSend({t:'s',id:p.id,x:Math.round(p.x),y:Math.round(p.y),a:+p.a.toFixed(2),ba:+p.ba.toFixed(2),vx:Math.round(p.vx),vy:Math.round(p.vy),hp:p.hp,al:p.al?1:0,sh:p.sh&&p.shT>0?1:0})}
 // Чужой танк: рисуем на 100 мс в прошлом между двумя снимками; если новых нет — продолжаем по скорости (до 150 мс)
 function tkInterp(p){
@@ -424,7 +454,7 @@ function tkScore(){
   Object.values(tk.players).sort((a,b)=>b.sc-a.sc).forEach(p=>{const c=el('span','tk-chip'+(p.id===me?' me':'')+(p.al?'':' dead'));c.style.setProperty('--c',tkCol(p.hue));c.append(el('i'),el('b',null,p.name.split(' ')[0]),el('em',null,String(p.sc)));box.append(c)});
   box.append(el('small',null,'до '+TK.WIN));
 }
-function tkPing(){const e=$('tkPing');if(!e||!tk)return;const mode=tk.allDirect?' · прямое':(tk.direct?' · частично прямое':'');e.textContent=tk.ping?tk.ping+' мс'+mode:'';e.className='tk-ping'+(tk.ping>220?' bad':tk.ping>110?' mid':'')}
+function tkPing(){const e=$('tkPing');if(!e||!tk)return;const kinds=Object.values(tk.links||{}).filter(l=>l.isOpen()).map(l=>l.kind),relay=kinds.includes('relay'),mode=tk.allDirect?(relay?' · ретранслятор':' · прямое'):(tk.direct?' · частично прямое':(tk.roster.length>1?' · сервер':''));e.textContent=tk.ping?tk.ping+' мс'+mode:'';e.title='Через сервер: '+(tk.srvRate||0)+' сообщ./с';e.className='tk-ping'+(tk.ping>220?' bad':tk.ping>110?' mid':'')}
 
 // ---------- интерфейс ----------
 function tkUI(){
@@ -478,7 +508,7 @@ function tkLobby(){
     if(go.disabled)c.append(el('p','tk-hint','Нужен ещё игрок — позовите друга или добавьте бота'));
   }else c.append(el('p','tk-hint','Ждём, пока хозяин комнаты начнёт игру…'));
   const ex=el('button','ghost','Выйти');ex.onclick=tkClose;row.append(ex);c.append(row);
-  if(tk.roster.length>1)c.append(el('p','tk-hint',tk.direct===tk.roster.length-1&&tk.direct>0?'Прямое соединение установлено — пинг минимальный':'Соединяю напрямую для низкого пинга… (игроки при этом видят IP друг друга)'));
+  if(tk.roster.length>1)c.append(el('p','tk-hint',tk.direct===tk.roster.length-1&&tk.direct>0?'Прямое соединение установлено — пинг минимальный':'Соединяю напрямую для низкого пинга… (при прямой связи игроки видят IP друг друга; в крайнем случае — через ретранслятор)'));
   box.append(c);
 }
 function tkInvite(){
@@ -491,7 +521,7 @@ function tkInvite(){
   });
 }
 function tkClose(){
-  if(!tk)return;cancelAnimationFrame(tk.raf);window.removeEventListener('keydown',tk.kd);window.removeEventListener('keyup',tk.ku);window.removeEventListener('pointerup',tk.pu);
+  if(!tk)return;tkFlush();cancelAnimationFrame(tk.raf);window.removeEventListener('keydown',tk.kd);window.removeEventListener('keyup',tk.ku);window.removeEventListener('pointerup',tk.pu);
   try{Object.values(tk.links||{}).forEach(l=>l.close())}catch{}
   try{tk.ch?.unsubscribe?.();sb.removeChannel?.(tk.ch)}catch{}
   const w=$('tk');w?.classList.remove('in');setTimeout(()=>w?.remove(),220);tk=null;
