@@ -34,7 +34,42 @@ function shortTime(t){
 
 // ---------- Папки ----------
 const FOLDERS=[['all','Все'],['dm','Личные'],['groups','Группы'],['unread','Непрочитанные']];
+// ---------- Закреп и архив (хранится на устройстве и, если есть таблица chat_prefs, в базе — supabase/v4.sql) ----------
+let chatPrefs={};try{chatPrefs=JSON.parse(localStorage.getItem('nit-prefs')||'{}')}catch{}
+let prefsDb=true;
+const isPinned=k=>!!chatPrefs[k]?.p,isArchived=k=>!!chatPrefs[k]?.a;
+function savePrefs(k){
+  try{localStorage.setItem('nit-prefs',JSON.stringify(chatPrefs))}catch{}
+  const p=chatPrefs[k]||{};if(!prefsDb||!me)return;
+  sb.from('chat_prefs').upsert({user_id:me,chat:readKey(k),pinned:!!p.p,archived:!!p.a,pin_at:p.p||null}).then(({error})=>{if(error&&/relation|does not exist|schema cache/i.test(error.message))prefsDb=false});
+}
+async function loadPrefs(){
+  const {data,error}=await sb.from('chat_prefs').select('chat,pinned,archived,pin_at');
+  if(error){prefsDb=false;return}
+  (data||[]).forEach(r=>{const k=keyFromRead(r.chat);if(!k)return;chatPrefs[k]={p:r.pinned?(r.pin_at||1):0,a:r.archived?1:0}});
+  try{localStorage.setItem('nit-prefs',JSON.stringify(chatPrefs))}catch{}scheduleChats();
+}
+function setPref(k,key,on){
+  const p=chatPrefs[k]||(chatPrefs[k]={});
+  if(key==='p'){if(on&&Object.keys(chatPrefs).filter(x=>chatPrefs[x].p).length>=5){toast('Можно закрепить не больше 5 чатов');return}p.p=on?Date.now():0}
+  else{p.a=on?1:0;if(on)p.p=0}
+  savePrefs(k);renderChats();toast(key==='p'?(on?'Чат закреплён':'Чат откреплён'):(on?'Чат в архиве':'Чат возвращён из архива'));
+}
+// Меню чата: долгое нажатие или правая кнопка мыши
+function chatMenu(it){
+  const k=it.k;navigator.vibrate?.(10);
+  openModal(s=>{
+    s.classList.add('cm-sheet');
+    const h=el('div','cm-head');h.append(it.group?groupAvatar(it.g,44):avatar(k,44),el('b',null,it.name));s.append(h);
+    const opt=(ic,t,d,f,cls)=>{const r=giRow(ic,t,d,cls);r.onclick=()=>{closeModal();f()};s.append(r)};
+    if(!isArchived(k))opt('i-pin',isPinned(k)?'Открепить':'Закрепить','Закреплённые чаты всегда сверху (до 5)',()=>setPref(k,'p',!isPinned(k)));
+    opt('i-download',isArchived(k)?'Вернуть из архива':'В архив','Уберёт чат из общего списка',()=>setPref(k,'a',!isArchived(k)));
+    opt('i-chats','Открыть',null,()=>openChat(k));
+  });
+}
 function inFolder(it){
+  if(folder==='archive')return isArchived(it.k);
+  if(isArchived(it.k))return false;
   if(folder==='dm')return !it.group;
   if(folder==='groups')return it.group;
   if(folder==='unread')return (+unread[it.k]||0)>0;
@@ -81,7 +116,12 @@ function chatRow(it){
   if(mentionOf[k])bot.append(el('span','badge at','@'));
   if(n)bot.append(el('span','badge',n>99?'99+':String(n)));
   body.append(top,bot);r.append(body);
-  r.onclick=()=>openChat(k);
+  if(isPinned(k)){const pin=el('span','crow-pin');pin.append(svgI('i-pin'));bot.append(pin)}
+  let lp=0,fired=false;
+  r.onclick=()=>{if(fired){fired=false;return}openChat(k)};
+  r.oncontextmenu=e=>{e.preventDefault();chatMenu(it)};
+  r.addEventListener('touchstart',()=>{fired=false;clearTimeout(lp);lp=setTimeout(()=>{fired=true;chatMenu(it)},480)},{passive:true});
+  ['touchend','touchmove','touchcancel'].forEach(t=>r.addEventListener(t,()=>clearTimeout(lp),{passive:true}));
   return r;
 }
 // Пока чаты грузятся — серые «заглушки» строк вместо пустоты и надписи «Чатов пока нет»
@@ -89,13 +129,17 @@ let chatsReady=false;
 function chatSkeleton(){const f=document.createDocumentFragment();[70,52,64,44,58,48].forEach(w=>{const r=el('div','crow sk-row');r.append(el('span','sk-ava'));const b=el('div','sk-lines');const a=el('i');a.style.width=w+'%';const c=el('i');c.style.width=(w+20)+'%';b.append(a,c);r.append(b);f.append(r)});return f}
 function renderChats(){
   const list=$('list');if(!list||!me)return;
-  if(!chatsReady){if(!list.querySelector('.sk-row')){list.innerHTML='';out.append(chatSkeleton())}return}
+  if(!chatsReady){if(!list.querySelector('.sk-row')){list.innerHTML='';list.append(chatSkeleton())}return}
   const q=($('csearch')?.value||'').trim().toLowerCase();
   const all=chatItems();renderFolders(all);
   let items=all.filter(inFolder);
   if(q)items=items.filter(it=>it.name.toLowerCase().includes(q)||(!it.group&&(people[it.k]||'').includes(q)));
-  items.sort((a,b)=>(lastOf[b.k]?.id||0)-(lastOf[a.k]?.id||0)||a.name.localeCompare(b.name));
+  items.sort((a,b)=>((chatPrefs[b.k]?.p?1:0)-(chatPrefs[a.k]?.p?1:0))||((chatPrefs[b.k]?.p||0)-(chatPrefs[a.k]?.p||0))||(lastOf[b.k]?.id||0)-(lastOf[a.k]?.id||0)||a.name.localeCompare(b.name));
   const out=document.createElement('div');
+  // Архив: строка сверху в общем списке; внутри архива — «назад»
+  const arch=all.filter(it=>isArchived(it.k));
+  if(folder==='archive'){const b=el('button','crow arch-row');b.append(svgI('i-back'),el('b',null,'Архив · '+arch.length));b.onclick=()=>{folder='all';renderChats()};out.append(b)}
+  else if(arch.length&&!q){const b=el('button','crow arch-row');const ic=el('span','arch-ic');ic.append(svgI('i-download'));b.append(ic,el('b',null,'Архив'),el('small',null,String(arch.length)));b.onclick=()=>{folder='archive';renderChats()};out.append(b)}
   items.forEach(it=>out.append(chatRow(it)));
   // Отправленные заявки — внизу, бледно
   if(folder==='all'||folder==='dm'){

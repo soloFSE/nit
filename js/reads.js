@@ -86,12 +86,13 @@ function ping(){
 function notify(m){
   const k=chatKey(m);if(cur===k&&!document.hidden)return;
   if(isBlocked(m.sender)||/^::(gev|ttl):/.test(m.body||''))return;
+  if(quietNow())return; // «Не беспокоить»
   const sys=document.hidden&&notifyOn()&&('Notification' in window)&&Notification.permission==='granted';
   // Свёрнуто — системное уведомление со звуком телефона; открыто — свой короткий звук и лёгкая вибрация
-  if(!sys&&soundOn()){ping();if(!document.hidden&&navigator.userActivation?.hasBeenActive)navigator.vibrate?.(40)}
+  if(!sys&&soundOn()){ping();if(!document.hidden&&vibeOn()&&navigator.userActivation?.hasBeenActive)navigator.vibrate?.(40)}
   if(!sys)return;
   const title=isGroupKey(k)?chatName(k)+' · '+nameOf(m.sender):nameOf(m.sender);
-  sysNotify(title,{body:stripIcons(preview(m)),icon:prof[m.sender]?.avatar_path?avatarUrl(prof[m.sender].avatar_path):undefined,tag:k,chat:k});
+  sysNotify(title,{body:prevOn()?stripIcons(preview(m)):'Новое сообщение',icon:prof[m.sender]?.avatar_path?avatarUrl(prof[m.sender].avatar_path):undefined,tag:k,chat:k});
 }
 // Число непрочитанных во вкладке браузера и на значке
 function updateBadge(){

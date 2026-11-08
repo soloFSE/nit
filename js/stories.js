@@ -132,7 +132,7 @@ async function showStory(){
     const rep=document.createElement('input');rep.placeholder='Ответить '+nameOf(owner).split(' ')[0]+'…';
     rep.onfocus=()=>pauseStory(true);rep.onblur=()=>pauseStory(false);
     const sendR=async()=>{const v=rep.value.trim();if(!v)return;rep.value='';rep.blur();
-      try{await sendMsg(owner,{body:'Ответ на вашу историю'+(s.caption?' «'+s.caption.slice(0,40)+'»':'')+': '+v},{noReply:true});toast('Ответ отправлен в личку')}catch(err){toast('Не удалось: '+err.message)}};
+      try{await sendMsg(owner,{body:'::sr:'+s.id+'::'+v},{noReply:true});toast('Ответ отправлен в личку')}catch(err){toast('Не удалось: '+err.message)}};
     rep.onkeydown=ev=>{if(ev.key==='Enter')sendR()};
     const go=el('button','icon stv-ic');go.append(svgI('i-send'));go.onclick=sendR;
     // Лайк — один раз на историю: отметка хранится в story_views.liked_at (supabase/v3.sql), автор видит, кто лайкнул
@@ -142,7 +142,7 @@ async function showStory(){
       storyLiked.add(s.id);heart.classList.add('liked','pop');navigator.vibrate?.(10);
       const {data,error}=await sb.rpc('like_story',{sid:s.id});
       if(error&&!/function|schema cache/i.test(error.message)){storyLiked.delete(s.id);heart.classList.remove('liked');toast('Не получилось');return}
-      if(error||data!==false)sendMsg(owner,{body:'::slike::'},{noReply:true}).catch(()=>{})};
+      if(error||data!==false)sendMsg(owner,{body:'::sl:'+s.id+'::'},{noReply:true}).catch(()=>{})};
     bot.append(rep,heart,go);
     if(!storySeen.has(s.id)){storySeen.add(s.id);sb.from('story_views').insert({story_id:s.id,viewer:me}).then(()=>{})}
   }
@@ -197,3 +197,33 @@ setInterval(()=>{if(me&&!document.hidden)loadStories()},60000);
 // «Нравится ваша история» — отдельное сообщение с сердцем в стиле иконок
 SPECIAL.push({re:/^::slike::$/,cls:'slike-m',forward:false,preview:()=>PI('i-heart')+'Нравится ваша история',
   render:(m,d)=>{d.append(icoText('i-heart',m.sender===me?'Вам понравилась история':'Нравится ваша история','slike'))}});
+
+// ---------- Ответ на статус и лайк статуса: в сообщении видно, на какой именно статус ----------
+// ::sr:<id истории>::<текст> — ответ, ::sl:<id истории>:: — лайк
+const storyCache={};
+async function storyById(id){
+  const l=stories.find(s=>s.id===id);if(l)return l;
+  if(id in storyCache)return storyCache[id];
+  const {data}=await sb.from('stories').select('*').eq('id',id).maybeSingle();
+  return storyCache[id]=data||null;
+}
+function storyRefCard(id,mine){
+  const c=el('button','sref');c.type='button';
+  const tx=el('span','sref-t');const h=el('b',null,'Статус');tx.append(h);const sub=el('small',null,'загрузка…');tx.append(sub);
+  const th=el('span','sref-th');c.append(tx,th);
+  storyById(id).then(async s=>{
+    if(!s){sub.textContent='Статус уже недоступен';th.classList.add('gone');th.append(svgI('i-circle'));return}
+    sub.textContent=s.caption?s.caption.slice(0,60):(s.kind==='video'?'Видео':'Фото');
+    const u=await storyUrl(s.media_path);if(!u)return;
+    if(s.kind==='video'){const v=document.createElement('video');v.src=u+'#t=0.1';v.muted=true;v.playsInline=true;v.preload='metadata';th.append(v);const p=el('i','sref-play');p.append(svgI('i-play'));th.append(p)}
+    else{const i=document.createElement('img');i.src=u;i.alt='';th.append(i)}
+    c.onclick=e=>{e.stopPropagation();if(stories.some(z=>z.id===id))openStoryViewer(s.owner);else toast('Статус уже исчез')};
+  });
+  return c;
+}
+SPECIAL.push({re:/^::sr:([0-9a-zA-Z-]{1,40})::([\s\S]*)$/,cls:'sref-m',forward:false,
+  preview:x=>PI('i-chats')+'Ответ на статус: '+x[2].slice(0,60),
+  render:(m,d,x)=>{d.append(storyRefCard(x[1],m.sender===me));const t=el('div','sref-text');t.append(document.createTextNode(x[2]));d.append(t)}});
+SPECIAL.push({re:/^::sl:([0-9a-zA-Z-]{1,40})::$/,cls:'sref-m',forward:false,
+  preview:()=>PI('i-heart')+'Нравится ваш статус',
+  render:(m,d,x)=>{d.append(storyRefCard(x[1],m.sender===me));d.append(icoText('i-heart',m.sender===me?'Вам понравился статус':'Нравится ваш статус','slike'))}});

@@ -26,7 +26,7 @@ function richText(t){
     const a=el('a','link',x[0].replace(/^https?:\/\//,'').slice(0,60)+(x[0].length>68?'…':''));
     a.href=x[0];a.target='_blank';a.rel='noopener noreferrer';a.onclick=e=>e.stopPropagation();f.append(a);last=x.index+x[0].length;
   }
-  f.append(document.createTextNode(t.slice(last)));return typeof linkMentions==='function'?linkMentions(f):f;
+  f.append(document.createTextNode(t.slice(last)));return typeof premiumize==='function'?premiumize(typeof linkMentions==='function'?linkMentions(f):f):(typeof linkMentions==='function'?linkMentions(f):f);
 }
 // Превью без сторонних сервисов: YouTube (картинка с самого YouTube) и прямые ссылки на картинки
 function linkPreviews(t){

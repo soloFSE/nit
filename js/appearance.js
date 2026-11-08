@@ -94,17 +94,38 @@ function shrinkTo(f,max,q){return new Promise((ok,no)=>{const i=new Image();i.on
   c.width=Math.round(i.width*k);c.height=Math.round(i.height*k);c.getContext('2d').drawImage(i,0,0,c.width,c.height);c.toBlob(b=>b?ok(b):no(new Error('ошибка')),'image/jpeg',q)};
   i.onerror=()=>no(new Error('это не картинка'));i.src=URL.createObjectURL(f)})}
 
-// Переключатель уведомлений для настроек
+// ---------- Уведомления и звук: настройки хранятся на устройстве ----------
+const lsOn=(k,def=true)=>{const v=ls.get(k);return v==null?def:v!=='0'};
+const vibeOn=()=>lsOn('nit-vibe'),prevOn=()=>lsOn('nit-prev');
+function quietCfg(){try{return {on:false,from:'23:00',to:'08:00',...JSON.parse(ls.get('nit-quiet')||'{}')}}catch{return {on:false,from:'23:00',to:'08:00'}}}
+function quietNow(){const q=quietCfg();if(!q.on)return false;const d=new Date(),n=d.getHours()*60+d.getMinutes(),f=t=>{const [h,m]=t.split(':').map(Number);return h*60+m},a=f(q.from),b=f(q.to);return a<=b?(n>=a&&n<b):(n>=a||n<b)}
+// Переключатель-«тумблер»
+function switchRow(icon,title,sub,on,f,disabled){
+  const r=el('label','sw-row'+(disabled?' off':''));const i=el('span','gi-ic');i.append(svgI(icon));
+  const t=el('span','gi-rt');t.append(el('b',null,title));if(sub)t.append(el('small',null,sub));
+  const c=document.createElement('input');c.type='checkbox';c.className='sw-in';c.checked=!!on;c.disabled=!!disabled;
+  const sw=el('span','sw');sw.append(el('i'));
+  c.onchange=()=>f(c.checked,c);r.append(i,t,c,sw);return r;
+}
 function notifySection(s){
-  const l=el('label','check');const c=document.createElement('input');c.type='checkbox';c.checked=notifyOn()&&('Notification' in window)&&Notification.permission==='granted';
-  c.onchange=async()=>{c.checked=await setNotify(c.checked)};
-  l.append(c,document.createTextNode(' Уведомления о новых сообщениях и звонках, когда приложение свёрнуто'));
-  if(!('Notification' in window)){c.disabled=true}
-  const l2=el('label','check');const c2=document.createElement('input');c2.type='checkbox';c2.checked=soundOn();
-  c2.onchange=()=>{try{localStorage.setItem('nit-sound',c2.checked?'1':'0')}catch{}if(c2.checked)ping()};
-  l2.append(c2,document.createTextNode(' Звук новых сообщений'));
-  s.append(l,l2);
-  if('Notification' in window&&Notification.permission==='denied')s.append(el('p','sm','Уведомления запрещены в настройках браузера для этого сайта — разрешите их там.'));
+  const permOk='Notification' in window,perm=permOk?Notification.permission:'denied';
+  const c1=el('section','gi-card');c1.append(el('div','gi-h','Сообщения'));
+  c1.append(switchRow('i-bell','Уведомления','Когда «Нить» свёрнута'+(perm==='denied'?' · запрещены в браузере':''),notifyOn()&&perm==='granted',async(v,c)=>{c.checked=await setNotify(v)},!permOk));
+  c1.append(switchRow('i-mic','Звук сообщений','Короткий сигнал при новом сообщении',soundOn(),v=>{try{localStorage.setItem('nit-sound',v?'1':'0')}catch{}if(v)ping()}));
+  c1.append(switchRow('i-phone','Вибрация','На телефоне при новом сообщении',vibeOn(),v=>{ls.set('nit-vibe',v?'1':'0');if(v)navigator.vibrate?.(30)}));
+  c1.append(switchRow('i-eye','Показывать текст','Выключите, чтобы в уведомлении было только «Новое сообщение»',prevOn(),v=>ls.set('nit-prev',v?'1':'0')));
+  s.append(c1);
+  if(perm==='denied')s.append(el('p','sm set-note','Уведомления запрещены в настройках браузера для этого сайта — разрешите их там, и переключатель заработает.'));
+  const q=quietCfg();const c2=el('section','gi-card');c2.append(el('div','gi-h','Не беспокоить'));
+  const times=el('div','sw-times'+(q.on?'':' dim'));
+  const mk=(lab,key)=>{const w=el('label','sw-time');w.append(el('span',null,lab));const i=document.createElement('input');i.type='time';i.value=q[key];i.onchange=()=>{const c=quietCfg();c[key]=i.value||c[key];ls.set('nit-quiet',JSON.stringify(c))};w.append(i);return w};
+  times.append(mk('С','from'),mk('До','to'));
+  c2.append(switchRow('i-timer','Тихие часы','Без звука и уведомлений по расписанию',q.on,v=>{const c=quietCfg();c.on=v;ls.set('nit-quiet',JSON.stringify(c));times.classList.toggle('dim',!v)}),times);
+  s.append(c2);
+  const c3=el('section','gi-card');c3.append(el('div','gi-h','Проверка'));
+  const t1=giRow('i-mic','Проверить звук',null);t1.onclick=()=>{ping();navigator.vibrate?.(30)};c3.append(t1);
+  const t2=giRow('i-bell','Тестовое уведомление','Покажем, как оно выглядит',null);t2.onclick=()=>{if(!permOk||Notification.permission!=='granted'){toast('Сначала включите уведомления');return}sysNotify('Нить',{body:prevOn()?'Так выглядит новое сообщение':'Новое сообщение',tag:'test'})};c3.append(t2);
+  s.append(c3);
 }
 
 // Плавная смена оформления (View Transitions, где поддерживается)

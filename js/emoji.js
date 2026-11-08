@@ -99,14 +99,20 @@ async function sendSticker(code){
 SPECIAL.push({re:STICKER_RE,cls:'sticker',preview:()=>'Стикер',render:(m,d,x)=>{
   const i=document.createElement('img');i.className='st-img';i.alt='стикер';i.loading='lazy';i.decoding='async';i.src=stickerUrl(x[1],true);d.append(i)}});
 
-function emojiTab(st){
-  $('emojiTab').classList.toggle('hide',st);$('stickTab').classList.toggle('hide',!st);
-  $('etE').classList.toggle('g',st);$('etS').classList.toggle('g',!st);
-  if(st)buildStickers();else loadPicker().catch(()=>{});
+let emoMode='e';
+function emojiTab(mode){
+  if(mode===true)mode='s';if(mode===false||!mode)mode='e';emoMode=mode;
+  $('emojiTab').classList.toggle('hide',mode!=='e');$('premTab').classList.toggle('hide',mode!=='p');$('stickTab').classList.toggle('hide',mode!=='s');
+  $('etE').classList.toggle('on',mode==='e');$('etP').classList.toggle('on',mode==='p');$('etS').classList.toggle('on',mode==='s');
+  if(mode==='s')buildStickers();else if(mode==='p')buildPremium();else loadPicker().catch(()=>{});
 }
-function openEmoji(){$('emoji').classList.remove('hide');$('be').classList.add('on');emojiTab(!$('stickTab').classList.contains('hide'))}
+function openEmoji(){$('emoji').classList.remove('hide');$('be').classList.add('on');emojiTab(emoMode)}
 function closeEmoji(){$('emoji').classList.add('hide');$('be').classList.remove('on')}
 $('be').onclick=e=>{e.stopPropagation();$('emoji').classList.contains('hide')?openEmoji():closeEmoji()};
-$('etE').onclick=()=>emojiTab(false);$('etS').onclick=()=>emojiTab(true);
+$('etE').onclick=()=>emojiTab('e');$('etP').onclick=()=>emojiTab('p');$('etS').onclick=()=>emojiTab('s');
+// «Стереть»: удаляет символ перед курсором (премиум-эмодзи :rb7: стирается целиком)
+$('etDel').onclick=()=>{const m=$('msg'),s=m.selectionStart??m.value.length,e=m.selectionEnd??s;let a=s;
+  if(s===e){const before=m.value.slice(0,s),t=/:[a-z]{2,6}\d{1,3}: ?$/.exec(before);a=t?s-t[0].length:Math.max(0,s-[...before].slice(-1)[0]?.length||s-1)}
+  m.value=m.value.slice(0,a)+m.value.slice(e);m.setSelectionRange(a,a);m.dispatchEvent(new Event('input'));m.focus()};
 document.addEventListener('click',e=>{if(!$('emoji').classList.contains('hide')&&!e.target.closest('#emoji,#be'))closeEmoji()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeEmoji()});

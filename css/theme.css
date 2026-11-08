@@ -987,3 +987,120 @@ input,textarea{transition:box-shadow .2s,background-color .2s}
 .wn-head span{font-weight:700}
 .wn-head small{margin-left:auto;color:var(--dim)}
 .wn-new{font-style:normal;font-size:10.5px;font-weight:800;text-transform:uppercase;color:#fff;background:var(--acc);padding:2px 7px;border-radius:7px}
+
+/* ============ v4: стикеры и крупные эмодзи — без «коробки» вокруг ============ */
+.m.sticker,.m.big,.m.circle,.m.title-m{background:transparent!important;box-shadow:none!important;border:0!important;outline:0!important;border-radius:0!important;padding:0!important;min-width:0!important}
+.m.sticker::before,.m.big::before,.m.circle::before,.m.sticker::after,.m.big::after{display:none!important}
+.m.sticker .st-img{width:min(160px,46vw);height:min(160px,46vw);display:block;object-fit:contain}
+.m.big{font-size:56px;line-height:1.15;letter-spacing:6px;width:fit-content}
+.m.big small,.m.sticker small{position:static;margin-top:2px}
+.m.sticker.me,.m.big.me{align-self:flex-end}
+.m.sticker.them,.m.big.them{align-self:flex-start}
+
+/* Карточка статуса в ответе/лайке */
+.sref{display:flex;align-items:stretch;gap:10px;width:min(260px,70vw);padding:6px 6px 6px 10px;margin-bottom:6px;border-radius:14px;text-align:left;position:relative;
+  background:color-mix(in srgb,currentColor 10%,transparent);color:inherit;box-shadow:inset 3px 0 0 currentColor;transition:transform .15s var(--ease-out)}
+.sref:active{transform:scale(.98)}
+.sref-t{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.sref-t b{font-size:13px;opacity:.95}
+.sref-t small{font-size:12.5px;opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sref-th{position:relative;flex:none;width:46px;height:58px;border-radius:10px;overflow:hidden;background:rgba(0,0,0,.25);display:grid;place-items:center}
+.sref-th img,.sref-th video{width:100%;height:100%;object-fit:cover;display:block;animation:fade .3s}
+.sref-th.gone svg{width:22px;height:22px;opacity:.6}
+.sref-play{position:absolute;inset:0;display:grid;place-items:center;color:#fff;background:rgba(0,0,0,.2)}
+.sref-play svg{width:18px;height:18px}
+.sref-text{white-space:pre-wrap;word-break:break-word}
+.m.sref-m{min-width:0}
+
+/* Монетка */
+.game .coin{width:92px;height:92px;font-size:0;filter:drop-shadow(0 8px 14px rgba(120,80,0,.35));perspective:300px}
+.game .coin svg{width:100%;height:100%;display:block}
+.game .coin.flip{animation:coinFlip 1.3s cubic-bezier(.3,.7,.3,1)}
+@keyframes coinFlip{0%{transform:translateY(0) rotateY(0)}40%{transform:translateY(-38px) rotateY(900deg)}75%{transform:translateY(0) rotateY(1620deg)}88%{transform:translateY(-8px) rotateY(1710deg)}100%{transform:translateY(0) rotateY(1800deg)}}
+
+/* Закреп и архив */
+.crow-pin{margin-left:auto;color:var(--dim);display:grid;place-items:center}
+.crow-pin svg{width:15px;height:15px;transform:rotate(30deg)}
+.badge+.crow-pin{margin-left:6px}
+.arch-row{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border-radius:18px;background:none;color:var(--text);text-align:left}
+.arch-row b{flex:1;font-size:15px}
+.arch-row small{color:var(--dim);font-weight:700}
+.arch-row>svg{width:22px;height:22px;color:var(--acc)}
+.arch-ic{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--dim) 22%,transparent);color:var(--dim)}
+.arch-ic svg{width:24px;height:24px}
+.sheet.cm-sheet{padding:10px 8px 14px}
+.cm-head{display:flex;align-items:center;gap:12px;padding:8px 10px 12px}
+.cm-head b{font-size:17px}
+
+/* ============ Панель эмодзи как в Telegram: внизу вкладки-иконки ============ */
+.emoji{display:flex;flex-direction:column;gap:0;padding:0;overflow:hidden;width:min(392px,calc(100% - 16px));border-radius:22px;box-shadow:0 18px 50px rgba(0,0,0,.35),0 0 0 1px color-mix(in srgb,var(--line) 70%,transparent);background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(18px)}
+.emoji .emoji-tab,.emoji .prem-tab,.emoji .stick-tab{height:340px;flex:none}
+.emoji .stick-tab,.emoji .prem-tab{overflow-y:auto;padding:8px}
+.emoji emoji-picker{width:100%;height:100%;--background:transparent;--border-color:transparent;--border-size:0;--num-columns:8;--emoji-size:1.65rem;--emoji-padding:.35rem;--category-emoji-size:1.25rem;--indicator-color:var(--acc);--input-border-radius:14px;--input-padding:.5rem .8rem;--outline-color:var(--acc)}
+.etabs{display:flex;align-items:center;gap:4px;padding:6px 8px;border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent);background:color-mix(in srgb,var(--surface2) 70%,transparent)}
+.etabs button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;border-radius:14px;background:none;color:var(--dim);font-size:11px;font-weight:700;transition:color .2s,background .2s,transform .15s var(--spring)}
+.etabs button svg{width:22px;height:22px}
+.etabs button.on{color:var(--acc);background:color-mix(in srgb,var(--acc) 13%,transparent)}
+.etabs button:active{transform:scale(.92)}
+.etabs .etdel{flex:none;width:48px}
+.etabs .etdel span{display:none}
+.prem-tabs{display:flex;gap:6px;overflow-x:auto;padding:0 0 8px;scrollbar-width:none;position:sticky;top:0;background:inherit;z-index:1}
+.prem-pk{flex:none;padding:6px 14px;border-radius:999px;background:var(--surface2);color:var(--text);font-weight:700;font-size:13px;transition:background .2s,color .2s}
+.prem-pk.on{background:var(--acc);color:#fff}
+.prem-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.prem-it{aspect-ratio:1;padding:4px;border-radius:12px;background:none;transition:background .2s,transform .15s var(--spring)}
+.prem-it:hover{background:var(--surface2)}
+.prem-it:active{transform:scale(.88)}
+.pem{display:inline-block;width:1.35em;height:1.35em;vertical-align:-.3em;line-height:0}
+.pem svg,.pem img,.pem video{width:100%;height:100%;display:block;object-fit:contain}
+.prem-it .pem{width:100%;height:100%}
+.m.big .pem{width:1.05em;height:1.05em;vertical-align:-.15em;margin-right:6px}
+.m.big:has(.pem){letter-spacing:0}
+
+.m.game-m .game{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:110px;padding:2px 4px}
+
+/* Тумблеры в настройках */
+.sw-row{display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer;transition:background .2s}
+.sw-row:active{background:var(--surface2)}
+.sw-row.off{opacity:.5;pointer-events:none}
+.sw-row .gi-ic{color:var(--acc)}
+.sw-in{position:absolute;opacity:0;pointer-events:none}
+.sw{position:relative;flex:none;width:46px;height:28px;border-radius:999px;background:color-mix(in srgb,var(--dim) 35%,transparent);transition:background .25s}
+.sw i{position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.3);transition:transform .28s var(--spring)}
+.sw-in:checked+.sw{background:var(--acc)}
+.sw-in:checked+.sw i{transform:translateX(18px)}
+.sw-times{display:flex;gap:10px;padding:0 14px 12px 64px;transition:opacity .25s}
+.sw-times.dim{opacity:.4;pointer-events:none}
+.sw-time{flex:1;display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:14px;background:var(--surface2);font-weight:700;font-size:14px}
+.sw-time input{background:none!important;border:0!important;padding:0!important;flex:1;font-weight:800;color:var(--text);min-width:0}
+.set-note{margin:0 16px 12px;color:var(--dim)}
+
+/* ============ v4: общая полировка ============ */
+/* Отправка: пузырь «вылетает» из поля ввода */
+.m.me.new,.m.me.sending{animation:sendIn .38s var(--spring) both;transform-origin:100% 100%}
+.m.them.new{animation:recvIn .32s var(--ease-out) both;transform-origin:0 100%}
+@keyframes sendIn{from{opacity:0;transform:translate(14px,26px) scale(.86)}to{opacity:1;transform:none}}
+@keyframes recvIn{from{opacity:0;transform:translate(-10px,12px) scale(.94)}to{opacity:1;transform:none}}
+.m.sending{opacity:.75}
+/* Список чатов: закреплённые чуть выделены, плавное нажатие */
+.crow{border-radius:20px}
+.crow:has(.crow-pin):not(.on){background:color-mix(in srgb,var(--acc) 5%,transparent)}
+.crow.on{box-shadow:0 8px 22px color-mix(in srgb,var(--acc) 28%,transparent)}
+.crow b{letter-spacing:-.005em}
+/* Поле ввода и шапка */
+.cbox,.composer .cbox{box-shadow:0 6px 24px rgba(0,0,0,.12),0 0 0 1px color-mix(in srgb,var(--line) 70%,transparent);transition:box-shadow .25s,transform .25s var(--ease-out)}
+.cbox:focus-within{box-shadow:0 10px 30px color-mix(in srgb,var(--acc) 18%,transparent),0 0 0 1.5px color-mix(in srgb,var(--acc) 55%,transparent)}
+#bs,#bv{transition:transform .25s var(--spring),background .25s,box-shadow .25s}
+#bs:active,#bv:active{transform:scale(.88)}
+/* Разделитель дня и «в сети» */
+.day{font-weight:700;letter-spacing:.01em}
+.ava.online::after{animation:onlinePulse 2.6s ease-in-out infinite}
+@keyframes onlinePulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.45)}50%{box-shadow:0 0 0 5px rgba(34,197,94,0)}}
+/* Панели (профиль, настройки, группа): мягче въезд справа */
+.gi{animation:giIn .38s var(--ease-out)}
+/* Скролл и выделение */
+#log,.side-scroll,.gi-scroll{scroll-behavior:auto;-webkit-overflow-scrolling:touch}
+::selection{background:color-mix(in srgb,var(--acc) 30%,transparent)}
+/* Меньше движения */
+.less-motion .m.new,.less-motion .m.sending{animation:none}
+@media (prefers-reduced-motion:reduce){.m.new,.m.sending,.ava.online::after{animation:none!important}}

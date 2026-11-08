@@ -28,7 +28,7 @@ function preview(m){
   const sp=specialOf(m.body);if(sp)return sp.s.preview(sp.x,m);
   const cut=t=>t.length>80?t.slice(0,80)+'…':t;
   if(m.body&&m.image_path&&!isAudio(m.image_path)&&!isCircle(m.image_path))return (isFile(m.image_path)&&!VIDEO_EXT.test(m.image_path)?PI('i-file'):VIDEO_EXT.test(m.image_path)?PI('i-film'):PI('i-image'))+cut(m.body);
-  if(m.body)return cut(m.body);
+  if(m.body)return cut(typeof premPreview==='function'?premPreview(m.body):m.body);
   if(isFile(m.image_path))return VIDEO_EXT.test(m.image_path)?PI('i-film')+'Видео':PI('i-file')+fileName(m.image_path);
   if(isCircle(m.image_path))return PI('i-circle')+'Кружок';
   if(isAudio(m.image_path))return PI('i-mic')+'Голосовое сообщение';
@@ -48,7 +48,7 @@ function draw(m){
   if(m.deleted_at)d.classList.add('del');
   if(sp&&sp.s.cls)d.classList.add(sp.s.cls);
   if(!m.deleted_at&&!isFile(m.image_path)&&isCircle(m.image_path))d.classList.add('circle');
-  if(!m.deleted_at&&!sp&&!m.image_path&&isBigEmoji(m.body))d.classList.add('big');
+  if(!m.deleted_at&&!sp&&!m.image_path&&(isBigEmoji(m.body)||(typeof isPremOnly==='function'&&isPremOnly(m.body))))d.classList.add('big');
 
   // В группе над чужим сообщением — имя отправителя
   if(m.group_id&&m.sender!==me){const w=el('b','who',nameOf(m.sender));w.style.setProperty('--h',hue(m.sender));const tm=typeof titleMini==='function'&&titleMini(m.sender);if(tm)w.append(tm);d.append(w);

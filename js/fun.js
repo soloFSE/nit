@@ -76,13 +76,23 @@ async function sendGame(kind){
     '::ttt::'+JSON.stringify({b:'---------',t:'x',x:me,o:'',w:''});
   try{await sendMsg(cur,{body})}catch(e){alert('Не отправилось: '+e.message)}
 }
+// Монетка: золотая, с рантом и чеканкой. Орёл — корона с крыльями, решка — «1» в лавровом венке
+function coinSvg(heads){
+  const u='cn'+Math.random().toString(36).slice(2,7);
+  const face=heads
+   ?'<path d="M30 56 24 34l11 9 7-14 8 14 7-14 7 14 11-9-6 22z" fill="url(#'+u+'d)" stroke="#8a5a0b" stroke-width="1.6" stroke-linejoin="round"/><circle cx="35" cy="30" r="2.4" fill="#8a5a0b"/><circle cx="50" cy="24" r="2.4" fill="#8a5a0b"/><circle cx="65" cy="30" r="2.4" fill="#8a5a0b"/><path d="M28 62c8 4 36 4 44 0M32 69c6 3 30 3 36 0" fill="none" stroke="#8a5a0b" stroke-width="2.2" stroke-linecap="round"/>'
+   :'<path d="M33 36c-6 6-6 20 2 28M67 36c6 6 6 20-2 28" fill="none" stroke="#8a5a0b" stroke-width="2.4" stroke-linecap="round"/><path d="M29 44c3-1 5 1 5 4M29 53c3-1 5 1 5 4M71 44c-3-1-5 1-5 4M71 53c-3-1-5 1-5 4" fill="none" stroke="#8a5a0b" stroke-width="2" stroke-linecap="round"/><text x="50" y="62" text-anchor="middle" font-family="Manrope,system-ui,sans-serif" font-weight="800" font-size="34" fill="url(#'+u+'d)" stroke="#8a5a0b" stroke-width="1.4">1</text>';
+  return '<svg viewBox="0 0 100 100"><defs><linearGradient id="'+u+'g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff3b0"/><stop offset=".45" stop-color="#f7c531"/><stop offset="1" stop-color="#b9770e"/></linearGradient><linearGradient id="'+u+'d" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe9a0"/><stop offset="1" stop-color="#e0a31a"/></linearGradient></defs>'
+   +'<circle cx="50" cy="50" r="47" fill="url(#'+u+'g)" stroke="#9a6408" stroke-width="2"/><circle cx="50" cy="50" r="41" fill="none" stroke="#9a6408" stroke-opacity=".55" stroke-width="2.2" stroke-dasharray="1.6 3.4" stroke-linecap="round"/><circle cx="50" cy="50" r="35" fill="#f3b82a" fill-opacity=".55" stroke="#9a6408" stroke-opacity=".5" stroke-width="1.4"/>'
+   +face+'<path d="M18 30c6-12 18-20 32-21" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="3" stroke-linecap="round"/></svg>';
+}
 const fresh=m=>Date.now()-new Date(m.created_at)<4000;
 SPECIAL.push({re:/^::dice:([1-6])::$/,cls:'game-m',forward:false,preview:x=>PI('i-dice')+'Кубик: '+x[1],render:(m,d,x)=>{
   const w=el('div','game');const f=el('div','die'+(fresh(m)?' roll':''));f.append(dieSvg(+x[1]));
   w.append(f,el('span',null,'Выпало '+x[1]));d.append(w);
 }});
 SPECIAL.push({re:/^::coin:([01])::$/,cls:'game-m',forward:false,preview:x=>PI('i-coin')+(x[1]==='0'?'Орёл':'Решка'),render:(m,d,x)=>{
-  const w=el('div','game');const cn=el('div','coin'+(fresh(m)?' flip':''));cn.append(svgI(x[1]==='0'?'i-crown':'i-coin'));w.append(cn,el('span',null,x[1]==='0'?'Орёл':'Решка'));d.append(w);
+  const w=el('div','game');const cn=el('div','coin'+(fresh(m)?' flip':''));cn.innerHTML=coinSvg(x[1]==='0');w.append(cn,el('span',null,x[1]==='0'?'Орёл':'Решка'));d.append(w);
 }});
 SPECIAL.push({re:/^::rps:([0-2])::$/,cls:'game-m',forward:false,preview:x=>PI(RPS[x[1]][0])+RPS[x[1]][1],render:(m,d,x)=>{
   const w=el('div','game');const rp=el('div','rps'+(fresh(m)?' shake':''));rp.append(svgI(RPS[x[1]][0]));w.append(rp,el('span',null,RPS[x[1]][1]));d.append(w);

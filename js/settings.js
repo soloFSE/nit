@@ -111,5 +111,5 @@ function setLook(sc){
   [['full','Плавные'],['less','Минимум']].forEach(([v,t])=>{const b=el('button',v===mo?'':'g',t);b.onclick=()=>{ls.set('nit-motion',v);applyLook();[...seg.children].forEach(x=>x.className='g');b.className=''};seg.append(b)});
   c4.append(seg);sc.append(c4);
 }
-function setNotifyPage(sc){const c=el('section','gi-card set-pad');notifySection(c);sc.append(c)}
+function setNotifyPage(sc){notifySection(sc)}
 function setPrivacy(sc){const c=el('section','gi-card set-pad');blockedSection(c);sc.append(c)}

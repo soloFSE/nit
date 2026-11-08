@@ -16,7 +16,7 @@ async function boot(u){
   lastDel=dl?.[0]?.deleted_at||lastDel;
   await loadUnread();
   chatsReady=true;renderChats();$('list').classList.add('appear');setTimeout(()=>$('list').classList.remove('appear'),700);
-  loadLast();loadStories();loadTitles();
+  loadLast();loadStories();loadTitles();loadPrefs();
   try{
     const last=localStorage.getItem('nit-last');
     const ok=last&&(isGroupKey(last)?groups[gidOf(last)]:fr.some(f=>f.status==='accepted'&&(f.a===last||f.b===last)));
