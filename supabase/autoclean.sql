@@ -1,6 +1,6 @@
 -- ============================================================
 -- Автоудаление старых сообщений — чтобы база не засорялась.
--- ВНИМАНИЕ: удаляет сообщения НАВСЕГДА у всех. Срок задаётся в последней строке (сейчас 7 дней).
+-- ВНИМАНИЕ: удаляет сообщения НАВСЕГДА у всех. Срок задаётся в последней строке (сейчас 31 день).
 -- Выполнить один раз: Supabase → SQL Editor → Run. Повторный запуск просто обновит расписание.
 -- ============================================================
 
@@ -24,6 +24,6 @@ revoke all on function public.nit_cleanup(int) from public, anon, authenticated;
 -- Расписание: каждую ночь в 04:00 по UTC (нужно расширение pg_cron: Database → Extensions → pg_cron)
 create extension if not exists pg_cron;
 select cron.unschedule('nit-cleanup') where exists(select 1 from cron.job where jobname = 'nit-cleanup');
-select cron.schedule('nit-cleanup', '0 4 * * *', $$select public.nit_cleanup(7)$$);
+select cron.schedule('nit-cleanup', '0 4 * * *', $$select public.nit_cleanup(31)$$);
 
 select 'autoclean ok' as result;
