@@ -237,7 +237,7 @@ function setHead(k){
   const can=dm||isGroupKey(k);
   $('bcall').classList.toggle('hide',!can);$('bvcall').classList.toggle('hide',!can);
   $('bcall').title=isGroupKey(k)?'Групповой звонок':'Позвонить';$('bvcall').title=isGroupKey(k)?'Групповой видеозвонок':'Видеозвонок';
-  setSub();
+  setSub();if(typeof strHead==='function')strHead();
 }
 
 // Просмотр фото на весь экран: плавно открывается, нажатие или ✕ закрывает, «Скачать» сохраняет файл

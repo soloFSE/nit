@@ -41,6 +41,10 @@ function setMain(sc){
   tile('i-forward','Пригласить',()=>inviteFriend());
   tile('i-gear','Оформление',()=>goSet('look'));
   hero.append(tiles);sc.append(hero);
+  // Моя нить
+  {const n=typeof strEff==='function'?strEff(strMe):0,card=el('section','gi-card sk-card');
+   const row=giRow(yarnEl(n,38),'Моя нить',n?daysWord(n)+' · '+yarnName(n):'Напишите кому-нибудь — и нить начнётся','sk-set');
+   row.onclick=()=>openStreak(null);const ch=el('span','chev');ch.append(svgI('i-back'));row.append(ch);card.append(row);sc.append(card)}
   // Аккаунты на этом устройстве
   const acc=el('section','gi-card');acc.append(el('div','gi-h','Аккаунты'));accountsSection(acc);sc.append(acc);
   const sp=el('section','gi-card prem-card');const pr=setRow('i-gem','Нить Премиум',isPremium(me)?'Подключён '+untilText(premMap[me]):'Эмодзи, звезда у имени, цвет профиля и другое',()=>openPremium(),'pr-set');sp.append(pr);sc.append(sp);

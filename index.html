@@ -120,6 +120,7 @@
   <aside class="side">
     <div class="me-bar">
       <button class="mebtn" id="meBtn" title="Настройки профиля"><span id="meAva"></span><span class="me-txt"><b id="who"></b><small id="whoNick"></small></span></button>
+      <button class="skbtn hide" id="skBtn" title="Моя нить"></button>
       <button class="ghost sm-btn hide" id="install" title="Установить как приложение">Установить</button>
       <button class="icon" id="newchat" title="Новый чат"><svg><use href="#i-pencil"/></svg></button>
       <button class="icon" id="out" title="Выйти"><svg><use href="#i-out"/></svg></button>
@@ -155,6 +156,7 @@
     <header id="head" class="hide">
       <button class="icon" id="back" title="Назад"><svg><use href="#i-back"/></svg></button>
       <button class="peer" id="peer"><span id="cava"></span><span class="peer-txt"><b id="cname"></b><small id="csub"></small></span></button>
+      <button class="cstreak hide" id="cstreak" title="Нить"></button>
       <button class="icon" id="bsearch" title="Поиск по чату"><svg><use href="#i-search"/></svg></button>
       <button class="icon hide" id="bcall" title="Позвонить"><svg><use href="#i-phone"/></svg></button>
       <button class="icon hide" id="bvcall" title="Видеозвонок"><svg><use href="#i-video"/></svg></button>
@@ -203,7 +205,7 @@
       <div class="cbox">
         <button class="icon" id="be" title="Смайлики и стикеры"><svg><use href="#i-smile"/></svg></button>
         <button class="ttlchip hide" id="ttlchip" title="Исчезающие сообщения"></button>
-        <input id="msg" placeholder="Сообщение" autocomplete="off">
+        <textarea id="msg" rows="1" placeholder="Сообщение" autocomplete="off" enterkeyhint="send"></textarea>
         <button class="icon hide" id="vc" title="Отменить запись"><svg><use href="#i-x"/></svg></button>
         <button class="icon" id="bp" title="Вложения"><svg><use href="#i-clip"/></svg></button>
         <input type="file" id="file" multiple hidden>
@@ -318,6 +320,7 @@
 <script src="js/emoji.js"></script>
 <script src="js/premium.js"></script>
 <script src="js/premacc.js"></script>
+<script src="js/streak.js"></script>
 <script src="js/reactions.js"></script>
 <script src="js/msgtools.js"></script>
 <script src="js/fun.js"></script>

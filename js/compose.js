@@ -9,7 +9,7 @@ async function sendMsg(to,fields,opt={}){
     if(/row-level security|policy/i.test(error.message)&&row.recipient){await loadBlocks();applyBlockUI();
       throw new Error(isBlockedBy(row.recipient)?'пользователь ограничил вам сообщения':isBlocked(row.recipient)?'вы заблокировали этого пользователя':'нет доступа к этому чату')}
     throw error}
-  seen.add(data.id);noteLast(data);
+  seen.add(data.id);noteLast(data);if(typeof streakSoon==='function')streakSoon();
   if(cur===to){const e=$('log').querySelector('.empty');if(e)e.remove();opt.pending?.remove();line(data,false,!!opt.pending);markRead()}
   else opt.pending?.remove();
   if(data.body)fxFor(data.body);
@@ -144,5 +144,11 @@ setInterval(()=>{
 },1000);
 
 $('bs').onclick=send;
-$('msg').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}if(e.key==='Escape'){cancelReply();cancelEdit()}};
+// Поле ввода растёт по мере набора (до 6 строк), дальше прокручивается. Enter — отправить (на компьютере), Shift+Enter — новая строка;
+// на телефоне Enter — новая строка, отправка — кнопкой.
+(()=>{const ta=$('msg'),d=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value');
+  const fit=()=>{ta.style.height='auto';const h=Math.min(ta.scrollHeight,150);ta.style.height=Math.max(42,h)+'px';ta.style.overflowY=ta.scrollHeight>150?'auto':'hidden'};
+  Object.defineProperty(ta,'value',{get(){return d.get.call(this)},set(v){d.set.call(this,v);fit()},configurable:true});
+  ta.addEventListener('input',fit);window.fitMsg=fit;fit()})();
+$('msg').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing&&!matchMedia('(pointer:coarse)').matches){e.preventDefault();send()}if(e.key==='Escape'){cancelReply();cancelEdit()}};
 $('back').onclick=closeChat;

@@ -16,7 +16,7 @@ async function boot(u){
   lastDel=dl?.[0]?.deleted_at||lastDel;
   await loadUnread();
   chatsReady=true;renderChats();$('list').classList.add('appear');setTimeout(()=>$('list').classList.remove('appear'),700);
-  loadLast();loadStories();loadTitles();loadPrefs();loadPremium();
+  loadLast();loadStories();loadTitles();loadPrefs();loadPremium();loadStreaks();
   try{
     const last=localStorage.getItem('nit-last');
     const ok=last&&(isGroupKey(last)?groups[gidOf(last)]:fr.some(f=>f.status==='accepted'&&(f.a===last||f.b===last)));
@@ -40,7 +40,7 @@ async function boot(u){
   startCalls();
   startLive();
 }
-function unboot(){clearTimeout(poll);lastOf={};stories=[];storySeen=new Set();titlesOf={};titleById={};amAppAdmin=false;premMap={};poll=null;me=null;cur=null;fr=[];frSig="";groups={};gm={};grSig="";prof={};unread={};blocked=new Set();online=new Set();reacts={};liveCh=null;socialOk=true;myReads={};peerReads={};votes={};seen=new Set();sb.removeAllChannels();$('app').classList.add('hide');$('auth').classList.remove('hide')}
+function unboot(){clearTimeout(poll);lastOf={};stories=[];storySeen=new Set();titlesOf={};titleById={};amAppAdmin=false;premMap={};strMe=null;strPairs={};strPrev=null;poll=null;me=null;cur=null;fr=[];frSig="";groups={};gm={};grSig="";prof={};unread={};blocked=new Set();online=new Set();reacts={};liveCh=null;socialOk=true;myReads={};peerReads={};votes={};seen=new Set();sb.removeAllChannels();$('app').classList.add('hide');$('auth').classList.remove('hide')}
 
 // Пока работают мгновенные обновления (realtime), сервер почти не опрашиваем — это только подстраховка.
 // Если realtime отвалился — опрашиваем чаще. Свёрнутая вкладка опрашивает в 4 раза реже.
@@ -80,8 +80,8 @@ function onMsg(m){
   if(hidden.has(m.id)||(m.deleted_at&&!nodes[m.id]))return;
   if(m.expires_at&&new Date(m.expires_at)<=new Date())return;
   if(other===cur){const e=$('log').querySelector('.empty');if(e)e.remove();line(m);if(document.hidden&&isNew&&m.sender!==me){unread[other]=(+unread[other]||0)+1;updateBadge()}markRead()}
-  else if(isNew&&m.sender!==me&&!m.deleted_at){unread[other]=(+unread[other]||0)+1;render();updateBadge()}
-  if(isNew&&m.sender!==me&&!m.deleted_at){if(other!==cur&&mentionsMe(m)){mentionOf[other]=true;scheduleChats()}else if(other===cur&&!stick&&mentionsMe(m)&&typeof noteMention==='function')noteMention(m);notify(m);fxFor(m.body)}
+  else if(isNew&&m.sender!==me&&!m.deleted_at){if(typeof streakSoon==='function')streakSoon();unread[other]=(+unread[other]||0)+1;render();updateBadge()}
+  if(isNew&&m.sender!==me&&!m.deleted_at){if(typeof streakSoon==='function')streakSoon();if(other!==cur&&mentionsMe(m)){mentionOf[other]=true;scheduleChats()}else if(other===cur&&!stick&&mentionsMe(m)&&typeof noteMention==='function')noteMention(m);notify(m);fxFor(m.body)}
 }
 // Обновить последние сообщения открытого чата (правки, ходы в игре) — запасной путь, если realtime не дошёл
 async function refreshRecent(k){
