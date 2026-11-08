@@ -40,7 +40,7 @@ function renderGamesTab(){
   const box=$('tabGames');if(box.dataset.ready)return;box.dataset.ready='1';
   const top=el('div','tp-top');top.append(el('h2',null,'Мини-игры'));box.append(top);
   const c=el('div','gm-card');const art=el('div','gm-art');art.append(svgI('i-tank'));
-  const t=el('div','gm-t');t.append(el('b',null,'Танки'),el('small',null,'Онлайн-арена на 2–8 игроков: с другом, в группе или с ботами. Кто первым наберёт 7 побед.'));
+  const t=el('div','gm-t');t.append(el('b',null,'Танки'),el('small',null,'Большая онлайн-арена на 2–8 игроков: с другом, в группе или с ботами. Щит, рывок, мины и веер выстрелов.'));
   const row=el('div','gm-btns');
   const mk=el('button','primary','Создать комнату');mk.onclick=()=>openTanks();
   const bt=el('button','ghost','С ботами');bt.onclick=()=>openTanks(null,{bots:2});

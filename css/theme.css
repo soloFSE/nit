@@ -1348,3 +1348,22 @@ body:has(#tk) #viewer{z-index:105}
 .sk-set .gi-ic{width:44px;height:44px}
 
 .cbox #msg{min-height:42px}
+
+/* ============ Танки v2: способности, пинг ============ */
+.tk-ping{align-self:center;padding:3px 9px;border-radius:999px;background:rgba(34,197,94,.22);color:#86efac;font-size:12px;font-weight:800;pointer-events:none}
+.tk-ping:empty{display:none}
+.tk-ping.mid{background:rgba(234,179,8,.22);color:#fde047}
+.tk-ping.bad{background:rgba(239,68,68,.25);color:#fca5a5}
+.tk-abs{position:absolute;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;gap:12px;z-index:3}
+.tk-abs.hide{display:none}
+.tk-ab{position:relative;width:58px;height:58px;padding:0;border-radius:50%;display:grid;place-items:center;color:#fff;background:rgba(30,34,44,.82);box-shadow:inset 0 0 0 2px rgba(255,255,255,.18),0 6px 16px rgba(0,0,0,.4);overflow:hidden;touch-action:none;transition:transform .15s var(--spring),box-shadow .2s}
+.tk-ab svg{width:26px;height:26px;position:relative;z-index:1}
+.tk-ab small{display:none}
+.tk-ab kbd{position:absolute;right:2px;bottom:1px;z-index:2;font:700 10px/1 Manrope,system-ui,sans-serif;color:rgba(255,255,255,.7);background:rgba(0,0,0,.4);padding:2px 4px;border-radius:5px}
+.tk-ab::after{content:"";position:absolute;left:0;right:0;bottom:0;height:var(--p,0%);background:rgba(0,0,0,.62);transition:height .1s linear}
+.tk-ab.rdy{box-shadow:inset 0 0 0 2px #fde68a,0 0 16px rgba(253,224,71,.45)}
+.tk-ab:active{transform:scale(.9)}
+@media (pointer:coarse){
+  .tk-abs{left:auto;right:20px;bottom:calc(196px + env(safe-area-inset-bottom,0px));transform:none;display:grid;grid-template-columns:repeat(4,52px);gap:8px;justify-content:end}
+  .tk-ab{width:52px;height:52px}.tk-ab kbd{display:none}
+}
