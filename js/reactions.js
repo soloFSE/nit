@@ -43,7 +43,11 @@ async function toggleReact(id,e){
 // Полоска быстрых реакций в меню сообщения
 function reactPicker(m){
   const w=el('div','qreact');
-  QUICK.forEach(e=>{const b=el('button',null,e);b.onclick=ev=>{ev.stopPropagation();const d=nodes[m.id];d?.classList.remove('open');d?.querySelector('.acts')?.remove();toggleReact(m.id,e)};w.append(b)});
+  const close=()=>{const d=nodes[m.id];d?.classList.remove('open');d?.querySelector('.acts')?.remove()};
+  QUICK.forEach(e=>{const b=el('button',null,e);b.onclick=ev=>{ev.stopPropagation();close();toggleReact(m.id,e)};w.append(b)});
+  // «+» — любая эмодзи из полной панели
+  const more=el('button','qplus');more.append(svgI('i-plus'));more.title='Другие эмодзи';
+  more.onclick=ev=>{ev.stopPropagation();close();pickAnyEmoji(e=>toggleReact(m.id,e))};w.append(more);
   return w;
 }
 
@@ -85,3 +89,17 @@ function cancelReply(){replyTo=null;$('replybar').classList.add('hide')}
 // Поле reply_to для вставки сообщения (и сбрасываем полоску ответа)
 function takeReply(){if(!replyTo)return {};const r={reply_to:replyTo};cancelReply();return r}
 $('rbX').onclick=cancelReply;
+
+// Окно с полной панелью эмодзи (для реакций): выбранная эмодзи возвращается в f
+async function pickAnyEmoji(f){
+  openModal(s=>{
+    s.classList.add('emo-sheet');
+    const top=el('div','sheet-top');top.append(el('h3',null,'Реакция'));const x=el('button','icon');x.append(svgI('i-x'));x.onclick=closeModal;top.append(x);s.append(top);
+    const box=el('div','emo-box');box.append(el('div','sk-line'),el('div','sk-line short'));s.append(box);
+    Promise.all([import(PICKER_JS),import(PICKER_RU).catch(()=>null)]).then(([,ru])=>{
+      const p=document.createElement('emoji-picker');p.dataSource=PICKER_DATA;p.locale='ru';if(ru?.default)p.i18n=ru.default;
+      p.addEventListener('emoji-click',e=>{closeModal();f(e.detail.unicode.slice(0,16))});
+      box.innerHTML='';box.append(p);
+    }).catch(()=>{box.innerHTML='<p class="hint">Не удалось загрузить эмодзи. Проверьте интернет.</p>'});
+  });
+}

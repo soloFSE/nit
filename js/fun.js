@@ -117,8 +117,6 @@ SPECIAL.push({re:/^::ttt::(\{.*\})$/s,cls:'ttt-m',forward:false,preview:()=>PI('
 // ---------- Анимации на слова ----------
 const FX_WORDS=[
   [/(с\s*д(нём|нем)\s*рождени|\bс\s*др\b|поздравля|\bура+\b|🎉|🥳|🎂)/i,'confetti'],
-  [/(люблю|❤️|💕|💖|сердечк|обнимаю)/i,'hearts'],
-  [/(снег|❄️|☃️|зим[аы]|новым\s*годом|🎄)/i,'snow'],
 ];
 function fxFor(t){if(!t||t.startsWith('::'))return;for(const [re,k] of FX_WORDS)if(re.test(t)){fx(k);return}}
 function fx(kind){

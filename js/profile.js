@@ -47,7 +47,8 @@ function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className
 
 // ---------- Мой профиль ----------
 function renderMe(){
-  const a=$('meAva');a.innerHTML='';a.append(avatar(me,38));
+  const a=$('meAva'),sig=(prof[me]?.avatar_path||'')+'|'+online.has(me)+'|'+nameOf(me);
+  if(a._sig!==sig){a._sig=sig;a.innerHTML='';a.append(avatar(me,38))}
   $('who').textContent=nameOf(me);$('whoNick').textContent='@'+myName;
 }
 $('meBtn').onclick=()=>openSettings(); // окно настроек — settings.js
@@ -65,7 +66,7 @@ function openProfileEdit(){
     const f=document.createElement('input');f.type='file';f.accept='image/*';f.hidden=true;
     pick.onclick=()=>f.click();
     f.onchange=async()=>{const file=f.files[0];f.value='';if(!file)return;
-      try{const b=await cropImage(file,320,true);if(!b)return;newAva=b;dropAva=false;
+      try{const b=await cropImage(file,640,true);if(!b)return;newAva=b;dropAva=false;
         const img=document.createElement('img');img.src=URL.createObjectURL(newAva);
         const sp=el('span','ava');sp.style.setProperty('--s','96px');sp.append(img);holder.innerHTML='';holder.append(sp);
       }catch(e){err.textContent=e.message}};

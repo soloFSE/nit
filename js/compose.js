@@ -51,9 +51,11 @@ async function sendFile(f,to=cur){
     await sendMsg(to,{image_path:path});
   }catch(err){pend?.remove();alert('Не удалось отправить «'+f.name+'»: '+(err.message||err)+(/mime/i.test(err.message||'')?'\nЗапустите supabase/more.sql, чтобы разрешить файлы.':''))}
 }
-function uploadStub(to,label){
+function uploadStub(to,label,file){
   if(cur!==to)return null;
-  const d=el('div','m me pending-up');d.append(el('span','spin'),el('span',null,label));
+  const d=el('div','m me pending-up'+(file?' media':''));
+  if(file&&/^image\//.test(file.type)){const u=URL.createObjectURL(file),i=document.createElement('img');i.className='photo loaded';i.src=u;i.onload=()=>setTimeout(()=>URL.revokeObjectURL(u),30000);d.append(i);d.append(el('span','spin up-spin'))}
+  else d.append(el('span','spin'),el('span',null,label));
   const em=$('log').querySelector('.empty');if(em)em.remove();
   $('log').append(d);$('log').scrollTop=1e9;return d;
 }

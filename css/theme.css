@@ -830,7 +830,7 @@ img.photo:not(.loaded){min-width:min(220px,60vw);min-height:180px;opacity:.001;
   background:linear-gradient(90deg,var(--surface2) 0%,color-mix(in srgb,var(--surface2) 55%,var(--surface)) 50%,var(--surface2) 100%) 0 0/200% 100%;animation:shimmer 1.2s linear infinite}
 .m.media:has(img.photo:not(.loaded)){background:var(--surface2)}
 /* Аватарки проявляются, а не «вспыхивают» */
-.ava img{animation:fade .3s var(--ease-out)}
+.ava img{animation:none}
 /* Новые строки в списке чатов и сообщения — мягкое появление */
 #list.appear .crow:not(.sk-row){animation:rowIn .32s var(--ease-out) both}
 #list.appear .crow:nth-child(2){animation-delay:.03s}#list.appear .crow:nth-child(3){animation-delay:.06s}#list.appear .crow:nth-child(4){animation-delay:.09s}#list.appear .crow:nth-child(n+5){animation-delay:.12s}
@@ -854,3 +854,129 @@ button:active:not(:disabled){transform:scale(.96)}
 /* Меньше движения — по желанию */
 .less-motion .crow,.less-motion .sheet,.less-motion img.photo,.less-motion .ava img{animation:none!important}
 @media (prefers-reduced-motion:reduce){.crow,.sheet,.ava img,.replybar,.pinbar{animation:none!important}}
+
+/* ============ v4: просмотр фото, выбор и редактор фото ============ */
+.viewer{animation:vwIn .25s var(--ease-out);gap:12px}
+.viewer img{max-width:100%;max-height:calc(100% - 70px);width:auto;height:auto;object-fit:contain;border-radius:10px;animation:vwImg .35s var(--spring)}
+.viewer.out{opacity:0;transition:opacity .2s}
+@keyframes vwIn{from{opacity:0}to{opacity:1}}
+@keyframes vwImg{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
+.vw-x{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:12px;background:rgba(255,255,255,.14)!important;color:#fff}
+.vw-dl{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:999px;background:rgba(255,255,255,.16);color:#fff;font-weight:700;backdrop-filter:blur(8px)}
+.vw-dl svg{width:20px;height:20px}
+.vw-dl.busy{opacity:.6;pointer-events:none}
+/* Выбор фото: крупный предпросмотр, лента миниатюр */
+.modal:has(.mp-sheet){padding:0}
+.sheet.mp-sheet{display:flex;flex-direction:column;gap:10px;width:100%;max-width:640px;height:min(94vh,820px);max-height:none;padding:12px 12px calc(12px + env(safe-area-inset-bottom,0px));background:#0c0c10;color:#fff;border-radius:24px;overflow:hidden}
+@media (max-width:760px){.sheet.mp-sheet{height:100%;max-width:none;border-radius:0}}
+.mp-top{display:flex;align-items:center;gap:6px}
+.mp-title{font-weight:800;font-size:16px;margin-left:6px}
+.mp-sp{flex:1}
+.mp-b{color:#fff;background:rgba(255,255,255,.1)!important}
+.mp-edit{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.12);color:#fff;font-weight:700;font-size:14px}
+.mp-edit svg{width:18px;height:18px}
+.mp-stage{flex:1;min-height:0;display:grid;place-items:center;border-radius:18px;overflow:hidden;background:#000}
+.mp-stage img,.mp-stage video{max-width:100%;max-height:100%;object-fit:contain;animation:vwImg .3s var(--ease-out)}
+.mp-strip{display:flex;gap:8px;overflow-x:auto;padding:2px;scrollbar-width:none}
+.mp-strip::-webkit-scrollbar{display:none}
+.mp-th{position:relative;flex:none;width:56px;height:56px;padding:0;border-radius:12px;overflow:hidden;background:#1d1d24;opacity:.6;transition:opacity .2s,transform .2s var(--spring),box-shadow .2s}
+.mp-th img,.mp-th video{width:100%;height:100%;object-fit:cover;display:block}
+.mp-th.on{opacity:1;transform:scale(1.06);box-shadow:0 0 0 2.5px var(--acc)}
+.mp-th.mp-add{display:grid;place-items:center;color:#fff;background:transparent;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.3)}
+.mp-th.mp-add svg{width:22px;height:22px}
+.mp-row input{background:rgba(255,255,255,.1);color:#fff;border:0}
+.mp-row input::placeholder{color:rgba(255,255,255,.5)}
+/* Редактор фото */
+.pe{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;background:#000;color:#fff;opacity:0;transform:scale(.98);transition:opacity .22s,transform .25s var(--ease-out);touch-action:none;user-select:none}
+.pe.in{opacity:1;transform:none}
+.pe-top{display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px}
+.pe-sp{flex:1}
+.pe-b{color:#fff;background:rgba(255,255,255,.12)!important}
+.pe-b:disabled{opacity:.35}
+.pe-done{padding:9px 18px;border-radius:999px;background:var(--acc);color:#fff;font-weight:800}
+.pe-stage{position:relative;flex:1;min-height:0;display:grid;place-items:center;overflow:hidden}
+.pe-view{display:block;touch-action:none;border-radius:4px;box-shadow:0 0 0 1px rgba(255,255,255,.08)}
+.pe-text{position:absolute;transform:translate(-8px,-50%);min-width:120px;max-width:80%;background:rgba(0,0,0,.45)!important;border:0!important;border-radius:10px!important;padding:6px 10px!important;font-size:22px!important;font-weight:800;text-shadow:0 1px 4px #000}
+.pe-opts{display:flex;align-items:center;gap:12px;padding:10px 14px;min-height:56px;overflow-x:auto;scrollbar-width:none;animation:barIn .2s var(--ease-out)}
+.pe-colors{display:flex;gap:10px;flex:none}
+.pe-col{width:28px;height:28px;padding:0;border-radius:50%;box-shadow:inset 0 0 0 2px rgba(255,255,255,.35);transition:transform .2s var(--spring)}
+.pe-col.on{transform:scale(1.25);box-shadow:0 0 0 2px #000,0 0 0 4px #fff}
+.pe-size{flex:1;min-width:90px;accent-color:#fff;background:transparent!important;padding:0!important}
+.pe-chip{display:inline-flex;align-items:center;gap:6px;flex:none;padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.12);color:#fff;font-weight:700;font-size:13.5px}
+.pe-chip svg{width:17px;height:17px}
+.pe-chip.on{background:#fff;color:#000}
+.pe-bar{display:flex;justify-content:space-around;padding:6px 10px calc(12px + env(safe-area-inset-bottom,0px))}
+.pe-t{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 16px;border-radius:14px;color:rgba(255,255,255,.65);font-size:12px;font-weight:700;background:transparent;transition:color .2s,background .2s}
+.pe-t svg{width:24px;height:24px}
+.pe-t.on{color:#fff;background:rgba(255,255,255,.14)}
+.pe-crop{position:absolute;box-shadow:0 0 0 9999px rgba(0,0,0,.55);border:2px solid #fff;touch-action:none;cursor:move}
+.pe-h{position:absolute;width:26px;height:26px;background:transparent;touch-action:none}
+.pe-h::after{content:"";position:absolute;width:18px;height:18px;border:4px solid #fff;border-radius:3px}
+.pe-h.tl{left:-10px;top:-10px}.pe-h.tl::after{left:4px;top:4px;border-right:0;border-bottom:0}
+.pe-h.tr{right:-10px;top:-10px}.pe-h.tr::after{right:4px;top:4px;border-left:0;border-bottom:0}
+.pe-h.bl{left:-10px;bottom:-10px}.pe-h.bl::after{left:4px;bottom:4px;border-right:0;border-top:0}
+.pe-h.br{right:-10px;bottom:-10px}.pe-h.br::after{right:4px;bottom:4px;border-left:0;border-top:0}
+/* Реакции: кнопка «+» и окно с эмодзи */
+.acts .qreact .qplus{display:grid;place-items:center;color:var(--dim)!important}
+.acts .qreact .qplus svg{width:20px;height:20px}
+.sheet.emo-sheet{padding:14px}
+.emo-box emoji-picker{width:100%;height:min(56vh,420px);--background:transparent;--border-size:0}
+/* Свайп влево по своему сообщению — «Сведения» */
+.m.swl::after{content:"";position:absolute;right:-44px;top:50%;width:32px;height:32px;margin-top:-16px;border-radius:50%;opacity:var(--sw,0);transform:scale(var(--sw,0));background:var(--surface2)}
+/* Фото, которое отправляется: сразу в ленте, с крутилкой */
+.m.pending-up.media{position:relative;padding:4px}
+.m.pending-up.media img{opacity:.7;filter:saturate(.8)}
+.up-spin{position:absolute;left:50%;top:50%;margin:-14px 0 0 -14px;width:28px;height:28px}
+
+/* ============ v4: настройки ============ */
+.gi-hero.set-hero{position:relative;overflow:hidden;gap:6px;padding:28px 16px 18px;background:radial-gradient(circle at 50% -10%,color-mix(in srgb,var(--acc) 38%,var(--surface)) 0%,var(--surface) 70%)}
+.set-hero::before{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.1) 50%,transparent 60%);animation:tShine 6s ease-in-out infinite;pointer-events:none}
+.set-sub{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center}
+.set-nick{padding:4px 12px;border-radius:999px;background:color-mix(in srgb,var(--acc) 14%,transparent);color:var(--acc);font-weight:700;font-size:13.5px}
+.set-status{padding:4px 12px;border-radius:999px;background:var(--surface2);font-size:13px;font-weight:600}
+.set-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;margin-top:12px}
+.set-tile{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px;border-radius:16px;background:color-mix(in srgb,var(--surface2) 80%,transparent);color:var(--acc);font-size:12.5px;font-weight:700;backdrop-filter:blur(6px);transition:transform .2s var(--spring),background .2s}
+.set-tile span{color:var(--text)}
+.set-tile svg{width:22px;height:22px}
+.set-tile:active{transform:scale(.94)}
+.set-slogan{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;padding:30px 16px 8px}
+.set-logo{width:68px;height:68px;margin-bottom:12px;border-radius:22%;filter:drop-shadow(0 10px 24px color-mix(in srgb,var(--acc) 40%,transparent));animation:tFloat 4s ease-in-out infinite}
+.set-logo svg{width:100%;height:100%}
+.set-slogan p{margin:0;font-size:22px;font-weight:800;letter-spacing:-.01em}
+.sl-a{color:var(--dim)}
+.sl-b{background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent;font-size:30px!important}
+.sl-c{margin-top:18px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.sl-team{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+.sl-team span{padding:5px 12px;border-radius:999px;background:var(--surface2);font-size:13px;font-weight:700}
+.sl-team span:nth-child(1){animation:rowIn .5s .1s var(--ease-out) both}.sl-team span:nth-child(2){animation:rowIn .5s .18s var(--ease-out) both}
+.sl-team span:nth-child(3){animation:rowIn .5s .26s var(--ease-out) both}.sl-team span:nth-child(4){animation:rowIn .5s .34s var(--ease-out) both}
+.set-ver{margin:14px 0 24px}
+.wn-row{animation:rowIn .35s var(--ease-out) both}
+/* Карточки в панелях выезжают по очереди */
+.gi-scroll>.gi-card,.gi-scroll>.gi-hero{animation:rowIn .4s var(--ease-out) both}
+.gi-scroll>*:nth-child(2){animation-delay:.04s}.gi-scroll>*:nth-child(3){animation-delay:.08s}.gi-scroll>*:nth-child(4){animation-delay:.12s}
+.gi-scroll>*:nth-child(5){animation-delay:.16s}.gi-scroll>*:nth-child(n+6){animation-delay:.2s}
+
+/* ============ v4: больше плавности ============ */
+.gi-row{transition:background .2s,transform .15s var(--ease-out)}
+.gi-row:active{transform:scale(.985);background:var(--surface2)}
+.opt{transition:background .2s,transform .15s var(--ease-out)}
+.opt:active{transform:scale(.98)}
+.fold{transition:background .25s,color .25s,transform .2s var(--spring)}
+.fold:active{transform:scale(.94)}
+.toast{animation:toastIn .3s var(--spring)}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,14px)}to{opacity:1;transform:translate(-50%,0)}}
+.m.new{animation:msgIn .32s var(--ease-out)}
+@keyframes msgIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+.react{transition:transform .2s var(--spring),background .2s}
+.react:active{transform:scale(.9)}
+.acts{animation:popIn .2s var(--spring)}
+input,textarea{transition:box-shadow .2s,background-color .2s}
+.fab{transition:transform .25s var(--spring),box-shadow .25s}
+.fab:active{transform:scale(.9) rotate(-8deg)}
+.gi.closing{transition:transform .26s var(--ease-out),opacity .26s}
+.pane,.side{transition:background-color .35s}
+.less-motion *,.less-motion *::before,.less-motion *::after{animation-duration:.01ms!important;animation-delay:0s!important}
+
+.gi-scroll>*{flex-shrink:0}
+.gi-hero.set-hero{flex:none}

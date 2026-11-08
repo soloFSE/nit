@@ -41,13 +41,14 @@ function inFolder(it){
   return true;
 }
 function renderFolders(items){
-  const box=$('folders');if(!box)return;box.innerHTML='';
+  const box=$('folders');if(!box)return;const tmp=document.createElement('div');
   FOLDERS.forEach(([v,t])=>{
     const n=items.filter(it=>(v==='dm'?!it.group:v==='groups'?it.group:true)&&(+unread[it.k]||0)>0).length;
     const b=el('button','fold'+(folder===v?' on':''));b.append(el('span',null,t));if(n)b.append(el('i',null,n>99?'99+':String(n)));
     b.onclick=()=>{folder=v;try{localStorage.setItem('nit-folder',v)}catch{}renderChats();$('list').scrollIntoView?.({block:'nearest'})};
-    box.append(b);
+    tmp.append(b);
   });
+  if(tmp.innerHTML!==box._html){box._html=tmp.innerHTML;box.replaceChildren(...tmp.childNodes)}
 }
 
 // ---------- Все чаты ----------
@@ -88,29 +89,30 @@ let chatsReady=false;
 function chatSkeleton(){const f=document.createDocumentFragment();[70,52,64,44,58,48].forEach(w=>{const r=el('div','crow sk-row');r.append(el('span','sk-ava'));const b=el('div','sk-lines');const a=el('i');a.style.width=w+'%';const c=el('i');c.style.width=(w+20)+'%';b.append(a,c);r.append(b);f.append(r)});return f}
 function renderChats(){
   const list=$('list');if(!list||!me)return;
-  if(!chatsReady){if(!list.querySelector('.sk-row')){list.innerHTML='';list.append(chatSkeleton())}return}
+  if(!chatsReady){if(!list.querySelector('.sk-row')){list.innerHTML='';out.append(chatSkeleton())}return}
   const q=($('csearch')?.value||'').trim().toLowerCase();
   const all=chatItems();renderFolders(all);
   let items=all.filter(inFolder);
   if(q)items=items.filter(it=>it.name.toLowerCase().includes(q)||(!it.group&&(people[it.k]||'').includes(q)));
   items.sort((a,b)=>(lastOf[b.k]?.id||0)-(lastOf[a.k]?.id||0)||a.name.localeCompare(b.name));
-  const keep=list.scrollTop;list.innerHTML='';
-  items.forEach(it=>list.append(chatRow(it)));
+  const out=document.createElement('div');
+  items.forEach(it=>out.append(chatRow(it)));
   // Отправленные заявки — внизу, бледно
   if(folder==='all'||folder==='dm'){
     fr.filter(f=>f.status==='pending'&&f.a===me).map(f=>f.b).filter(id=>!q||nameOf(id).toLowerCase().includes(q)).forEach(id=>{
       const r=el('div','crow dim');r.append(avatar(id,52));const b=el('div','crow-b');
       const t=el('div','crow-t');t.append(el('b',null,nameOf(id)));const s=el('div','crow-s');s.append(el('span','crow-p','заявка отправлена — ждём ответа'));
-      b.append(t,s);r.append(b);r.onclick=()=>showProfile(id);list.append(r);
+      b.append(t,s);r.append(b);r.onclick=()=>showProfile(id);out.append(r);
     });
   }
-  if(!list.children.length){
+  if(!out.children.length){
     const e=el('div','list-empty');e.append(svgI('i-chats'));
     e.append(el('b',null,q?'Ничего не нашлось':folder==='unread'?'Всё прочитано':folder==='groups'?'Групп пока нет':'Чатов пока нет'));
     if(q)e.append(el('span',null,'Попробуйте другое имя или ник'));else{const hs=el('span');hs.append('Нажмите ',ico('i-pencil'),', чтобы добавить друга или создать группу');e.append(hs)}
-    list.append(e);
+    out.append(e);
   }
-  list.scrollTop=keep;
+  // Заменяем содержимое, только если оно изменилось: иначе при любом событии список «мигал» и дёргался
+  if(out.innerHTML!==list._html||list.querySelector('.sk-row')){const keep=list.scrollTop;list._html=out.innerHTML;list.replaceChildren(...out.childNodes);list.scrollTop=keep}
   $('csx')?.classList.toggle('hide',!q);
 }
 

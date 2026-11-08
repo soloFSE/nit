@@ -25,25 +25,58 @@ function renderSettings(anim){
 }
 function setRow(icon,title,sub,f,cls){const r=giRow(icon,title,sub,cls);r.onclick=f;const ch=el('span','chev');ch.append(svgI('i-back'));r.append(ch);return r}
 
+const NIT_VERSION='3.0',FEEDBACK_URL='https://docs.google.com/document/d/1tv4pkKcjnsUK6MeOT2Gdkgzi2F8Y976j104CjGdnFKk/edit?usp=sharing';
+const WHATS_NEW=[['i-medal','Звания','Витрина как подарки, значок под ником и у имени в группах'],['i-brush','Редактор фото','Рисование, текст и обрезка перед отправкой'],['i-eye','Сведения о сообщении','Свайп влево по своему сообщению: кто прочитал, открыл, прослушал'],['i-heart','Истории','Лайк один раз, видно, кто лайкнул'],['i-user','Смена ника','Можно менять раз в неделю'],['i-bell','Непрочитанные и @','Плашка «Непрочитанные» и быстрый переход к упоминаниям'],['i-star','Плавность','Заглушки вместо резких появлений, больше анимаций']];
 function setMain(sc){
   const p=prof[me]||{};
+  // Шапка: цветной фон под выбранную тему, аватар, имя, ник и быстрые плитки
   const hero=el('section','gi-hero set-hero');
-  const av=avatar(me,104);av.classList.add('zoom');av.onclick=()=>openProfileEdit();
-  hero.append(av,el('h2',null,nameOf(me)),el('small',null,'@'+myName+(p.status?' · '+p.status:'')));
-  const ed=el('button','ghost sm-btn','Изменить профиль');ed.onclick=()=>openProfileEdit();hero.append(ed);
-  sc.append(hero);
+  const av=avatar(me,104);if(p.avatar_path){av.classList.add('zoom');av.onclick=()=>openViewer(avatarUrl(p.avatar_path))}else av.onclick=()=>openProfileEdit();
+  hero.append(av,el('h2',null,nameOf(me)));
+  const sub=el('div','set-sub');const nk=el('button','set-nick','@'+myName);nk.title='Скопировать ник';nk.onclick=()=>{navigator.clipboard?.writeText('@'+myName);toast('Ник скопирован')};sub.append(nk);
+  if(p.status)sub.append(el('span','set-status',p.status));hero.append(sub);
+  const mt=typeof mainTitle==='function'&&mainTitle(me);if(mt)hero.append(titleBadge(mt,'big'));
+  const tiles=el('div','set-tiles');
+  const tile=(ic,t,f)=>{const b=el('button','set-tile');b.append(svgI(ic),el('span',null,t));b.onclick=f;tiles.append(b)};
+  tile('i-pencil','Профиль',()=>openProfileEdit());
+  tile('i-forward','Пригласить',()=>inviteFriend());
+  tile('i-gear','Оформление',()=>goSet('look'));
+  hero.append(tiles);sc.append(hero);
   // Аккаунты на этом устройстве
   const acc=el('section','gi-card');acc.append(el('div','gi-h','Аккаунты'));accountsSection(acc);sc.append(acc);
   const s1=el('section','gi-card');
-  s1.append(setRow('i-gear','Оформление','Тема, цвета, обои, размер текста',()=>goSet('look')));
-  s1.append(setRow('i-bell','Уведомления и звук',null,()=>goSet('notify')));
+  s1.append(setRow('i-gear','Оформление','Тема, логотип и цвета, обои, размер текста',()=>goSet('look')));
+  s1.append(setRow('i-bell','Уведомления и звук','Сообщения, звонки, звуки',()=>goSet('notify')));
   s1.append(setRow('i-user','Конфиденциальность','Заблокированные',()=>goSet('privacy')));
   s1.append(setRow('i-lock','Аккаунт и безопасность','Почта, пароль, Google и GitHub',()=>openAccount()));
   sc.append(s1);
+  // О Нити: что нового, идеи, обновление
+  const s4=el('section','gi-card');s4.append(el('div','gi-h','О «Нити»'));
+  s4.append(setRow('i-star','Что нового','Версия '+NIT_VERSION,()=>openWhatsNew()));
+  s4.append(setRow('i-chats','Идеи и баги','Общий документ — пишите сюда, что улучшить',()=>window.open(FEEDBACK_URL,'_blank','noopener')));
+  s4.append(setRow('i-redial','Обновить приложение','Загрузить свежую версию, если что-то глючит',()=>refreshApp()));
+  sc.append(s4);
   if(typeof installEvt!=='undefined'&&installEvt){const s2=el('section','gi-card');s2.append(setRow('i-download','Установить приложение',null,()=>$('install').click()));sc.append(s2)}
   const s3=el('section','gi-card');const out=giRow('i-out','Выйти из аккаунта',null,'gi-danger');
   out.onclick=()=>{if(confirm('Выйти из аккаунта @'+myName+'?')){closeSettings();$('out').click()}};s3.append(out);sc.append(s3);
-  {const v=el('p','set-ver','Нить · сделано с ');v.append(ico('i-heart','love'));sc.append(v)}
+  // Слоган
+  const sl=el('section','set-slogan');const lg=el('div','set-logo');lg.append(svgI('i-logo'));
+  sl.append(lg,el('p','sl-a','Мессенджеров много'),el('p','sl-b','Нить — одна'));
+  const team=el('div','sl-team');['Клод','Эльдар','Исрафил','Победа'].forEach(n=>team.append(el('span',null,n)));
+  sl.append(el('small','sl-c','Сделали'),team);sc.append(sl);
+  {const v=el('p','set-ver','Нить '+NIT_VERSION+' · сделано с ');v.append(ico('i-heart','love'));sc.append(v)}
+}
+function openWhatsNew(){
+  openModal(s=>{
+    const top=el('div','sheet-top');top.append(el('h3',null,'Что нового · '+NIT_VERSION));const x=el('button','icon');x.append(svgI('i-x'));x.onclick=closeModal;top.append(x);s.append(top);
+    const l=el('div','wn-list');WHATS_NEW.forEach(([ic,t,d],i)=>{const r=giRow(ic,t,d,'gi-mem wn-row');r.style.animationDelay=i*45+'ms';l.append(r)});s.append(l);
+  });
+}
+// Сбросить кэш сайта и перезагрузить — так подтягивается свежая версия
+async function refreshApp(){
+  if(!confirm('Обновить приложение? Страница перезагрузится.'))return;
+  try{(await navigator.serviceWorker?.getRegistrations?.()||[]).forEach(r=>r.unregister());(await caches?.keys?.()||[]).forEach(k=>caches.delete(k))}catch{}
+  setTimeout(()=>location.reload(),150);
 }
 
 function setLook(sc){

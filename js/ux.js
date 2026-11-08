@@ -87,18 +87,22 @@ $('log').addEventListener('touchstart',e=>{
 },{passive:true});
 $('log').addEventListener('touchmove',e=>{
   if(!sw)return;const t=e.touches[0],dx=t.clientX-sw.x,dy=t.clientY-sw.y;
-  if(!sw.on){if(Math.abs(dy)>12){sw=null;return}if(dx>10&&Math.abs(dx)>Math.abs(dy)){sw.on=true;clearTimeout(lpT)}else return}
+  if(!sw.on){if(Math.abs(dy)>12){sw=null;return}
+    const mine=msgs[sw.d.dataset.id]?.sender===me;
+    if(dx>10&&Math.abs(dx)>Math.abs(dy)){sw.on=true;sw.dir=1;clearTimeout(lpT)}
+    else if(dx<-10&&mine&&Math.abs(dx)>Math.abs(dy)){sw.on=true;sw.dir=-1;clearTimeout(lpT)} // влево по своему — «Сведения»
+    else return}
   // тянется с «резинкой»: чем дальше, тем туже
-  const pull=Math.max(0,dx),eased=pull<70?pull:70+(pull-70)*.3;
-  sw.dx=Math.min(100,eased);sw.d.style.transform='translateX('+sw.dx+'px)';sw.d.classList.add('swiping');
+  const pull=Math.max(0,dx*sw.dir),eased=pull<70?pull:70+(pull-70)*.3;
+  sw.dx=Math.min(100,eased);sw.d.style.transform='translateX('+(sw.dx*sw.dir)+'px)';sw.d.classList.add('swiping');sw.d.classList.toggle('swl',sw.dir<0);
   const k=Math.min(1,sw.dx/64);sw.d.style.setProperty('--sw',k);
   if(k>=1&&!sw.buzz){sw.buzz=true;navigator.vibrate?.(8)}else if(k<1)sw.buzz=false;
 },{passive:true});
 $('log').addEventListener('touchend',()=>{
-  if(!sw)return;const {d,dx,on}=sw;sw=null;if(!on)return;
-  d.classList.remove('swiping');d.style.transition='transform .35s cubic-bezier(.34,1.5,.64,1)';d.style.transform='';
+  if(!sw)return;const {d,dx,on,dir}=sw;sw=null;if(!on)return;
+  d.classList.remove('swiping','swl');d.style.transition='transform .35s cubic-bezier(.34,1.5,.64,1)';d.style.transform='';
   setTimeout(()=>{d.style.transition='';d.style.removeProperty('--sw')},360);
-  if(dx>=64){const m=msgs[d.dataset.id];if(m&&!m.deleted_at){startReply(m);navigator.vibrate?.(10)}}
+  if(dx>=64){const m=msgs[d.dataset.id];if(m&&!m.deleted_at){navigator.vibrate?.(10);dir<0?(typeof showMsgInfo==='function'&&showMsgInfo(m)):startReply(m)}}
 });
 // Свайп от левого края — назад к списку (на телефоне)
 let back=null;

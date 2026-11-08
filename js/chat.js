@@ -240,8 +240,22 @@ function setHead(k){
   setSub();
 }
 
-// Просмотр фото на весь экран
+// Просмотр фото на весь экран: плавно открывается, нажатие или ✕ закрывает, «Скачать» сохраняет файл
 function openViewer(u){
-  const v=$('viewer');v.querySelector('img').src=u;v.querySelector('a').href=u;v.classList.remove('hide');
+  const v=$('viewer');v.dataset.url=u;v.querySelector('img').src=u;v.classList.remove('hide','out');
 }
-$('viewer').onclick=e=>{if(!e.target.closest('a'))$('viewer').classList.add('hide')};
+function closeViewer(){const v=$('viewer');if(v.classList.contains('hide'))return;v.classList.add('out');setTimeout(()=>{v.classList.add('hide');v.classList.remove('out');v.querySelector('img').removeAttribute('src')},200)}
+$('viewer').onclick=e=>{if(!e.target.closest('button'))closeViewer()};
+$('vwx').onclick=closeViewer;
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('viewer').classList.contains('hide'))closeViewer()});
+$('vwdl').onclick=async e=>{
+  e.stopPropagation();const u=$('viewer').dataset.url;if(!u)return;
+  const b=$('vwdl');b.classList.add('busy');
+  try{
+    const blob=await (await fetch(u)).blob(),ext=(blob.type.split('/')[1]||'jpg').replace('jpeg','jpg'),name='nit-'+Date.now()+'.'+ext;
+    const file=new File([blob],name,{type:blob.type});
+    if(/iPhone|iPad|iPod/.test(navigator.userAgent)&&navigator.canShare?.({files:[file]})){await navigator.share({files:[file]})} // на iPhone — «Сохранить изображение»
+    else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);toast('Фото сохранено')}
+  }catch(err){if(err?.name!=='AbortError'){window.open(u,'_blank');toast('Не удалось скачать напрямую — открыто в новой вкладке')}}
+  b.classList.remove('busy');
+};
