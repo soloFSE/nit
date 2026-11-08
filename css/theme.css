@@ -1280,3 +1280,8 @@ input,textarea{transition:box-shadow .2s,background-color .2s}
 .gm-btns{display:flex;gap:8px;flex-wrap:wrap}
 .gm-btns button{flex:1;min-width:90px}
 .gm-note{margin:12px 14px;text-align:center;color:var(--dim);font-size:13px}
+
+/* Окна и подсказки поверх игры «Танки» (приглашение, коды) */
+body:has(#tk) .modal{z-index:100}
+body:has(#tk) .toast{z-index:110}
+body:has(#tk) #viewer{z-index:105}
