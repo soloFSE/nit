@@ -85,12 +85,12 @@ function mediaEl(path){
   if(isFile(path))return VIDEO_EXT.test(fileName(path))?videoEl(path):fileEl(path);
   if(isCircle(path))return circleEl(path);
   if(isAudio(path))return voiceEl(path);
-  const i=document.createElement('img');i.alt='фото';i.className='photo';i.loading='lazy';i.decoding='async';
-  imgUrl(path).then(u=>{if(u){i.src=u;i.onclick=e=>{e.stopPropagation();openViewer(u)}}});return i;
+  const i=document.createElement('img');i.alt='фото';i.className='photo';i.loading='lazy';i.decoding='async';i.onload=()=>i.classList.add('loaded');
+  imgUrl(path).then(u=>{if(u){i.src=u;i.onclick=e=>{e.stopPropagation();openViewer(u);logMsgEvent?.(msgByPath(path),'open')}}});return i;
 }
 
 // Меню сообщения: реакции и действия
-const MENU_IC={'Сохранить стикер':'i-heart','Ответить':'i-reply','Изменить':'i-pencil','Переслать':'i-forward','Закрепить':'i-pin','Открепить':'i-pin','Копировать':'i-copy'};
+const MENU_IC={'Сведения':'i-eye','Сохранить стикер':'i-heart','Ответить':'i-reply','Изменить':'i-pencil','Переслать':'i-forward','Закрепить':'i-pin','Открепить':'i-pin','Копировать':'i-copy'};
 function menuEl(m,sp){
   const a=el('div','acts'),d=nodes[m.id];
   const btn=(t,f,cls)=>{const b=el('button',cls||'g');const ic=MENU_IC[t.replace(/ \(.*\)$/,'')]||(/^Удалить/.test(t)?'i-trash':null);if(ic)b.append(svgI(ic));b.append(el('span',null,t));b.onclick=e=>{e.stopPropagation();d.classList.remove('open');a.remove();f()};a.append(b);return b};
@@ -102,6 +102,7 @@ function menuEl(m,sp){
     if(sp?.s.menu)sp.s.menu(m,btn,sp.x);
     btn(pinnedId===m.id?'Открепить':'Закрепить',()=>pinnedId===m.id?unpin():pinMsg(m));
     if(m.body&&!sp)btn('Копировать',()=>navigator.clipboard?.writeText(m.body));
+    if(m.sender===me&&(!sp||m.image_path)&&typeof showMsgInfo==='function')btn('Сведения',()=>showMsgInfo(m));
   }
   btn('Удалить у меня',async()=>{
     const {error}=await sb.from('message_hides').insert({message_id:m.id});
@@ -182,7 +183,9 @@ async function openChat(id){
   if(hasMore)$('log').append(el('div','older','Листайте вверх, чтобы загрузить ещё'));
   bulk=true;try{list.forEach(m=>line(m))}finally{bulk=false}
   if(!list.length)$('log').innerHTML='<div class="empty"><svg class="logo big"><use href="#i-logo"/></svg>Сообщений пока нет.<br>Напишите первым.</div>';
-  toBottom(false);void $('log').offsetWidth;$('log').classList.add('enter');
+  const before=readsOk?(myReads[readKey(id)]||0):0;
+  if(!(typeof placeUnread==='function'&&placeUnread(list,before)))toBottom(false);
+  void $('log').offsetWidth;$('log').classList.add('enter');
   afterRender(list);
   loadPeerReads(id);loadPin(id);markRead();
   if(!matchMedia('(max-width:760px)').matches)$('msg').focus();

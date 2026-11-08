@@ -83,8 +83,12 @@ function chatRow(it){
   r.onclick=()=>openChat(k);
   return r;
 }
+// Пока чаты грузятся — серые «заглушки» строк вместо пустоты и надписи «Чатов пока нет»
+let chatsReady=false;
+function chatSkeleton(){const f=document.createDocumentFragment();[70,52,64,44,58,48].forEach(w=>{const r=el('div','crow sk-row');r.append(el('span','sk-ava'));const b=el('div','sk-lines');const a=el('i');a.style.width=w+'%';const c=el('i');c.style.width=(w+20)+'%';b.append(a,c);r.append(b);f.append(r)});return f}
 function renderChats(){
   const list=$('list');if(!list||!me)return;
+  if(!chatsReady){if(!list.querySelector('.sk-row')){list.innerHTML='';list.append(chatSkeleton())}return}
   const q=($('csearch')?.value||'').trim().toLowerCase();
   const all=chatItems();renderFolders(all);
   let items=all.filter(inFolder);

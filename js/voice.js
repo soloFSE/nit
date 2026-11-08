@@ -38,6 +38,7 @@ function recTick(){
 }
 async function startRec(){
   if(!cur||rec)return;
+  stopVoice(); // чужое голосовое не играет поверх записи (и не попадает в неё)
   if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){alert('Этот браузер не умеет записывать звук.');return}
   try{recStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}})}
   catch(e){alert(e.name==='NotAllowedError'?'Нет доступа к микрофону. Разрешите его в настройках сайта.':'Микрофон недоступен: '+e.message);return}
@@ -69,6 +70,7 @@ function previewStop(){if(recPrev){recPrev.pause();URL.revokeObjectURL(recPrev.s
 $('vplay').onclick=e=>{
   e.stopPropagation();if(!recPaused)return;
   if(recPrev){previewStop();return}
+  stopVoice();
   const a=recPrev=new Audio(URL.createObjectURL(new Blob(recChunks,{type:rec._mime})));
   $('vplay').classList.add('on');
   const bars=[...$('vwave').children];
@@ -112,7 +114,21 @@ $('vpause').onclick=()=>recPaused?resumeRec():pauseRec();
 {const prev=$('bs').onclick;$('bs').onclick=e=>{if(rec)return finishRec(true);prev?.(e)}}
 
 // ---------- Плеер голосового в чате ----------
-let vNow=null; // сейчас играющее — одновременно только одно
+// Один общий проигрыватель на всё приложение: звуки не накладываются, а после перерисовки чата
+// кнопка снова «узнаёт» играющее голосовое. Ссылки на файлы готовятся заранее — iPhone разрешает play() только сразу по нажатию.
+const VP={a:null,path:null,ui:null,speed:1,seek:null},vUrl={};
+function vAudio(){
+  if(VP.a)return VP.a;
+  const a=VP.a=new Audio();a.preload='auto';
+  a.ontimeupdate=()=>VP.ui?.paint();
+  a.onloadedmetadata=()=>{if(VP.seek!=null&&isFinite(a.duration)){a.currentTime=Math.max(0,Math.min(a.duration-.05,VP.seek*a.duration));VP.seek=null}VP.ui?.paint()};
+  a.onplay=()=>VP.ui?.setPlaying(true);
+  a.onpause=()=>VP.ui?.setPlaying(false);
+  a.onended=()=>{const ui=VP.ui;VP.path=null;VP.ui=null;ui?.reset()};
+  a.onerror=()=>{if(!VP.path)return;const ui=VP.ui;VP.path=null;VP.ui=null;ui?.reset();toast('Не удалось воспроизвести голосовое')};
+  return a;
+}
+function stopVoice(){if(VP.a&&!VP.a.paused)VP.a.pause()}
 function voiceMeta(path){
   const m=/_v(\d+)_([0-9a-f]{10,80})\.\w+$/.exec(path||'');
   if(m)return {dur:+m[1],lv:[...m[2]].map(c=>parseInt(c,16)/15)};
@@ -122,26 +138,35 @@ function voiceMeta(path){
 }
 function voiceEl(path){
   const {dur,lv}=voiceMeta(path);
-  imgUrl(path).catch(()=>{}); // ссылка готова заранее: iPhone разрешает play() только сразу после нажатия
-  const w=el('div','vmsg'),play=el('button','vplay-b'),bars=el('div','vbars'),t=el('span','vtime-m',dur?mmss(dur):'0:00'),sp=el('button','vspeed','1×');
+  imgUrl(path).then(u=>{if(u)vUrl[path]=u}).catch(()=>{}); // ссылка готова заранее
+  const w=el('div','vmsg'),play=el('button','vplay-b'),bars=el('div','vbars'),t=el('span','vtime-m',dur?mmss(dur):'0:00'),sp=el('button','vspeed',VP.speed+'×');
   play.append(svgI('i-play'));play.title='Слушать';sp.title='Скорость';
   lv.forEach(v=>{const b=el('i');b.style.height=Math.max(3,Math.round(v*24))+'px';bars.append(b)});
   w.append(play,bars,t,sp);
-  let a=null,speed=1;
-  const paint=()=>{if(!a)return;const total=isFinite(a.duration)&&a.duration>0?a.duration:dur||1,p=a.currentTime/total;
-    [...bars.children].forEach((b,i)=>b.classList.toggle('on',(i+.5)/lv.length<=p));t.textContent=mmss(a.paused&&!a.currentTime?total:a.currentTime)};
-  const stop=()=>{if(!a)return;a.pause();w.classList.remove('playing');play.innerHTML='';play.append(svgI('i-play'))};
-  const ensure=async()=>{if(a)return a;const u=await imgUrl(path);if(!u)return null;a=new Audio(u);a.preload='auto';a.playbackRate=speed;
-    a.ontimeupdate=paint;a.onended=()=>{stop();a.currentTime=0;paint();[...bars.children].forEach(b=>b.classList.remove('on'));t.textContent=mmss(dur||a.duration)};
-    a.onloadedmetadata=()=>{if(!dur&&isFinite(a.duration))t.textContent=mmss(a.duration)};return a};
-  play.onclick=async e=>{e.stopPropagation();
+  const total=()=>{const a=VP.a;return a&&isFinite(a.duration)&&a.duration>0?a.duration:dur||1};
+  const ui={
+    paint(){const a=VP.a;if(!a||VP.path!==path)return;const p=a.currentTime/total();
+      [...bars.children].forEach((b,i)=>b.classList.toggle('on',(i+.5)/lv.length<=p));t.textContent=mmss(a.currentTime||0)},
+    setPlaying(on){w.classList.toggle('playing',on);play.innerHTML='';play.append(svgI(on?'i-pause':'i-play'))},
+    reset(){ui.setPlaying(false);[...bars.children].forEach(b=>b.classList.remove('on'));t.textContent=dur?mmss(dur):t.textContent},
+  };
+  // Чат перерисовался, а это голосовое играет — подхватываем
+  if(VP.path===path){VP.ui=ui;ui.setPlaying(!VP.a.paused);ui.paint()}
+  const start=(seek)=>{
+    if(rec){toast('Сначала закончите запись голосового');return}
     if(/\.webm$/i.test(path)&&!document.createElement('audio').canPlayType('audio/webm')){toast('Это голосовое записано в webm — ваш телефон его не проигрывает (нужен iOS 18.4 или новее)');return}
-    const au=await ensure();if(!au)return;
-    if(!au.paused){stop();return}
-    if(vNow&&vNow!==stop)vNow();vNow=stop;
-    au.play().then(()=>{w.classList.add('playing');play.innerHTML='';play.append(svgI('i-pause'))}).catch(()=>toast('Нажмите ещё раз, чтобы воспроизвести'))};
-  bars.onclick=async e=>{e.stopPropagation();const au=await ensure();if(!au)return;const r=bars.getBoundingClientRect(),p=(e.clientX-r.left)/r.width;
-    const total=isFinite(au.duration)&&au.duration>0?au.duration:dur;if(!total)return;au.currentTime=Math.max(0,Math.min(total-.05,p*total));paint();if(au.paused)play.click()};
-  sp.onclick=e=>{e.stopPropagation();speed=speed===1?1.5:speed===1.5?2:1;sp.textContent=speed+'×';if(a)a.playbackRate=speed};
+    const a=vAudio();
+    if(VP.path===path){
+      if(seek!=null&&isFinite(a.duration)){a.currentTime=Math.max(0,Math.min(a.duration-.05,seek*a.duration));ui.paint();if(a.paused)a.play().catch(()=>{});return}
+      if(a.paused)a.play().catch(()=>toast('Нажмите ещё раз, чтобы воспроизвести'));else a.pause();return}
+    const prev=VP.ui;a.pause();prev?.reset();
+    VP.path=path;VP.ui=ui;VP.seek=seek??null;ui.setPlaying(true);
+    const go=u=>{if(VP.path!==path)return;a.src=u;a.playbackRate=VP.speed;a.play().catch(()=>{ui.setPlaying(false);toast('Нажмите ещё раз, чтобы воспроизвести')})};
+    if(vUrl[path])go(vUrl[path]);
+    else imgUrl(path).then(u=>{if(!u){VP.path=null;VP.ui=null;ui.reset();toast('Файл голосового недоступен');return}vUrl[path]=u;go(u)});
+  };
+  play.onclick=e=>{e.stopPropagation();start();if(VP.path===path)logMsgEvent?.(msgByPath(path),'listen')};
+  bars.onclick=e=>{e.stopPropagation();const r=bars.getBoundingClientRect();start(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)))};
+  sp.onclick=e=>{e.stopPropagation();VP.speed=VP.speed===1?1.5:VP.speed===1.5?2:1;document.querySelectorAll('.vspeed').forEach(x=>x.textContent=VP.speed+'×');if(VP.a)VP.a.playbackRate=VP.speed};
   return w;
 }

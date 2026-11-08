@@ -123,13 +123,21 @@ function circleEl(path){
     if(!v.muted&&d){ring.querySelector('circle').style.strokeDashoffset=String(Math.max(0,100-v.currentTime/d*100));t.textContent=fmt(Math.max(0,d-v.currentTime))}
   };
   v.onended=()=>reset();
-  const reset=()=>{v.muted=true;v.loop=true;w.classList.remove('on');ring.querySelector('circle').style.strokeDashoffset='100';showDur();v.play().catch(()=>{})};
+  v.onerror=()=>{if(!v.src)return;w.classList.add('bad');t.textContent='не открывается'};
+  v.onpause=()=>w.classList.toggle('paused',w.classList.contains('on'));v.onplay=()=>w.classList.remove('paused');
+  const reset=()=>{v.muted=true;v.loop=true;w.classList.remove('on','paused');ring.querySelector('circle').style.strokeDashoffset='100';showDur();if(v._vis)v.play().catch(()=>{})};
+  // Нажатие — играет со звуком и плавно увеличивается (как в Telegram); ещё нажатие — пауза
   w.onclick=e=>{
     e.stopPropagation();
-    if(w.classList.contains('on')){if(v.paused)v.play();else v.pause();return}
-    // Останавливаем другие кружки со звуком
+    if(/\.webm$/i.test(path)&&!document.createElement('video').canPlayType('video/webm')){toast('Этот кружок записан в webm — ваш телефон его не проигрывает (нужен iOS 18.4 или новее)');return}
+    if(w.classList.contains('on')){if(v.paused)v.play().catch(()=>{});else v.pause();return}
+    if(typeof stopVoice==='function')stopVoice();
     document.querySelectorAll('.circ.on video').forEach(o=>o.dispatchEvent(new Event('ended')));
-    w.classList.add('on');v.muted=false;v.loop=false;v.currentTime=0;v.play().catch(()=>{});
+    if(!v.src&&v.dataset.src)v.src=v.dataset.src;
+    w.classList.add('on');v.muted=false;v.loop=false;logMsgEvent?.(msgByPath(path),'listen');
+    try{v.currentTime=0}catch{}
+    v.play().catch(()=>{v.muted=true;v.play().catch(()=>{});toast('Нажмите ещё раз, чтобы включить звук');w.classList.remove('on')});
+    setTimeout(()=>w.scrollIntoView({block:'nearest',behavior:'smooth'}),360);
   };
   return w;
 }

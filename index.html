@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#170420">
 <title>Нить</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -176,7 +176,7 @@
       <button class="icon" id="rbX" title="Не отвечать"><svg><use href="#i-x"/></svg></button>
     </div>
     <div id="robar" class="blockbar hide"><svg class="ii"><use href="#i-lock"/></svg>Писать в эту группу могут только админы</div>
-    <div id="blockbar" class="blockbar hide">Вы заблокировали этого пользователя. <button class="ghost sm-btn" id="unblockbtn">Разблокировать</button></div>
+    <div id="blockbar" class="blockbar hide"><span id="blockbarT">Вы заблокировали этого пользователя.</span> <button class="ghost sm-btn" id="unblockbtn">Разблокировать</button></div>
     <div id="send" class="hide composer">
       <div class="cbox">
         <button class="icon" id="be" title="Смайлики и стикеры"><svg><use href="#i-smile"/></svg></button>
@@ -278,6 +278,8 @@
 <script src="js/media.js"></script>
 <script src="js/crop.js"></script>
 <script src="js/mention.js"></script>
+<script src="js/jumps.js"></script>
+<script src="js/msginfo.js"></script>
 <script src="js/settings.js"></script>
 <script src="js/accounts.js"></script>
 <script src="js/peer.js"></script>

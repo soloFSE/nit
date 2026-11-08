@@ -130,20 +130,36 @@ async function loadGroupMedia(gid,box){
 function memberActions(gid,u){
   if(u===me){openProfileEdit();return}
   const role=roleOf(gid,u),admin=isAdminOf(gid),owner=groups[gid]?.owner===me;
-  const isFriend=fr.some(f=>f.status==='accepted'&&(f.a===u||f.b===u));
+  const st=friendState(u).s,p=prof[u]||{};
   openModal(s=>{
-    const c=el('div','gi-who');c.append(avatar(u,64));
-    const t=el('div');t.append(el('b',null,nameOf(u)),el('small',null,'@'+(people[u]||'?')+(role!=='member'?' · '+(role==='owner'?'создатель':'админ'):'')));c.append(t);s.append(c);
-    const opt=(label,f,cls)=>{const b=el('button','opt opt-i'+(cls?' '+cls:''));fillRich(b,label);b.onclick=()=>{closeModal();f()};s.append(b)};
-    if(isFriend)opt(PI('i-chats')+'Написать '+nameOf(u),()=>{closeGroupInfo();openChat(u)});
-    opt(PI('i-user')+'Профиль',()=>setTimeout(()=>showProfile(u),200));
-    if(admin&&role!=='owner'){
-      if(role==='admin')opt(PI('i-user')+'Снять с админов',()=>setRole(gid,u,'member'));
-      else opt(PI('i-star')+'Назначить админом',()=>setRole(gid,u,'admin'));
-    }
-    if(owner)opt(PI('i-crown')+'Передать права создателя',()=>transferGroup(gid,u));
-    if(admin&&role!=='owner')opt(PI('i-block')+'Удалить из группы',()=>removeMember(gid,u),'danger');
-    const x=el('button','ghost wide','Отмена');x.onclick=closeModal;s.append(x);
+    s.classList.add('mem-sheet');
+    // Шапка в цвет аватарки: фото, имя, ник, роль, звание, «в сети»
+    const hero=el('div','mem-hero');hero.style.setProperty('--h',hue(u));
+    const x=el('button','icon mem-x');x.append(svgI('i-x'));x.onclick=closeModal;hero.append(x);
+    const av=avatar(u,84);hero.append(av,el('b','mem-name',nameOf(u)));
+    const sub=el('div','mem-sub');sub.append(el('span',null,'@'+(people[u]||'?')));
+    if(online.has(u))sub.append(el('span','mem-on','в сети'));
+    hero.append(sub);
+    const tags=el('div','mem-tags');
+    if(role!=='member'){const r=el('span','mem-role '+role);r.append(svgI(role==='owner'?'i-crown':'i-star'),el('span',null,role==='owner'?'Создатель':'Админ'));tags.append(r)}
+    const mt=typeof mainTitle==='function'&&mainTitle(u);if(mt)tags.append(titleBadge(mt));
+    if(tags.children.length)hero.append(tags);
+    s.append(hero);
+    if(p.bio)s.append(el('p','mem-bio',p.bio));
+    // Быстрые действия плитками
+    const acts=el('div','mem-acts');
+    const act=(icon,label,f,cls)=>{const b=el('button','mem-act'+(cls?' '+cls:''));b.append(svgI(icon),el('span',null,label));b.onclick=()=>{closeModal();f()};acts.append(b)};
+    if(st==='friend'){act('i-chats','Написать',()=>{closeGroupInfo();openChat(u)});act('i-phone','Звонок',()=>{closeGroupInfo();startCall(u,false)})}
+    else if(st==='none'&&!isBlocked(u))act('i-plus','В друзья',()=>requestFriend(u,people[u]));
+    else if(st==='incoming')act('i-check','Принять',()=>acceptFriend(u));
+    act('i-user','Профиль',()=>setTimeout(()=>showProfile(u),200));
+    s.append(acts);
+    // Управление — только тем, у кого есть права
+    const rows=[];
+    if(admin&&role!=='owner')rows.push(role==='admin'?['i-user','Снять с админов','Останется обычным участником',()=>setRole(gid,u,'member')]:['i-star','Назначить админом','Сможет управлять группой',()=>setRole(gid,u,'admin')]);
+    if(owner)rows.push(['i-crown','Передать права создателя','Вы останетесь админом',()=>transferGroup(gid,u)]);
+    if(rows.length){const c=el('div','gi-card mem-card');c.append(el('div','gi-h','Управление'));rows.forEach(([i,t,d,f])=>{const r=giRow(i,t,d);r.onclick=()=>{closeModal();f()};c.append(r)});s.append(c)}
+    if(admin&&role!=='owner'){const c=el('div','gi-card mem-card');const r=giRow('i-block','Удалить из группы',null,'gi-danger');r.onclick=()=>{closeModal();removeMember(gid,u)};c.append(r);s.append(c)}
   });
 }
 

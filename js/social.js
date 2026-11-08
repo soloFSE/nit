@@ -1,11 +1,14 @@
 // Удаление из друзей, блокировка, «в сети» и «печатает…»
-let blocked=new Set(),online=new Set(),typing={},liveCh=null,typeTimer=0;
+let blocked=new Set(),blockedBy=new Set(),online=new Set(),typing={},liveCh=null,typeTimer=0;
 
+// blocked — кого заблокировал я; blockedBy — кто заблокировал меня (функция who_blocked_me из supabase/v3.sql)
 async function loadBlocks(){
   const {data,error}=await sb.from('blocks').select('blocked').eq('blocker',me);
   if(!error)blocked=new Set((data||[]).map(x=>x.blocked));
+  const r=await sb.rpc('who_blocked_me');if(!r.error)blockedBy=new Set((r.data||[]).map(x=>x.blocker||x));
 }
 const isBlocked=id=>blocked.has(id);
+const isBlockedBy=id=>blockedBy.has(id);
 
 async function removeFriend(id){
   if(!confirm('Удалить '+nameOf(id)+' из друзей? Переписка останется, но писать друг другу вы не сможете, пока снова не станете друзьями.'))return false;
@@ -24,20 +27,24 @@ async function blockUser(id){
   await sb.from('friendships').delete().or(`and(a.eq.${me},b.eq.${id}),and(a.eq.${id},b.eq.${me})`);
   setFr(fr.filter(f=>!((f.a===me&&f.b===id)||(f.a===id&&f.b===me))));
   if(cur===id)setHead(id),applyBlockUI();
+  refreshPeer?.();toast(nameOf(id)+' заблокирован(а)');
   return true;
 }
 async function unblockUser(id){
   const {error}=await sb.from('blocks').delete().eq('blocker',me).eq('blocked',id);
   if(error){alert('Не удалось разблокировать: '+error.message);return false}
   blocked.delete(id);if(cur===id)setHead(id),applyBlockUI();
+  refreshPeer?.();toast('Разблокирован(а). Чтобы снова переписываться — отправьте заявку в друзья');
   return true;
 }
 
 // В личке с заблокированным вместо поля ввода — плашка
 function applyBlockUI(){
-  const b=cur&&!isGroupKey(cur)&&isBlocked(cur);
+  const dm=cur&&!isGroupKey(cur),mine=dm&&isBlocked(cur),theirs=dm&&!mine&&isBlockedBy(cur),b=mine||theirs;
   const ro=cur&&isGroupKey(cur)&&groups[gidOf(cur)]&&!canDo(gidOf(cur),'send');
   $('send').classList.toggle('hide',!cur||b||ro);$('blockbar').classList.toggle('hide',!b);$('robar').classList.toggle('hide',!ro);
+  $('blockbarT').textContent=mine?'Вы заблокировали этого пользователя.':'Пользователь ограничил вам отправку сообщений.';
+  $('unblockbtn').classList.toggle('hide',!mine);
 }
 $('unblockbtn').onclick=async()=>{if(cur&&await unblockUser(cur)){}};
 

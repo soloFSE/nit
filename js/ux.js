@@ -189,7 +189,11 @@ $('log').addEventListener('touchend',()=>{clearTimeout(lpT);lpXY=null;setTimeout
   const loop=()=>{fit();if(performance.now()<until)requestAnimationFrame(loop)};
   const burst=()=>{const idle=performance.now()>=until;until=performance.now()+1200;if(idle)requestAnimationFrame(loop)};
   if(vv){vv.addEventListener('resize',()=>{if(performance.now()>=until)wasStick=stick;burst()});vv.addEventListener('scroll',burst)}
-  window.addEventListener('resize',burst);window.addEventListener('orientationchange',()=>{full=0;burst()});fit();
+  window.addEventListener('resize',burst);window.addEventListener('orientationchange',()=>{full=0;burst();resetZoom()});
+  // После поворота iPhone иногда остаётся приближенным — возвращаем масштаб 1 (перезапись viewport сбрасывает зум)
+  function resetZoom(){const m=document.querySelector('meta[name=viewport]');if(!m)return;const c=m.content;
+    m.content=c.replace(/,?\s*maximum-scale=[\d.]+/,'')+', maximum-scale=1.0001';setTimeout(()=>{m.content=c;window.scrollTo(0,0)},350)}
+  if(vv)vv.addEventListener('resize',()=>{if(vv.scale>1.01&&!typing())resetZoom()});fit();
   document.addEventListener('focusin',e=>{if(e.target.matches?.('input,textarea')){wasStick=stick;burst()}});
   document.addEventListener('focusout',e=>{if(e.target.matches?.('input,textarea')){wasStick=stick;burst()}});
   // Вернулись в приложение (из фона, после звонка) — пересчитать

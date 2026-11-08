@@ -4,7 +4,10 @@ async function sendMsg(to,fields,opt={}){
   if(!to)return null;
   const row={sender:me,...target(to),body:'',...fields,...(opt.noReply?{}:takeReply()),...ttlField(to,fields.body)};
   const {data,error}=await sb.from('messages').insert(row).select().single();
-  if(error)throw error;
+  if(error){
+    if(/row-level security|policy/i.test(error.message)&&row.recipient){await loadBlocks();applyBlockUI();
+      throw new Error(isBlockedBy(row.recipient)?'пользователь ограничил вам сообщения':isBlocked(row.recipient)?'вы заблокировали этого пользователя':'нет доступа к этому чату')}
+    throw error}
   seen.add(data.id);noteLast(data);
   if(cur===to){const e=$('log').querySelector('.empty');if(e)e.remove();opt.pending?.remove();line(data,false,!!opt.pending);markRead()}
   else opt.pending?.remove();

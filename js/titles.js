@@ -24,31 +24,52 @@ function titleBadge(t,cls){
 // Маленький значок у имени в группе
 function titleMini(uid){const t=mainTitle(uid);if(!t)return null;const s=el('span','tmini');s.style.setProperty('--tc',t.color);s.append(ico(t.icon));s.title=t.name;return s}
 
-// Витрина званий в профиле
+// Витрина званий в профиле — как подарки в Telegram: карточки с переливом и свечением; нажатие — подробная карточка
+const titleDate=t=>t.created_at&&!isNaN(new Date(t.created_at))?new Date(t.created_at).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'}):'';
+const titleNo=t=>{const all=Object.values(titleById).filter(x=>x.name===t.name).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));const i=all.findIndex(x=>x.id===t.id);return i>=0?i+1:1};
+function titleTile(t,main){
+  const b=el('button','t-tile'+(main?' main':''));b.style.setProperty('--tc',t.color);
+  const glow=el('span','t-glow');const ic=el('span','t-tile-ic');ic.append(svgI(t.icon));
+  b.append(glow,ic,el('b',null,t.name),el('small',null,'№'+titleNo(t)));
+  if(main)b.append(el('span','t-pin','главное'));
+  return b;
+}
 function titlesCard(uid){
   const list=titlesOf[uid]||[];
   if(!list.length&&!(amAppAdmin&&uid!==me))return null;
   const c=el('section','gi-card t-card');
   const h=el('div','gi-h');h.append(el('span',null,'Звания'),el('small',null,list.length?String(list.length):''));c.append(h);
   const main=mainTitle(uid);
-  [...list].reverse().forEach(t=>{
-    const r=el('div','t-row');r.style.setProperty('--tc',t.color);
-    const i=el('span','t-ic');i.append(svgI(t.icon));
-    const tx=el('span','t-tx');tx.append(el('b',null,t.name));
-    const sub=[t.note,'выдал'+(t.granted_by===me?'и вы':' '+nameOf(t.granted_by)),(t.created_at&&!isNaN(new Date(t.created_at))?new Date(t.created_at).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'}):'')].filter(Boolean).join(' · ');
-    tx.append(el('small',null,sub));r.append(i,tx);
-    if(list.length>1&&t===main)r.append(el('span','t-main','Главное'));
-    if(uid===me&&list.length>1&&t!==main){const b=el('button','t-act','Сделать главным');b.onclick=async()=>{b.disabled=true;
-      const {error}=await sb.rpc('set_main_title',{tid:t.id});if(error){toast('Не удалось: '+error.message);b.disabled=false;return}
-      list.forEach(z=>z.main=z.id===t.id);toast('Теперь главное — «'+t.name+'»');c.replaceWith(titlesCard(uid)||el('i'))};r.append(b)}
-    if(amAppAdmin){const d=el('button','icon t-del');d.append(svgI('i-trash'));d.title='Забрать звание';d.onclick=async()=>{
-      if(!confirm('Забрать звание «'+t.name+'» у '+nameOf(uid)+'?'))return;
-      const {error}=await sb.from('titles').delete().eq('id',t.id);if(error){toast('Не удалось: '+error.message);return}
-      await loadTitles();toast('Звание забрано')};r.append(d)}
-    c.append(r);
-  });
+  if(list.length){
+    const grid=el('div','t-grid');
+    [...list].reverse().forEach(t=>{const tile=titleTile(t,list.length>1&&t===main);tile.onclick=()=>titleSheet(t,uid);grid.append(tile)});
+    c.append(grid);
+  }
   if(amAppAdmin&&uid!==me){const g=giRow('i-medal','Выдать звание','Значок появится в профиле и у имени в группах','gi-accent');g.onclick=()=>grantTitle(uid);c.append(g)}
   return c;
+}
+// Подробная карточка звания
+function titleSheet(t,uid){
+  const list=titlesOf[uid]||[],main=mainTitle(uid);
+  openModal(s=>{
+    s.classList.add('t-sheet');s.style.setProperty('--tc',t.color);
+    const x=el('button','icon t-sheet-x');x.append(svgI('i-x'));x.onclick=closeModal;s.append(x);
+    const stage=el('div','t-stage');const rays=el('span','t-rays');const big=el('span','t-big');big.append(svgI(t.icon));stage.append(rays,big);s.append(stage);
+    s.append(el('h3','t-sheet-name',t.name),el('div','t-sheet-no','Звание №'+titleNo(t)));
+    if(t.note)s.append(el('p','t-sheet-note','«'+t.note+'»'));
+    const info=el('div','t-info');
+    const row=(k,v)=>{const r=el('div','t-info-r');r.append(el('span',null,k),el('b',null,v));info.append(r)};
+    row('Владелец',uid===me?'Вы':nameOf(uid));row('Выдал',t.granted_by===me?'Вы':nameOf(t.granted_by));if(titleDate(t))row('Дата',titleDate(t));
+    s.append(info);
+    if(uid===me&&list.length>1){
+      const b=el('button','primary wide',t===main?'Показывается в профиле':'Показывать в профиле');b.disabled=t===main;
+      b.onclick=async()=>{b.disabled=true;const {error}=await sb.rpc('set_main_title',{tid:t.id});if(error){toast('Не удалось: '+error.message);b.disabled=false;return}
+        list.forEach(z=>z.main=z.id===t.id);closeModal();toast('Теперь главное — «'+t.name+'»');refreshPeer?.()};s.append(b)}
+    if(amAppAdmin){const d=el('button','ghost wide danger','Забрать звание');d.onclick=async()=>{
+      if(!confirm('Забрать звание «'+t.name+'» у '+nameOf(uid)+'?'))return;
+      const {error}=await sb.from('titles').delete().eq('id',t.id);if(error){toast('Не удалось: '+error.message);return}
+      closeModal();await loadTitles();toast('Звание забрано')};s.append(d)}
+  });
 }
 
 // Окно выдачи звания (только админам приложения) — с живым предпросмотром

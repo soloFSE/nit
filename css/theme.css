@@ -468,6 +468,10 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),
 .m{-webkit-touch-callout:none}
 #log,.side-scroll,.sheet{overscroll-behavior:contain}
 #log{overflow-x:hidden} /* из-за этого «гулял» экран: пузырь шире ленты */
+/* Экран не двигается влево-вправо: ни лента, ни приложение целиком (свайп «ответить» обрабатывается скриптом) */
+html,body{overscroll-behavior:none;max-width:100%}
+.app,.pane,.side{overflow-x:hidden;overflow-x:clip}
+@media (pointer:coarse){#log{touch-action:pan-y;overscroll-behavior-x:none}}
 /* iPhone приближает страницу при вводе, если шрифт поля меньше 16px */
 @media (pointer:coarse){input,textarea,select{font-size:16px}}
 
@@ -710,3 +714,143 @@ svg.ii.love{color:#ff4d6d;fill:#ff4d6d;stroke:#ff4d6d;margin:0 0 0 .1em}
 .lgo.on{background:var(--surface2)}
 .lgo.on .lgo-ic{box-shadow:0 0 0 2.5px var(--surface),0 0 0 4.5px var(--acc)}
 .lgo-note{margin-top:8px}
+
+/* ============ Непрочитанные и упоминания ============ */
+.unread-sep{display:flex;justify-content:center;margin:14px -20px 10px;padding:6px 0;background:color-mix(in srgb,var(--acc) 10%,transparent);animation:fade .3s}
+.unread-sep span{font-size:12.5px;font-weight:700;color:var(--acc);padding:3px 12px;border-radius:10px;background:var(--surface);box-shadow:var(--bubble-shadow)}
+.tomention{bottom:calc(132px + env(safe-area-inset-bottom,0px))}
+.tomention b{font-size:20px;font-weight:800;color:var(--acc);line-height:1}
+.kb .tomention{bottom:124px}
+
+/* Кружок: при воспроизведении плавно увеличивается, на паузе — значок паузы */
+.circ{transition:width .35s var(--ease),box-shadow .35s var(--ease)}
+.circ.on{width:min(320px,80vw);box-shadow:0 10px 34px rgba(0,0,0,.28)}
+.circ.paused::before{content:"";position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;z-index:2;
+  background:rgba(0,0,0,.45) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8 5.6c0-1 1.1-1.6 1.9-1.1l9.4 5.9c.8.5.8 1.7 0 2.2l-9.4 5.9c-.8.5-1.9-.1-1.9-1.1z' fill='%23fff'/%3E%3C/svg%3E") center/24px no-repeat;animation:popIn .25s var(--spring)}
+.circ.bad{background:#222}
+.circ.bad video{opacity:.25}
+
+/* Лайки историй */
+.stv-likes{display:inline-flex;align-items:center;gap:3px;margin-left:8px;color:#ff4d6d;font-weight:800}
+.stv-likes svg{width:15px;height:15px}
+.stv-liker{margin-left:auto;color:#ff4d6d;display:grid;place-items:center}
+.stv-liker svg{width:20px;height:20px}
+.stv-ic.liked{color:#ff4d6d}
+.stv-ic.pop svg{animation:popIn .4s var(--spring)}
+
+/* ============ Сведения о сообщении ============ */
+.mi-card{padding:12px 14px;border-radius:16px;background:var(--surface2);margin-bottom:10px}
+.mi-prev{font-size:14.5px;line-height:1.35;max-height:4.2em;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.mi-meta{display:flex;flex-direction:column;gap:3px;margin-top:8px;font-size:12.5px;color:var(--dim)}
+.mi-sec{margin-top:6px}
+.mi-ic{margin-left:auto;color:var(--acc);display:grid;place-items:center}
+.mi-ic svg{width:18px;height:18px}
+.sk-line{height:44px;border-radius:12px;margin:8px 0;background:linear-gradient(90deg,var(--surface2) 0%,color-mix(in srgb,var(--surface2) 60%,var(--surface)) 50%,var(--surface2) 100%);background-size:200% 100%;animation:shimmer 1.2s linear infinite}
+.sk-line.short{width:60%}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+
+/* Поле ника с @ */
+.nick-in{display:flex;align-items:center;border-radius:14px;background:var(--surface2);padding-left:12px}
+.nick-in input{background:none!important;border:0!important;padding-left:2px!important;box-shadow:none!important}
+.nick-at{color:var(--dim);font-weight:700}
+
+/* ============ Окно участника группы ============ */
+.sheet.mem-sheet{padding:0 0 14px;overflow:hidden auto}
+.mem-hero{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:26px 16px 18px;text-align:center;
+  background:linear-gradient(180deg,hsl(var(--h) 70% 55% / .32),transparent)}
+.mem-hero .ava{box-shadow:0 8px 24px hsl(var(--h) 60% 40% / .35);animation:popIn .35s var(--spring)}
+.mem-x{position:absolute;top:10px;right:10px;background:color-mix(in srgb,var(--surface) 70%,transparent)}
+.mem-name{font-size:20px;font-weight:800;margin-top:8px}
+.mem-sub{display:flex;gap:8px;align-items:center;color:var(--dim);font-size:13.5px}
+.mem-on{color:#16a34a;font-weight:700}
+.mem-tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+.mem-role{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:12.5px;font-weight:700;background:var(--surface2)}
+.mem-role svg{width:14px;height:14px}
+.mem-role.owner{color:#d4a017;background:color-mix(in srgb,#eab308 16%,transparent)}
+.mem-role.admin{color:var(--acc);background:color-mix(in srgb,var(--acc) 14%,transparent)}
+.mem-bio{margin:0 18px 6px;text-align:center;color:var(--text);font-size:14px;line-height:1.4}
+.mem-acts{display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:8px;padding:6px 14px 4px}
+.mem-act{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border-radius:16px;background:var(--surface2);color:var(--acc);font-size:12.5px;font-weight:700;transition:transform .15s var(--ease),background .2s}
+.mem-act span{color:var(--text)}
+.mem-act svg{width:22px;height:22px}
+.mem-act:active{transform:scale(.95)}
+.mem-card{margin:10px 14px 0}
+
+/* ============ Витрина званий (как подарки) ============ */
+.t-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:4px 2px 8px}
+.t-tile{--tc:#8b5cf6;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;gap:3px;padding:14px 6px 10px;border-radius:18px;
+  background:radial-gradient(circle at 50% 30%,color-mix(in srgb,var(--tc) 30%,var(--surface)) 0%,color-mix(in srgb,var(--tc) 10%,var(--surface)) 70%);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tc) 28%,transparent);color:var(--text);transition:transform .2s var(--spring)}
+.t-tile:active{transform:scale(.95)}
+.t-tile b{font-size:12px;line-height:1.2;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.t-tile small{font-size:10.5px;color:var(--dim);font-weight:700}
+.t-tile-ic{position:relative;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;color:#fff;margin-bottom:4px;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--tc) 85%,#fff),color-mix(in srgb,var(--tc) 70%,#000));box-shadow:0 6px 18px color-mix(in srgb,var(--tc) 50%,transparent);animation:tFloat 3.2s ease-in-out infinite}
+.t-tile-ic svg{width:24px;height:24px}
+.t-glow{position:absolute;inset:-40%;background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.28) 50%,transparent 60%);animation:tShine 3.6s ease-in-out infinite;pointer-events:none}
+.t-pin{position:absolute;top:6px;left:6px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:var(--tc);padding:2px 6px;border-radius:6px}
+@keyframes tShine{0%,55%{transform:translateX(-60%)}85%,100%{transform:translateX(60%)}}
+@keyframes tFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.sheet.t-sheet{position:relative;text-align:center;overflow:hidden;padding-top:8px;
+  background:radial-gradient(circle at 50% 0%,color-mix(in srgb,var(--tc) 28%,var(--surface)) 0%,var(--surface) 60%)}
+.t-sheet-x{position:absolute;top:10px;right:10px;z-index:2}
+.t-stage{position:relative;height:150px;display:grid;place-items:center;margin:4px 0 2px}
+.t-rays{position:absolute;width:220px;height:220px;border-radius:50%;
+  background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--tc) 30%,transparent) 0deg 8deg,transparent 8deg 20deg);
+  -webkit-mask:radial-gradient(circle,#000 20%,transparent 70%);mask:radial-gradient(circle,#000 20%,transparent 70%);animation:tSpin 18s linear infinite}
+.t-big{position:relative;width:104px;height:104px;border-radius:50%;display:grid;place-items:center;color:#fff;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--tc) 80%,#fff),color-mix(in srgb,var(--tc) 65%,#000));
+  box-shadow:0 14px 40px color-mix(in srgb,var(--tc) 55%,transparent),inset 0 2px 0 rgba(255,255,255,.35);animation:popIn .5s var(--spring),tFloat 3.2s .5s ease-in-out infinite}
+.t-big svg{width:54px;height:54px}
+@keyframes tSpin{to{transform:rotate(360deg)}}
+.t-sheet-name{font-size:22px;font-weight:800;margin:6px 0 2px}
+.t-sheet-no{font-size:12.5px;font-weight:700;color:var(--tc)}
+.t-sheet-note{margin:10px 8px 0;color:var(--text);font-size:14.5px;line-height:1.4}
+.t-info{margin:14px 0;border-radius:16px;background:var(--surface2);overflow:hidden;text-align:left}
+.t-info-r{display:flex;justify-content:space-between;gap:10px;padding:11px 14px;font-size:14px}
+.t-info-r+.t-info-r{border-top:1px solid var(--line)}
+.t-info-r span{color:var(--dim)}
+.t-sheet .wide+.wide{margin-top:8px}
+.tbadge.big{position:relative;overflow:hidden}
+.tbadge.big::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.35) 50%,transparent 65%);animation:tShine 4s ease-in-out infinite;pointer-events:none}
+.less-motion .t-glow,.less-motion .t-rays,.less-motion .tbadge.big::after{animation:none}
+@media (prefers-reduced-motion:reduce){.t-glow,.t-rays,.t-tile-ic,.t-big,.tbadge.big::after{animation:none}}
+
+/* ============ Плавность и заглушки (v3) ============ */
+:root{--ease-out:cubic-bezier(.22,1,.36,1)}
+/* Строки-заглушки списка чатов */
+.sk-row{pointer-events:none}
+.sk-ava{width:52px;height:52px;border-radius:50%;flex:none}
+.sk-lines{flex:1;display:flex;flex-direction:column;gap:8px}
+.sk-lines i{display:block;height:11px;border-radius:6px}
+.sk-ava,.sk-lines i{background:linear-gradient(90deg,var(--surface2) 0%,color-mix(in srgb,var(--surface2) 55%,var(--surface)) 50%,var(--surface2) 100%);background-size:200% 100%;animation:shimmer 1.2s linear infinite}
+/* Фото в чате: пока грузится — переливающаяся заглушка, потом плавно проявляется */
+img.photo{transition:opacity .35s var(--ease-out),filter .35s var(--ease-out)}
+img.photo:not(.loaded){min-width:min(220px,60vw);min-height:180px;opacity:.001;
+  background:linear-gradient(90deg,var(--surface2) 0%,color-mix(in srgb,var(--surface2) 55%,var(--surface)) 50%,var(--surface2) 100%) 0 0/200% 100%;animation:shimmer 1.2s linear infinite}
+.m.media:has(img.photo:not(.loaded)){background:var(--surface2)}
+/* Аватарки проявляются, а не «вспыхивают» */
+.ava img{animation:fade .3s var(--ease-out)}
+/* Новые строки в списке чатов и сообщения — мягкое появление */
+#list.appear .crow:not(.sk-row){animation:rowIn .32s var(--ease-out) both}
+#list.appear .crow:nth-child(2){animation-delay:.03s}#list.appear .crow:nth-child(3){animation-delay:.06s}#list.appear .crow:nth-child(4){animation-delay:.09s}#list.appear .crow:nth-child(n+5){animation-delay:.12s}
+@keyframes rowIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+/* Нажатия: кнопки слегка «проседают» */
+button{transition:transform .15s var(--ease-out),background-color .2s,color .2s,opacity .2s}
+button:active:not(:disabled){transform:scale(.96)}
+.crow{transition:background .2s,transform .15s var(--ease-out)}
+.crow:active{transform:scale(.985)}
+/* Окна: плавнее выезжают и уезжают */
+.sheet{animation:sheetIn .32s var(--ease-out)}
+@keyframes sheetIn{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:none}}
+@media (max-width:760px){@keyframes sheetIn{from{transform:translateY(40%)}to{transform:none}}}
+.modal.closing .sheet{transition:transform .18s ease-in,opacity .18s ease-in;transform:translateY(16px);opacity:0}
+.modal.closing{transition:opacity .18s;opacity:0}
+/* Плашки: ответ, закреп, поиск — выезжают */
+.replybar:not(.hide),.pinbar:not(.hide){animation:barIn .22s var(--ease-out)}
+@keyframes barIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+/* Кнопки «вниз» и «@» — пружинкой */
+.tobottom{transition:opacity .2s,transform .3s var(--spring)}
+/* Меньше движения — по желанию */
+.less-motion .crow,.less-motion .sheet,.less-motion img.photo,.less-motion .ava img{animation:none!important}
+@media (prefers-reduced-motion:reduce){.crow,.sheet,.ava img,.replybar,.pinbar{animation:none!important}}

@@ -76,9 +76,17 @@ function openProfileEdit(){
     const nm=el('label','fld');nm.append(el('span',null,'Имя'));
     const ni=document.createElement('input');ni.maxLength=30;ni.placeholder=myName;ni.value=p.display_name||'';nm.append(ni);s.append(nm);
 
-    const nk=el('label','fld');nk.append(el('span',null,'Ник'));
-    const nki=document.createElement('input');nki.value='@'+myName;nki.disabled=true;nk.append(nki);
-    nk.append(el('small','sm','По нику вас находят друзья. Его нельзя изменить.'));s.append(nk);
+    // Ник можно менять (не чаще раза в неделю — supabase/v3.sql, change_username). Свободен ли — проверяем на лету
+    const nk=el('label','fld');const nkh=el('span',null,'Ник ');const nks=el('small','nick-st');nkh.append(nks);nk.append(nkh);
+    const nkw=el('div','nick-in');nkw.append(el('span','nick-at','@'));
+    const nki=document.createElement('input');nki.value=myName;nki.maxLength=20;nki.autocapitalize='none';nki.autocomplete='off';nki.spellcheck=false;nkw.append(nki);nk.append(nkw);
+    nk.append(el('small','sm','По нику вас находят друзья. Латиница, цифры и _, от 3 символов. Менять можно раз в неделю.'));s.append(nk);
+    let nkT=0,nickOk=true;
+    nki.oninput=()=>{nki.value=nki.value.toLowerCase().replace(/[^a-z0-9_]/g,'');nks.textContent='';nks.className='nick-st';clearTimeout(nkT);
+      nickOk=nki.value===myName;if(nickOk)return;
+      if(nki.value.length<3){fillRich(nks,PI('i-x')+'минимум 3 символа');nks.classList.add('bad');return}
+      nkT=setTimeout(async()=>{const v=nki.value;const {data}=await sb.rpc('username_free',{u:v});if(nki.value!==v)return;nickOk=!!data;
+        fillRich(nks,data?PI('i-check')+'свободен':PI('i-x')+'занят');nks.classList.add(data?'ok':'bad')},350)};
 
     const bi=el('label','fld');const cnt=el('small','sm');
     const bh=el('span');bh.append(document.createTextNode('О себе '),cnt);bi.append(bh);
@@ -99,8 +107,16 @@ function openProfileEdit(){
     if(!profFull)err.textContent='Чтобы сохранять имя, описание и фото, запустите supabase/profile.sql в Supabase.';
     const save=el('button','primary wide','Сохранить');s.append(save);
     save.onclick=async()=>{
-      err.textContent='';save.disabled=true;save.textContent='Сохраняю…';
+      err.textContent='';
+      const newNick=nki.value.trim();
+      if(newNick!==myName&&(!nickOk||newNick.length<3)){err.textContent='Ник занят или слишком короткий';return}
+      save.disabled=true;save.textContent='Сохраняю…';
       try{
+        if(newNick!==myName){
+          const r=await sb.rpc('change_username',{u:newNick});
+          if(r.error)throw new Error(/function|schema cache/i.test(r.error.message)?'смена ника появится после обновления базы (supabase/v3.sql)':r.error.message);
+          people[me]=myName=newNick;if(prof[me])prof[me].username=newNick;toast('Ник изменён: @'+newNick);
+        }
         const patch={display_name:ni.value.trim()||null,bio:ta.value.trim()||null};
         if(profCols===0)patch.status=sti.value.trim()||null;
         const old=p.avatar_path;

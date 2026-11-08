@@ -11,13 +11,16 @@ async function storyUrl(p){
 }
 
 // ---------- Загрузка ----------
+let storyLiked=new Set();
 async function loadStories(){
   if(!me)return;
   const {data,error}=await sb.from('stories').select('*').gt('expires_at',new Date().toISOString()).order('created_at',{ascending:true}).limit(300);
   if(error){storiesOk=!/relation|does not exist|schema cache/i.test(error.message)?storiesOk:false;renderStories();return}
   stories=data||[];
   const ids=stories.filter(s=>s.owner!==me).map(s=>s.id);
-  if(ids.length){const {data:v}=await sb.from('story_views').select('story_id').eq('viewer',me).in('story_id',ids);storySeen=new Set((v||[]).map(x=>x.story_id))}
+  if(ids.length){let {data:v,error:e2}=await sb.from('story_views').select('story_id,liked_at').eq('viewer',me).in('story_id',ids);
+    if(e2)({data:v}=await sb.from('story_views').select('story_id').eq('viewer',me).in('story_id',ids)); // без supabase/v3.sql
+    storySeen=new Set((v||[]).map(x=>x.story_id));storyLiked=new Set((v||[]).filter(x=>x.liked_at).map(x=>x.story_id))}
   await loadProfiles([...new Set(stories.map(s=>s.owner))]);
   renderStories();
   // свои просроченные — убрать вместе с файлами
@@ -112,8 +115,13 @@ async function showStory(){
   const bot=el('div','stv-bot');
   if(owner===me){
     const views=el('button','stv-views');views.append(svgI('i-eye'),el('b',null,'…'));bot.append(views);
-    sb.from('story_views').select('viewer,viewed_at').eq('story_id',s.id).then(({data})=>{views.querySelector('b').textContent=(data||[]).length+' '+plural((data||[]).length,'просмотр','просмотра','просмотров');
-      views.onclick=()=>storyViewers(data||[])});
+    (async()=>{let {data,error}=await sb.from('story_views').select('viewer,viewed_at,liked_at').eq('story_id',s.id);
+      if(error)({data}=await sb.from('story_views').select('viewer,viewed_at').eq('story_id',s.id));
+      const list=data||[],likes=list.filter(v=>v.liked_at).length;
+      views.querySelector('b').textContent=list.length+' '+plural(list.length,'просмотр','просмотра','просмотров');
+      views.querySelector('.stv-likes')?.remove();
+      if(likes){const l=el('span','stv-likes');l.append(svgI('i-heart'),document.createTextNode(String(likes)));views.append(l)}
+      views.onclick=()=>storyViewers(list)})();
     const add=el('button','icon stv-ic');add.append(svgI('i-plus'));add.title='Ещё история';add.onclick=()=>{closeStory();pickStory()};
     const del=el('button','icon stv-ic');del.append(svgI('i-trash'));del.title='Удалить';del.onclick=async()=>{
       pauseStory(true);if(!confirm('Удалить эту историю?')){pauseStory(false);return}
@@ -127,8 +135,14 @@ async function showStory(){
       try{await sendMsg(owner,{body:'Ответ на вашу историю'+(s.caption?' «'+s.caption.slice(0,40)+'»':'')+': '+v},{noReply:true});toast('Ответ отправлен в личку')}catch(err){toast('Не удалось: '+err.message)}};
     rep.onkeydown=ev=>{if(ev.key==='Enter')sendR()};
     const go=el('button','icon stv-ic');go.append(svgI('i-send'));go.onclick=sendR;
-    const heart=el('button','icon stv-ic');heart.append(svgI('i-heart'));heart.title='Нравится';heart.onclick=async()=>{heart.classList.add('liked');
-      try{await sendMsg(owner,{body:'::slike::'},{noReply:true})}catch{}};
+    // Лайк — один раз на историю: отметка хранится в story_views.liked_at (supabase/v3.sql), автор видит, кто лайкнул
+    const heart=el('button','icon stv-ic'+(storyLiked.has(s.id)?' liked':''));heart.append(svgI('i-heart'));heart.title='Нравится';
+    heart.onclick=async()=>{
+      if(storyLiked.has(s.id)){toast('Вы уже отметили эту историю');return}
+      storyLiked.add(s.id);heart.classList.add('liked','pop');navigator.vibrate?.(10);
+      const {data,error}=await sb.rpc('like_story',{sid:s.id});
+      if(error&&!/function|schema cache/i.test(error.message)){storyLiked.delete(s.id);heart.classList.remove('liked');toast('Не получилось');return}
+      if(error||data!==false)sendMsg(owner,{body:'::slike::'},{noReply:true}).catch(()=>{})};
     bot.append(rep,heart,go);
     if(!storySeen.has(s.id)){storySeen.add(s.id);sb.from('story_views').insert({story_id:s.id,viewer:me}).then(()=>{})}
   }
@@ -165,10 +179,16 @@ function storyViewers(list){
   const back=el('div','stv-sheet');const sh=el('div','stv-sh');back.append(sh);
   const close=()=>{back.classList.add('out');setTimeout(()=>{back.remove();pauseStory(false)},200)};
   back.onclick=ev=>{if(ev.target===back)close()};back.onpointerdown=ev=>ev.stopPropagation();back.onpointerup=ev=>ev.stopPropagation();
-  const top=el('div','sheet-top');top.append(el('h3',null,'Просмотры · '+list.length));const x=el('button','icon');x.append(svgI('i-x'));x.onclick=close;top.append(x);sh.append(top);
+  const likes=list.filter(v=>v.liked_at).length;
+  const top=el('div','sheet-top');const h=el('h3',null,'Просмотры · '+list.length);if(likes){const l=el('span','stv-likes');l.append(svgI('i-heart'),document.createTextNode(String(likes)));h.append(l)}
+  top.append(h);const x=el('button','icon');x.append(svgI('i-x'));x.onclick=close;top.append(x);sh.append(top);
   const box=el('div','stv-list');sh.append(box);
   if(!list.length)box.append(el('p','sm','Пока никто не посмотрел.'));
-  loadProfiles(list.map(v=>v.viewer)).then(()=>list.forEach(v=>{const r=giRow(avatar(v.viewer,40),nameOf(v.viewer),agoStr(v.viewed_at),'gi-mem');r.onclick=()=>{closeStory();showProfile(v.viewer)};box.append(r)}));
+  // Сначала те, кто лайкнул; у них — сердечко справа
+  const sorted=[...list].sort((a,b)=>(!!b.liked_at-!!a.liked_at)||(new Date(b.viewed_at)-new Date(a.viewed_at)));
+  loadProfiles(list.map(v=>v.viewer)).then(()=>sorted.forEach(v=>{const r=giRow(avatar(v.viewer,40),nameOf(v.viewer),v.liked_at?'лайк · '+agoStr(v.liked_at):agoStr(v.viewed_at),'gi-mem');
+    if(v.liked_at){const hh=el('span','stv-liker');hh.append(svgI('i-heart'));r.append(hh)}
+    r.onclick=()=>{closeStory();showProfile(v.viewer)};box.append(r)}));
   sv.closeSheet=close;sv.el.append(back);
 }
 const agoStr=t=>{const s=(Date.now()-new Date(t))/1000;return !(s>=60)?'только что':s<3600?Math.floor(s/60)+' мин назад':Math.floor(s/3600)+' ч назад'};

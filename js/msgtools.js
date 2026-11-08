@@ -6,18 +6,21 @@ function startEdit(m){
   cancelReply();editing=m;
   $('rbWho').textContent='Редактирование';$('rbText').textContent=m.body;
   $('replybar').classList.remove('hide');$('replybar').classList.add('edit');
-  $('msg').value=m.body;$('msg').focus();
+  // input — чтобы вместо микрофона появилась кнопка «Отправить» (раньше на телефоне нажимали микрофон, и правка не сохранялась)
+  $('msg').value=m.body;$('msg').dispatchEvent(new Event('input'));$('msg').focus();
+  const n=$('msg').value.length;try{$('msg').setSelectionRange(n,n)}catch{}
 }
 function cancelEdit(){
   if(!editing)return;editing=null;$('replybar').classList.add('hide');$('replybar').classList.remove('edit');
-  $('msg').value='';loadDraft(cur);
+  $('msg').value='';loadDraft(cur);$('msg').dispatchEvent(new Event('input'));
 }
 async function finishEdit(){
   const m=editing,t=$('msg').value.trim();if(!m)return;
   if(!t||t===m.body){cancelEdit();return}
+  if(t.length>4000){toast('Слишком длинное сообщение');return}
   const {error}=await sb.rpc('edit_message',{mid:m.id,new_body:t});
-  if(error){alert('Не удалось изменить: '+(/function|schema cache/i.test(error.message)?'запустите supabase/more.sql':error.message));return}
-  editing=null;$('replybar').classList.add('hide');$('replybar').classList.remove('edit');$('msg').value='';saveDraft();
+  if(error){toast(/function|schema cache/i.test(error.message)?'Изменение недоступно: запустите supabase/more.sql':/нельзя изменить/i.test(error.message)?'Это сообщение уже нельзя изменить':'Не удалось изменить: '+error.message);return}
+  editing=null;$('replybar').classList.add('hide');$('replybar').classList.remove('edit');$('msg').value='';saveDraft();$('msg').dispatchEvent(new Event('input'));
   line({...m,body:t,edited_at:new Date().toISOString()});
 }
 // Отмена прежнего замыкания rbX: крестик закрывает и ответ, и редактирование

@@ -57,6 +57,7 @@ function renderPeer(){
   const mt=mainTitle(id);if(mt)hero.append(titleBadge(mt,'big'));
   const line=el('div','pv-line');
   if(blockedNow)line.append(el('span','pv-badge bad','Заблокирован'));
+  else if(isBlockedBy(id))line.append(el('span','pv-badge bad','Ограничил(а) общение с вами'));
   else if(online.has(id))line.append(el('span','pv-badge on','в сети'));
   if(p.status)line.append(el('span','pv-badge',p.status));
   if(line.children.length)hero.append(line);

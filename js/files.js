@@ -13,7 +13,7 @@ function fileEl(path){
   const ic=el('span','file-ic');ic.append(svgI(EXT_ICON[ext]||'i-file'));
   const t=el('span','file-t');t.append(el('b',null,name),el('small',null,fmtSize(fileSize(path))+(ext?' · '+ext.toUpperCase():'')));
   a.append(ic,t);
-  a.onclick=async e=>{e.preventDefault();e.stopPropagation();const u=await imgUrl(path,name);if(u)window.open(u,'_blank')};
+  a.onclick=async e=>{e.preventDefault();e.stopPropagation();logMsgEvent?.(msgByPath(path),'open');const u=await imgUrl(path,name);if(u)window.open(u,'_blank')};
   return a;
 }
 

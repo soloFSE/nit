@@ -5,6 +5,7 @@ async function boot(u){
   await loadProfiles([me],true);
   myName=people[me]||'я';renderMe();
   $('auth').classList.add('hide');$('app').classList.remove('hide');
+  chatsReady=false;$('list').innerHTML='';$('list').append(chatSkeleton());
   await loadBlocks();
   await loadFriends();
   await loadGroups();
@@ -14,6 +15,7 @@ async function boot(u){
   const {data:dl}=await sb.from('messages').select('deleted_at').not('deleted_at','is',null).order('deleted_at',{ascending:false}).limit(1);
   lastDel=dl?.[0]?.deleted_at||lastDel;
   await loadUnread();
+  chatsReady=true;renderChats();$('list').classList.add('appear');setTimeout(()=>$('list').classList.remove('appear'),700);
   loadLast();loadStories();loadTitles();
   try{
     const last=localStorage.getItem('nit-last');
@@ -79,7 +81,7 @@ function onMsg(m){
   if(m.expires_at&&new Date(m.expires_at)<=new Date())return;
   if(other===cur){const e=$('log').querySelector('.empty');if(e)e.remove();line(m);if(document.hidden&&isNew&&m.sender!==me){unread[other]=(+unread[other]||0)+1;updateBadge()}markRead()}
   else if(isNew&&m.sender!==me&&!m.deleted_at){unread[other]=(+unread[other]||0)+1;render();updateBadge()}
-  if(isNew&&m.sender!==me&&!m.deleted_at){if(other!==cur&&mentionsMe(m)){mentionOf[other]=true;scheduleChats()}notify(m);fxFor(m.body)}
+  if(isNew&&m.sender!==me&&!m.deleted_at){if(other!==cur&&mentionsMe(m)){mentionOf[other]=true;scheduleChats()}else if(other===cur&&!stick&&mentionsMe(m)&&typeof noteMention==='function')noteMention(m);notify(m);fxFor(m.body)}
 }
 // Обновить последние сообщения открытого чата (правки, ходы в игре) — запасной путь, если realtime не дошёл
 async function refreshRecent(k){
