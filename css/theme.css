@@ -980,3 +980,10 @@ input,textarea{transition:box-shadow .2s,background-color .2s}
 
 .gi-scroll>*{flex-shrink:0}
 .gi-hero.set-hero{flex:none}
+
+.sheet.wn-sheet{max-height:86vh;overflow-y:auto}
+.wn-head{display:flex;align-items:baseline;gap:8px;margin:14px 4px 4px;position:sticky;top:0;background:var(--surface);padding:6px 0;z-index:1}
+.wn-head b{font-size:18px;color:var(--acc)}
+.wn-head span{font-weight:700}
+.wn-head small{margin-left:auto;color:var(--dim)}
+.wn-new{font-style:normal;font-size:10.5px;font-weight:800;text-transform:uppercase;color:#fff;background:var(--acc);padding:2px 7px;border-radius:7px}

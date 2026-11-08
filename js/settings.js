@@ -25,8 +25,7 @@ function renderSettings(anim){
 }
 function setRow(icon,title,sub,f,cls){const r=giRow(icon,title,sub,cls);r.onclick=f;const ch=el('span','chev');ch.append(svgI('i-back'));r.append(ch);return r}
 
-const NIT_VERSION='3.0',FEEDBACK_URL='https://docs.google.com/document/d/1tv4pkKcjnsUK6MeOT2Gdkgzi2F8Y976j104CjGdnFKk/edit?usp=sharing';
-const WHATS_NEW=[['i-medal','Звания','Витрина как подарки, значок под ником и у имени в группах'],['i-brush','Редактор фото','Рисование, текст и обрезка перед отправкой'],['i-eye','Сведения о сообщении','Свайп влево по своему сообщению: кто прочитал, открыл, прослушал'],['i-heart','Истории','Лайк один раз, видно, кто лайкнул'],['i-user','Смена ника','Можно менять раз в неделю'],['i-bell','Непрочитанные и @','Плашка «Непрочитанные» и быстрый переход к упоминаниям'],['i-star','Плавность','Заглушки вместо резких появлений, больше анимаций']];
+const FEEDBACK_URL='https://docs.google.com/document/d/1tv4pkKcjnsUK6MeOT2Gdkgzi2F8Y976j104CjGdnFKk/edit?usp=sharing';
 function setMain(sc){
   const p=prof[me]||{};
   // Шапка: цветной фон под выбранную тему, аватар, имя, ник и быстрые плитки
@@ -52,7 +51,7 @@ function setMain(sc){
   sc.append(s1);
   // О Нити: что нового, идеи, обновление
   const s4=el('section','gi-card');s4.append(el('div','gi-h','О «Нити»'));
-  s4.append(setRow('i-star','Что нового','Версия '+NIT_VERSION,()=>openWhatsNew()));
+  s4.append(setRow('i-star','Что нового','v'+NIT_VERSION,()=>openWhatsNew()));
   s4.append(setRow('i-chats','Идеи и баги','Общий документ — пишите сюда, что улучшить',()=>window.open(FEEDBACK_URL,'_blank','noopener')));
   s4.append(setRow('i-redial','Обновить приложение','Загрузить свежую версию, если что-то глючит',()=>refreshApp()));
   sc.append(s4);
@@ -68,8 +67,14 @@ function setMain(sc){
 }
 function openWhatsNew(){
   openModal(s=>{
-    const top=el('div','sheet-top');top.append(el('h3',null,'Что нового · '+NIT_VERSION));const x=el('button','icon');x.append(svgI('i-x'));x.onclick=closeModal;top.append(x);s.append(top);
-    const l=el('div','wn-list');WHATS_NEW.forEach(([ic,t,d],i)=>{const r=giRow(ic,t,d,'gi-mem wn-row');r.style.animationDelay=i*45+'ms';l.append(r)});s.append(l);
+    s.classList.add('wn-sheet');
+    const top=el('div','sheet-top');top.append(el('h3',null,'История обновлений'));const x=el('button','icon');x.append(svgI('i-x'));x.onclick=closeModal;top.append(x);s.append(top);
+    const l=el('div','wn-list');let i=0;
+    CHANGELOG.forEach((c,ci)=>{
+      const h=el('div','wn-head');h.append(el('b',null,'v'+c.v),el('span',null,c.title),el('small',null,new Date(c.date).toLocaleDateString('ru-RU',{day:'numeric',month:'long'})));if(ci===0)h.append(el('i','wn-new','новое'));l.append(h);
+      c.items.forEach(([ic,t,d])=>{const r=giRow(ic,t,d,'gi-mem wn-row');r.style.animationDelay=(i++)*35+'ms';l.append(r)});
+    });
+    s.append(l);
   });
 }
 // Сбросить кэш сайта и перезагрузить — так подтягивается свежая версия
