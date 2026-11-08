@@ -4,11 +4,16 @@ let reacts={},replyTo=null,socialOk=true;
 
 // Загружаем реакции для сообщений, которые сейчас на экране
 async function loadReactions(ids){
-  ids=ids.filter(Boolean);if(!ids.length||!socialOk)return;
-  const {data,error}=await sb.from('reactions').select('message_id,user_id,emoji').in('message_id',ids);
-  if(error){socialOk=false;return} // SQL ещё не запущен
+  ids=ids.filter(i=>Number.isInteger(+i)&&+i>0);if(!ids.length||!socialOk)return;
+  // Порциями по 150: длинный список id не влезает в адрес запроса, и раньше это выключало реакции целиком
+  let data=[];
+  for(let k=0;k<ids.length;k+=150){
+    const r=await sb.from('reactions').select('message_id,user_id,emoji').in('message_id',ids.slice(k,k+150));
+    if(r.error){if(/relation|does not exist|schema cache/i.test(r.error.message))socialOk=false;return} // таблицы нет — SQL не запущен; иначе просто сбой сети
+    data=data.concat(r.data||[]);
+  }
   ids.forEach(i=>reacts[i]=[]);
-  (data||[]).forEach(r=>(reacts[r.message_id]||=[]).push(r));
+  data.forEach(r=>(reacts[r.message_id]||=[]).push(r));
   ids.forEach(i=>{if(nodes[i])drawReacts(i)});
 }
 function drawReacts(id){
@@ -26,7 +31,7 @@ function drawReacts(id){
   d.querySelector('small')?.before(w);
 }
 async function toggleReact(id,e){
-  if(!socialOk){alert('Чтобы ставить реакции, запустите supabase/social.sql в Supabase.');return}
+  if(!socialOk){toast('Реакции недоступны: запустите supabase/social.sql');return}
   const mine=(reacts[id]||[]).some(r=>r.user_id===me&&r.emoji===e);
   // Сразу показываем, потом отправляем
   reacts[id]=mine?(reacts[id]||[]).filter(r=>!(r.user_id===me&&r.emoji===e)):[...(reacts[id]||[]),{message_id:id,user_id:me,emoji:e}];
