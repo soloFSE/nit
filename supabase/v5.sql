@@ -41,7 +41,8 @@ create or replace function public.nit_premium_check() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
   if new.body ~ '(^|\s):[a-z]{2,6}[0-9]{1,3}:(\s|$)'
-     and not exists(select 1 from premium_users where user_id = new.sender and (until is null or until > now())) then
+     and not exists(select 1 from premium_users where user_id = new.sender and (until is null or until > now()))
+     and not public.is_app_admin(new.sender) then
     raise exception 'Премиум-эмодзи доступны только с Премиум';
   end if;
   return new;

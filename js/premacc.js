@@ -5,9 +5,9 @@ let premMap={},premOk=true;
 const PREM_COLORS=['#f59e0b','#ef4444','#ec4899','#a855f7','#3b82f6','#06b6d4','#22c55e','#64748b'];
 const premActive=r=>!!r&&(!r.until||new Date(r.until)>new Date());
 const isPremium=uid=>premOk&&premActive(premMap[uid]);
-const canUsePremEmoji=()=>!premOk||isPremium(me);
+const canUsePremEmoji=()=>!premOk||isPremium(me)||amAppAdmin; // админы приложения тоже могут
 const hasPremTokens=b=>{if(!b||typeof premRe==='undefined')return false;premRe.lastIndex=0;const r=premRe.test(b);premRe.lastIndex=0;return r};
-const premBlocked=b=>premOk&&!isPremium(me)&&hasPremTokens(b);
+const premBlocked=b=>premOk&&!isPremium(me)&&!amAppAdmin&&hasPremTokens(b);
 async function loadPremium(){
   if(!me)return;
   const {data,error}=await sb.from('premium_users').select('user_id,until,emoji_status,color');
