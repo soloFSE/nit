@@ -53,15 +53,59 @@ function tkRoster(){
   if(!list.some(x=>x.id===me))list.push({id:me,name:nameOf(me),t:tk.myT||(tk.myT=Date.now())});
   list.sort((a,b)=>(a.t-b.t)||String(a.id).localeCompare(String(b.id)));
   const seen=new Set();list=list.filter(x=>!seen.has(x.id)&&seen.add(x.id));
-  tk.roster=list;tk.hostId=list[0].id;tk.host=tk.hostId===me;
+  tk.roster=list;tk.hostId=list[0].id;tk.host=tk.hostId===me;tkLinks();
   if(tk.phase==='lobby')tkLobby();
 }
-function tkSend(p){try{tk.ch?.send({type:'broadcast',event:'tk',payload:p})}catch{}}
+// ---------- прямое соединение игроков (WebRTC DataChannel) ----------
+// Игроки соединяются друг с другом напрямую (пинг как до соседа), Supabase нужен только чтобы «познакомить» (обмен offer/answer/ice)
+// и как запасной путь: если прямое соединение не вышло (строгий NAT оператора), данные идут через Supabase, а с остальными — напрямую.
+function p2pLink(selfId,peerId,signal,onMsg,onState){
+  if(typeof RTCPeerConnection==='undefined')return null;
+  const init=String(selfId)<String(peerId);
+  const pc=new RTCPeerConnection({iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302','stun:stun.cloudflare.com:3478']}]});
+  let dc=null,open=false,pending=[],remote=false;
+  const st=v=>{if(open!==v){open=v;onState&&onState(v)}};
+  const setDc=d=>{dc=d;d.onopen=()=>st(true);d.onclose=()=>st(false);d.onmessage=e=>onMsg(e.data)};
+  pc.onicecandidate=e=>{if(e.candidate)signal({k:'ice',d:e.candidate})};
+  pc.ondatachannel=e=>setDc(e.channel);
+  pc.onconnectionstatechange=()=>{if(['failed','closed','disconnected'].includes(pc.connectionState))st(false)};
+  const flush=()=>{remote=true;pending.forEach(c=>pc.addIceCandidate(c).catch(()=>{}));pending=[]};
+  if(init){setDc(pc.createDataChannel('tk',{ordered:false,maxRetransmits:0}));pc.createOffer().then(o=>pc.setLocalDescription(o)).then(()=>signal({k:'offer',d:pc.localDescription})).catch(()=>{})}
+  return {
+    async handle(s){try{
+      if(s.k==='offer'){await pc.setRemoteDescription(s.d);flush();const a=await pc.createAnswer();await pc.setLocalDescription(a);signal({k:'answer',d:pc.localDescription})}
+      else if(s.k==='answer'){await pc.setRemoteDescription(s.d);flush()}
+      else if(s.k==='ice'){remote?pc.addIceCandidate(s.d).catch(()=>{}):pending.push(s.d)}
+    }catch{}},
+    send(str){if(open&&dc&&dc.readyState==='open'){try{dc.send(str);return true}catch{}}return false},
+    isOpen:()=>open&&!!dc&&dc.readyState==='open',
+    close(){try{dc?.close();pc.close()}catch{}}
+  };
+}
+function tkBcast(p){try{tk.ch?.send({type:'broadcast',event:'tk',payload:p})}catch{}}
+function tkLinkFor(id){
+  if(!tk.links)tk.links={};let l=tk.links[id];if(l&&l.dead)l=null;
+  if(!l){try{l=tk.links[id]=p2pLink(me,id,s=>tkBcast({t:'rtc',to:id,from:me,s}),d=>{try{tkNet(JSON.parse(d))}catch{}},()=>tkPing());if(l)l.born=Date.now()}catch{l=null}}
+  return l;
+}
+function tkLinks(){ // создать/убрать прямые соединения под текущий список игроков
+  if(!tk)return;const ids=tk.roster.filter(x=>x.id!==me).map(x=>x.id);
+  ids.forEach(id=>{const l=tkLinkFor(id);if(l&&!l.isOpen()&&Date.now()-l.born>15000){l.close();delete tk.links[id];tkLinkFor(id)}}); // не вышло за 15 с — пробуем заново
+  Object.keys(tk.links||{}).forEach(id=>{if(!ids.includes(id)){tk.links[id].close();delete tk.links[id]}});
+}
+function tkSend(p){
+  const peers=tk.roster.filter(x=>x.id!==me);let direct=[];
+  if(tk.links&&peers.length){const str=JSON.stringify(p);for(const x of peers){const l=tk.links[x.id];if(l&&l.send(str))direct.push(x.id)}}
+  tk.direct=direct.length;tk.allDirect=peers.length>0&&direct.length===peers.length;
+  if(direct.length<peers.length||!peers.length){if(direct.length)p.sk=direct;tkBcast(p)} // остальным — запасным путём через Supabase
+}
 const tkOwd=id=>Math.min(.4,(tk.rtt[id]||100)/2000); // односторонняя задержка, сек
 
 // ---------- сеть ----------
 function tkNet(p){
   if(!tk||!p)return;
+  if(p.sk&&p.sk.includes(me))return; // это уже пришло напрямую
+  if(p.t==='rtc'){if(p.to===me&&p.from){const l=tkLinkFor(p.from);l&&l.handle(p.s)}return}
   if(p.t==='start'){tkStart(p.seed,p.list);return}
   if(p.t==='bots'){tk.botN=p.n|0;if(tk.phase==='lobby')tkLobby();return}
   if(p.t==='pg'){if(p.id!==me)tkSend({t:'pn',to:p.id,from:me,ts:p.ts});return}
@@ -380,7 +424,7 @@ function tkScore(){
   Object.values(tk.players).sort((a,b)=>b.sc-a.sc).forEach(p=>{const c=el('span','tk-chip'+(p.id===me?' me':'')+(p.al?'':' dead'));c.style.setProperty('--c',tkCol(p.hue));c.append(el('i'),el('b',null,p.name.split(' ')[0]),el('em',null,String(p.sc)));box.append(c)});
   box.append(el('small',null,'до '+TK.WIN));
 }
-function tkPing(){const e=$('tkPing');if(!e||!tk)return;e.textContent=tk.ping?tk.ping+' мс':'';e.className='tk-ping'+(tk.ping>220?' bad':tk.ping>110?' mid':'')}
+function tkPing(){const e=$('tkPing');if(!e||!tk)return;const mode=tk.allDirect?' · прямое':(tk.direct?' · частично прямое':'');e.textContent=tk.ping?tk.ping+' мс'+mode:'';e.className='tk-ping'+(tk.ping>220?' bad':tk.ping>110?' mid':'')}
 
 // ---------- интерфейс ----------
 function tkUI(){
@@ -433,7 +477,9 @@ function tkLobby(){
     const go=el('button','primary','Начать игру');go.disabled=tk.roster.length+tk.botN<2;go.onclick=tkBegin;row.append(go);
     if(go.disabled)c.append(el('p','tk-hint','Нужен ещё игрок — позовите друга или добавьте бота'));
   }else c.append(el('p','tk-hint','Ждём, пока хозяин комнаты начнёт игру…'));
-  const ex=el('button','ghost','Выйти');ex.onclick=tkClose;row.append(ex);c.append(row);box.append(c);
+  const ex=el('button','ghost','Выйти');ex.onclick=tkClose;row.append(ex);c.append(row);
+  if(tk.roster.length>1)c.append(el('p','tk-hint',tk.direct===tk.roster.length-1&&tk.direct>0?'Прямое соединение установлено — пинг минимальный':'Соединяю напрямую для низкого пинга… (игроки при этом видят IP друг друга)'));
+  box.append(c);
 }
 function tkInvite(){
   openModal(s=>{
@@ -446,6 +492,7 @@ function tkInvite(){
 }
 function tkClose(){
   if(!tk)return;cancelAnimationFrame(tk.raf);window.removeEventListener('keydown',tk.kd);window.removeEventListener('keyup',tk.ku);window.removeEventListener('pointerup',tk.pu);
+  try{Object.values(tk.links||{}).forEach(l=>l.close())}catch{}
   try{tk.ch?.unsubscribe?.();sb.removeChannel?.(tk.ch)}catch{}
   const w=$('tk');w?.classList.remove('in');setTimeout(()=>w?.remove(),220);tk=null;
 }

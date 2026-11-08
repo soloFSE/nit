@@ -82,6 +82,7 @@ function renderPeer(){
   if(p.bio){const c=el('section','gi-card');c.append(el('div','gi-h','О себе'),el('p','gi-desc',p.bio));sc.append(c)}
   // Звания и Премиум
   const pc=typeof premiumCard==='function'&&premiumCard(id);if(pc)sc.append(pc);
+  const gc=typeof giftsCard==='function'&&giftsCard(id);if(gc)sc.append(gc);
   const tc=titlesCard(id);if(tc)sc.append(tc);
   // Ник и общие группы
   const info=el('section','gi-card');
