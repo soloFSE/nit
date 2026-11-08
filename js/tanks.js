@@ -41,7 +41,35 @@ function openTanks(code,opt={}){
     cam:{x:TK.W/2,y:TK.H/2},shake:0,rtt:{},seen:new Set(),pingT:0,ping:0,time:0};
   tkUI();tkJoin();
 }
-function tkJoin(){
+// ---------- свой игровой сервер (WebSocket) ----------
+// Адрес сервера. Пусто — играем как раньше (прямое соединение + Supabase). Подробности: gameserver/README.md
+const TK_SERVER='';
+function tkWake(){if(TK_SERVER){try{fetch(TK_SERVER.replace(/^ws/,'http'),{mode:'no-cors',cache:'no-store'}).catch(()=>{})}catch{}}}
+// Канал с тем же устройством, что у Supabase (send / presenceState / unsubscribe), но поверх WebSocket
+function tkWsChannel(code,onMsg,onRoster){
+  return new Promise(res=>{
+    let ws,list=[],done=false,ping=0,dead=false;
+    const fin=v=>{if(!done){done=true;res(v)}};
+    try{ws=new WebSocket(TK_SERVER)}catch{return res(null)}
+    const t=setTimeout(()=>{try{ws.close()}catch{}fin(null)},12000);
+    const api={send(o){if(ws.readyState===1)ws.send(JSON.stringify({t:'m',p:o.payload}))},presenceState:()=>({a:list}),unsubscribe(){dead=true;clearInterval(ping);try{ws.close()}catch{}}};
+    ws.onopen=()=>{ws.send(JSON.stringify({t:'join',room:code,id:me,name:nameOf(me),tt:tk.myT||(tk.myT=Date.now())}));ping=setInterval(()=>{if(ws.readyState===1)ws.send('{"t":"ping"}')},15000)};
+    ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch{return}
+      if(m.t==='roster'){list=m.list;clearTimeout(t);fin(api);onRoster()}else if(m.t==='m')onMsg(m.p)};
+    ws.onclose=ws.onerror=()=>{clearTimeout(t);clearInterval(ping);if(!done)fin(null);else if(!dead&&tk&&tk.ch===api){tk.ws=false;tk.ch=null;toast('Связь с игровым сервером потеряна');tkJoinSb()}};
+  });
+}
+async function tkJoin(){
+  if(TK_SERVER){
+    tkWake();const code=tk.code;let ch=null;
+    for(let i=0;i<2&&!ch&&tk&&tk.code===code;i++)ch=await tkWsChannel(code,p=>tkNet(p),()=>tkRoster());
+    if(!tk||tk.code!==code){try{ch?.unsubscribe()}catch{}return}
+    if(ch){tk.ch=ch;tk.ws=true;tkRoster();return}
+  }
+  tkJoinSb();
+}
+function tkJoinSb(){
+  if(!tk)return;
   const ch=tk.ch=sb.channel('tanks-'+tk.code,{config:{presence:{key:me},broadcast:{self:false}}});
   ch.on('presence',{event:'sync'},()=>tkRoster()).on('broadcast',{event:'tk'},({payload})=>tkNet(payload))
     .subscribe(async st=>{if(st==='SUBSCRIBED'){try{await ch.track({id:me,name:nameOf(me),t:Date.now()})}catch{}tkRoster()}});
@@ -296,15 +324,15 @@ function tkStep(dt){
   for(let i=tk.parts.length-1;i>=0;i--){const q=tk.parts[i];q.l-=dt;q.x+=q.vx*dt;q.y+=q.vy*dt;q.vx*=.96;q.vy*=.96;if(q.l<=0)tk.parts.splice(i,1)}
   tk.boom=tk.boom.filter(e=>(e.t+=dt)<.7);
   tk.shake=Math.max(0,tk.shake-dt);
-  tk.sendT-=dt;if(tk.sendT<=0){tk.sendT=tk.srv?.1:TK.SEND;if(m)tkSendState(m);if(tk.host)pl.filter(p=>p.bot).forEach(tkSendState)}
-  tk.pingT-=dt;if(tk.pingT<=0){tk.pingT=tk.srv?7:2;tkSend({t:'pg',id:me,ts:performance.now()})}
-  tk.flT=(tk.flT||0)-dt;if(tk.flT<=0){tk.flT=tk.srv?.1:.05;tkFlush()}
+  tk.sendT-=dt;if(tk.sendT<=0){tk.sendT=tk.srv&&!tk.ws?.1:TK.SEND;if(m)tkSendState(m);if(tk.host)pl.filter(p=>p.bot).forEach(tkSendState)}
+  tk.pingT-=dt;if(tk.pingT<=0){tk.pingT=tk.srv&&!tk.ws?7:2;tkSend({t:'pg',id:me,ts:performance.now()})}
+  tk.flT=(tk.flT||0)-dt;if(tk.flT<=0){tk.flT=tk.srv&&!tk.ws?.1:.05;tkFlush()}
   tk.lkT=(tk.lkT||0)-dt;if(tk.lkT<=0){tk.lkT=3;tkLinks()}
   tk.cntT=(tk.cntT||0)-dt;if(tk.cntT<=0){tk.cntT=5;tk.srvRate=Math.round(((tk.srvN||0)-(tk.srvN0||0))/5);tk.srvN0=tk.srvN||0;tkPing()}
 }
 function tkSendState(p){
   const k=Math.round(p.x)+','+Math.round(p.y)+','+p.a.toFixed(2)+','+p.ba.toFixed(2)+','+p.hp+','+(p.al?1:0)+','+(p.sh&&p.shT>0?1:0)+','+Math.round(p.vx/30)+','+Math.round(p.vy/30),now=performance.now();
-  if(p.ls===k&&now-p.lsT<(tk.srv?1000:300))return;p.ls=k;p.lsT=now; // стоит на месте — только «пульс» раз в 0,3 с
+  if(p.ls===k&&now-p.lsT<(tk.srv&&!tk.ws?1000:300))return;p.ls=k;p.lsT=now; // стоит на месте — только «пульс» раз в 0,3 с
   tkSend({t:'s',id:p.id,x:Math.round(p.x),y:Math.round(p.y),a:+p.a.toFixed(2),ba:+p.ba.toFixed(2),vx:Math.round(p.vx),vy:Math.round(p.vy),hp:p.hp,al:p.al?1:0,sh:p.sh&&p.shT>0?1:0})}
 // Чужой танк: рисуем на 100 мс в прошлом между двумя снимками; если новых нет — продолжаем по скорости (до 150 мс)
 function tkInterp(p){
@@ -454,7 +482,7 @@ function tkScore(){
   Object.values(tk.players).sort((a,b)=>b.sc-a.sc).forEach(p=>{const c=el('span','tk-chip'+(p.id===me?' me':'')+(p.al?'':' dead'));c.style.setProperty('--c',tkCol(p.hue));c.append(el('i'),el('b',null,p.name.split(' ')[0]),el('em',null,String(p.sc)));box.append(c)});
   box.append(el('small',null,'до '+TK.WIN));
 }
-function tkPing(){const e=$('tkPing');if(!e||!tk)return;const kinds=Object.values(tk.links||{}).filter(l=>l.isOpen()).map(l=>l.kind),relay=kinds.includes('relay'),mode=tk.allDirect?(relay?' · ретранслятор':' · прямое'):(tk.direct?' · частично прямое':(tk.roster.length>1?' · сервер':''));e.textContent=tk.ping?tk.ping+' мс'+mode:'';e.title='Через сервер: '+(tk.srvRate||0)+' сообщ./с';e.className='tk-ping'+(tk.ping>220?' bad':tk.ping>110?' mid':'')}
+function tkPing(){const e=$('tkPing');if(!e||!tk)return;const kinds=Object.values(tk.links||{}).filter(l=>l.isOpen()).map(l=>l.kind),relay=kinds.includes('relay'),mode=tk.allDirect?(relay?' · ретранслятор':' · прямое'):(tk.direct?' · частично прямое':(tk.roster.length>1?(tk.ws?' · игровой сервер':' · сервер'):''));e.textContent=tk.ping?tk.ping+' мс'+mode:'';e.title='Через сервер: '+(tk.srvRate||0)+' сообщ./с';e.className='tk-ping'+(tk.ping>220?' bad':tk.ping>110?' mid':'')}
 
 // ---------- интерфейс ----------
 function tkUI(){
