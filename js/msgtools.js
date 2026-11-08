@@ -18,6 +18,7 @@ async function finishEdit(){
   const m=editing,t=$('msg').value.trim();if(!m)return;
   if(!t||t===m.body){cancelEdit();return}
   if(t.length>4000){toast('Слишком длинное сообщение');return}
+  if(typeof premBlocked==='function'&&premBlocked(t)){openPremium();return}
   const {error}=await sb.rpc('edit_message',{mid:m.id,new_body:t});
   if(error){toast(/function|schema cache/i.test(error.message)?'Изменение недоступно: запустите supabase/more.sql':/нельзя изменить/i.test(error.message)?'Это сообщение уже нельзя изменить':'Не удалось изменить: '+error.message);return}
   editing=null;$('replybar').classList.add('hide');$('replybar').classList.remove('edit');$('msg').value='';saveDraft();$('msg').dispatchEvent(new Event('input'));

@@ -1,9 +1,9 @@
 // Премиум-эмодзи: свои наборы картинок/видео, которые вставляются в текст как :код: (например :rb7:)
 // и показываются в сообщении картинкой, как премиум-эмодзи в Telegram. Если в сообщении только они — крупно.
 // Наборы: встроенный «Роботы» (рисуется кодом) + любые из emoji/packs.json (скачиваются скриптом tools/tg-pack.js).
-const PREM_BUILTIN=[{id:'rb',name:'Роботы',n:24,kind:'svg'}];
+const PREM_BUILTIN=[{id:'bot',name:'Роботы',n:24,kind:'svg'}];
 let PREM_PACKS=[...PREM_BUILTIN];
-let premRe=/:(rb)(\d{1,3}):/g;
+let premRe=/:(bot)(\d{1,3}):/g;
 async function loadPremPacks(){
   try{const r=await fetch('emoji/packs.json',{cache:'no-cache'});if(!r.ok)return;const j=await r.json();
     (j.packs||[]).forEach(p=>{if(/^[a-z]{2,6}$/.test(p.id)&&!PREM_PACKS.some(x=>x.id===p.id))PREM_PACKS.push({id:p.id,name:p.name||p.id,n:p.n|0,ext:p.ext||'webp',kind:'file'})});
@@ -59,15 +59,25 @@ function premiumize(frag){
 const isPremOnly=b=>{if(!b||b.length>40)return false;premRe.lastIndex=0;return b.replace(premRe,'').trim()===''&&/:/.test(b)};
 const premPreview=b=>String(b||'').replace(premRe,()=>PI('i-gem'));
 
-// Вкладка «Премиум» в панели эмодзи
+// Вкладка «Премиум» в панели эмодзи: разделы по наборам с липкими заголовками, внизу — значки наборов.
+// Без Премиума эмодзи видны, но закрыты замком; нажатие открывает экран «Премиум».
 function buildPremium(force){
-  const box=$('premTab');if(box.children.length&&!force)return;box.innerHTML='';
-  const tabs=el('div','prem-tabs');const grid=el('div','prem-grid');box.append(tabs,grid);
-  let cur=PREM_PACKS[0].id;
-  const show=id=>{cur=id;[...tabs.children].forEach(b=>b.classList.toggle('on',b.dataset.id===id));grid.innerHTML='';
-    const p=PREM_PACKS.find(x=>x.id===id);
-    for(let i=0;i<p.n;i++){const b=el('button','prem-it');b.append(premEl(id,i));b.onclick=()=>{insertAtCursor(':'+id+i+': ')};grid.append(b)}};
-  PREM_PACKS.forEach(p=>{const b=el('button','prem-pk',p.name);b.dataset.id=p.id;b.onclick=()=>show(p.id);tabs.append(b)});
-  show(cur);
+  const box=$('premTab'),bar=$('pkbar');if(box.children.length&&!force)return;box.innerHTML='';bar.innerHTML='';
+  const locked=typeof canUsePremEmoji==='function'&&!canUsePremEmoji();
+  if(locked){const b=el('button','prem-lock');b.append(svgI('i-gem'),el('span',null,'Премиум-эмодзи доступны с Премиум'),el('i',null,'Подробнее'));b.onclick=()=>openPremium();box.append(b)}
+  const secs={};
+  PREM_PACKS.forEach(p=>{
+    const sec=el('section','prem-sec');secs[p.id]=sec;
+    const h=el('div','prem-h');h.append(el('b',null,p.name),el('small',null,String(p.n)));sec.append(h);
+    const g=el('div','prem-grid');
+    for(let i=0;i<p.n;i++){const b=el('button','prem-it'+(locked?' lk':''));b.append(premEl(p.id,i));
+      b.onclick=()=>{if(locked){openPremium();return}insertAtCursor(':'+p.id+i+': ')};g.append(b)}
+    sec.append(g);box.append(sec);
+    const ic=el('button','pk-ic');ic.title=p.name;ic.append(premEl(p.id,0));
+    ic.onclick=()=>{box.scrollTo({top:sec.offsetTop-box.offsetTop-(locked?44:0),behavior:'smooth'})};bar.append(ic);
+  });
+  // подсветка текущего набора по прокрутке
+  box.onscroll=()=>{let cur=PREM_PACKS[0].id;PREM_PACKS.forEach(p=>{if(secs[p.id].offsetTop-box.offsetTop<=box.scrollTop+60)cur=p.id});
+    [...bar.children].forEach((b,i)=>b.classList.toggle('on',PREM_PACKS[i].id===cur))};box.onscroll();
 }
 loadPremPacks();

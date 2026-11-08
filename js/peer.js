@@ -52,7 +52,9 @@ function renderPeer(){
   // Шапка: фон под цвет аватарки
   const hero=el('section','pv-hero');hero.style.setProperty('--h',hue(id));
   const av=avatar(id,120);if(p.avatar_path){av.classList.add('zoom');av.onclick=()=>openViewer(avatarUrl(p.avatar_path))}
-  hero.append(av,el('h2',null,nameOf(id)));
+  const h2=el('h2',null,nameOf(id));const pm=typeof premMark==='function'&&premMark(id);if(pm)h2.append(pm);
+  const ph=typeof premHue==='function'&&premHue(id);if(ph!=null)hero.style.setProperty('--h',ph);
+  hero.append(av,h2);
   const nk=el('button','pv-nick','@'+nick);nk.title='Скопировать ник';nk.onclick=()=>{navigator.clipboard?.writeText('@'+nick);toast('Ник скопирован')};hero.append(nk);
   const mt=mainTitle(id);if(mt)hero.append(titleBadge(mt,'big'));
   const line=el('div','pv-line');
@@ -78,7 +80,8 @@ function renderPeer(){
 
   // О себе
   if(p.bio){const c=el('section','gi-card');c.append(el('div','gi-h','О себе'),el('p','gi-desc',p.bio));sc.append(c)}
-  // Звания
+  // Звания и Премиум
+  const pc=typeof premiumCard==='function'&&premiumCard(id);if(pc)sc.append(pc);
   const tc=titlesCard(id);if(tc)sc.append(tc);
   // Ник и общие группы
   const info=el('section','gi-card');

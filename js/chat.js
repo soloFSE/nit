@@ -51,7 +51,7 @@ function draw(m){
   if(!m.deleted_at&&!sp&&!m.image_path&&(isBigEmoji(m.body)||(typeof isPremOnly==='function'&&isPremOnly(m.body))))d.classList.add('big');
 
   // В группе над чужим сообщением — имя отправителя
-  if(m.group_id&&m.sender!==me){const w=el('b','who',nameOf(m.sender));w.style.setProperty('--h',hue(m.sender));const tm=typeof titleMini==='function'&&titleMini(m.sender);if(tm)w.append(tm);d.append(w);
+  if(m.group_id&&m.sender!==me){const w=el('b','who',nameOf(m.sender));w.style.setProperty('--h',hue(m.sender));const tm=typeof titleMini==='function'&&titleMini(m.sender);if(tm)w.append(tm);const pm2=typeof premMark==='function'&&premMark(m.sender);if(pm2)w.append(pm2);d.append(w);
     const av=avatar(m.sender,30);av.classList.add('mava');av.onclick=e=>{e.stopPropagation();showProfile(m.sender)};d.append(av);d.classList.add('g')}
   if(m.forwarded_from&&!m.deleted_at)d.append(el('div','fwd','Переслано от '+nameOf(m.forwarded_from)));
 

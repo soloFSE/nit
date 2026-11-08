@@ -140,7 +140,14 @@
       <div id="list"></div>
       <div class="hide"><div class="seg tabs"><button id="tabF">Друзья</button><button class="g" id="tabG">Группы</button></div><section id="secF"></section><section id="secG"><div id="glist"></div></section></div>
     </div>
+    <section class="tab-pane" id="tabStories"></section>
+    <section class="tab-pane" id="tabGames"></section>
     <button class="fab" id="fab" title="Новый чат"><svg><use href="#i-pencil"/></svg></button>
+    <nav class="botnav" id="botnav">
+      <button data-t="chats" class="on"><svg><use href="#i-chats"/></svg><span>Чаты</span><i class="bn-badge hide" id="bnChats"></i></button>
+      <button data-t="stories"><svg><use href="#i-circle"/></svg><span>Статусы</span><i class="bn-dot hide" id="bnStories"></i></button>
+      <button data-t="games"><svg><use href="#i-dice"/></svg><span>Игры</span></button>
+    </nav>
   </aside>
 
   <main class="pane" id="pane">
@@ -172,15 +179,16 @@
       <button data-a="ttl"><svg><use href="#i-timer"/></svg>Исчезающие сообщения</button>
     </div>
     <div id="emoji" class="emoji hide">
+      <div class="etop">
+        <button id="etE" class="on">Эмодзи</button>
+        <button id="etP">Премиум</button>
+        <button id="etS">Стикеры</button>
+        <button id="etDel" class="etdel" title="Стереть"><svg><use href="#i-backspace"/></svg></button>
+      </div>
       <div id="emojiTab" class="emoji-tab"></div>
       <div id="premTab" class="prem-tab hide"></div>
       <div id="stickTab" class="stick-tab hide"></div>
-      <div class="etabs">
-        <button id="etE" class="on" title="Эмодзи"><svg><use href="#i-smile"/></svg><span>Эмодзи</span></button>
-        <button id="etP" title="Премиум"><svg><use href="#i-gem"/></svg><span>Премиум</span></button>
-        <button id="etS" title="Стикеры"><svg><use href="#i-image"/></svg><span>Стикеры</span></button>
-        <button id="etDel" class="etdel" title="Стереть"><svg><use href="#i-backspace"/></svg></button>
-      </div>
+      <div id="pkbar" class="pkbar hide"></div>
     </div>
     <div id="replybar" class="replybar hide">
       <svg><use href="#i-reply"/></svg>
@@ -299,12 +307,14 @@
 <script src="js/peer.js"></script>
 <script src="js/newchat.js"></script>
 <script src="js/stories.js"></script>
+<script src="js/tabs.js"></script>
 <script src="js/titles.js"></script>
 <script src="js/voice.js"></script>
 <script src="js/circle.js"></script>
 <script src="js/social.js"></script>
 <script src="js/emoji.js"></script>
 <script src="js/premium.js"></script>
+<script src="js/premacc.js"></script>
 <script src="js/reactions.js"></script>
 <script src="js/msgtools.js"></script>
 <script src="js/fun.js"></script>

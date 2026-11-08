@@ -2,6 +2,7 @@
 // Единая точка отправки — все виды сообщений идут через sendMsg
 async function sendMsg(to,fields,opt={}){
   if(!to)return null;
+  if(typeof premBlocked==='function'&&premBlocked(fields.body)){openPremium();throw new Error('премиум-эмодзи доступны только с Премиум')}
   const row={sender:me,...target(to),body:'',...fields,...(opt.noReply?{}:takeReply()),...ttlField(to,fields.body)};
   const {data,error}=await sb.from('messages').insert(row).select().single();
   if(error){

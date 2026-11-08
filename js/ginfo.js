@@ -136,7 +136,7 @@ function memberActions(gid,u){
     // Шапка в цвет аватарки: фото, имя, ник, роль, звание, «в сети»
     const hero=el('div','mem-hero');hero.style.setProperty('--h',hue(u));
     const x=el('button','icon mem-x');x.append(svgI('i-x'));x.onclick=closeModal;hero.append(x);
-    const av=avatar(u,84);hero.append(av,el('b','mem-name',nameOf(u)));
+    const av=avatar(u,84);const nm=el('b','mem-name',nameOf(u));const pm=typeof premMark==='function'&&premMark(u);if(pm)nm.append(pm);hero.append(av,nm);
     const sub=el('div','mem-sub');sub.append(el('span',null,'@'+(people[u]||'?')));
     if(online.has(u))sub.append(el('span','mem-on','в сети'));
     hero.append(sub);

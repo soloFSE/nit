@@ -51,7 +51,7 @@ async function loadPrefs(){
 }
 function setPref(k,key,on){
   const p=chatPrefs[k]||(chatPrefs[k]={});
-  if(key==='p'){if(on&&Object.keys(chatPrefs).filter(x=>chatPrefs[x].p).length>=5){toast('Можно закрепить не больше 5 чатов');return}p.p=on?Date.now():0}
+  if(key==='p'){const lim=(typeof isPremium==='function'&&isPremium(me))?10:5;if(on&&Object.keys(chatPrefs).filter(x=>chatPrefs[x].p).length>=lim){toast('Можно закрепить не больше '+lim+' чатов'+(lim===5?' (с Премиумом — 10)':''));return}p.p=on?Date.now():0}
   else{p.a=on?1:0;if(on)p.p=0}
   savePrefs(k);renderChats();toast(key==='p'?(on?'Чат закреплён':'Чат откреплён'):(on?'Чат в архиве':'Чат возвращён из архива'));
 }
@@ -99,7 +99,7 @@ function chatRow(it){
   const r=el('div','crow'+(cur===k?' on':'')+(n?' unread':''));r.dataset.k=k;
   r.append(it.group?groupAvatar(it.g,52):avatar(k,52));
   const body=el('div','crow-b');
-  const top=el('div','crow-t');top.append(el('b',null,it.name));
+  const top=el('div','crow-t');const nb=el('b',null,it.name);if(!it.group&&typeof premMark==='function'){const pm=premMark(k);if(pm)nb.append(pm)}top.append(nb);
   if(m){const tm=el('time',null,shortTime(m.created_at));top.append(tm)}
   const bot=el('div','crow-s');
   const pv=el('span','crow-p');

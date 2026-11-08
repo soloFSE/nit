@@ -31,7 +31,7 @@ function setMain(sc){
   // Шапка: цветной фон под выбранную тему, аватар, имя, ник и быстрые плитки
   const hero=el('section','gi-hero set-hero');
   const av=avatar(me,104);if(p.avatar_path){av.classList.add('zoom');av.onclick=()=>openViewer(avatarUrl(p.avatar_path))}else av.onclick=()=>openProfileEdit();
-  hero.append(av,el('h2',null,nameOf(me)));
+  const h2=el('h2',null,nameOf(me));const pm=typeof premMark==='function'&&premMark(me);if(pm)h2.append(pm);hero.append(av,h2);
   const sub=el('div','set-sub');const nk=el('button','set-nick','@'+myName);nk.title='Скопировать ник';nk.onclick=()=>{navigator.clipboard?.writeText('@'+myName);toast('Ник скопирован')};sub.append(nk);
   if(p.status)sub.append(el('span','set-status',p.status));hero.append(sub);
   const mt=typeof mainTitle==='function'&&mainTitle(me);if(mt)hero.append(titleBadge(mt,'big'));
@@ -43,6 +43,7 @@ function setMain(sc){
   hero.append(tiles);sc.append(hero);
   // Аккаунты на этом устройстве
   const acc=el('section','gi-card');acc.append(el('div','gi-h','Аккаунты'));accountsSection(acc);sc.append(acc);
+  const sp=el('section','gi-card prem-card');const pr=setRow('i-gem','Нить Премиум',isPremium(me)?'Подключён '+untilText(premMap[me]):'Эмодзи, звезда у имени, цвет профиля и другое',()=>openPremium(),'pr-set');sp.append(pr);sc.append(sp);
   const s1=el('section','gi-card');
   s1.append(setRow('i-gear','Оформление','Тема, логотип и цвета, обои, размер текста',()=>goSet('look')));
   s1.append(setRow('i-bell','Уведомления и звук','Сообщения, звонки, звуки',()=>goSet('notify')));

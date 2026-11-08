@@ -32,6 +32,7 @@ const byOwner=()=>{const m={};stories.forEach(s=>(m[s.owner]||=[]).push(s));retu
 
 // ---------- Полоска кружков ----------
 function renderStories(){
+  if(typeof renderStoriesTab==='function')renderStoriesTab();
   const bar=$('stories');if(!bar)return;bar.innerHTML='';
   if(!storiesOk){bar.classList.add('hide');return}
   bar.classList.remove('hide');

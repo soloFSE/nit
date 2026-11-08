@@ -103,6 +103,7 @@ let emoMode='e';
 function emojiTab(mode){
   if(mode===true)mode='s';if(mode===false||!mode)mode='e';emoMode=mode;
   $('emojiTab').classList.toggle('hide',mode!=='e');$('premTab').classList.toggle('hide',mode!=='p');$('stickTab').classList.toggle('hide',mode!=='s');
+  $('pkbar').classList.toggle('hide',mode!=='p');
   $('etE').classList.toggle('on',mode==='e');$('etP').classList.toggle('on',mode==='p');$('etS').classList.toggle('on',mode==='s');
   if(mode==='s')buildStickers();else if(mode==='p')buildPremium();else loadPicker().catch(()=>{});
 }
