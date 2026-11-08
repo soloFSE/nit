@@ -87,6 +87,7 @@ document.querySelectorAll('#attach [data-a]').forEach(b=>b.onclick=e=>{
   else if(a==='gallery')$('gfile').click();
   else if(a==='poll')openPollEditor();
   else if(a==='ttl')openTtlMenu();
+  else if(a==='tanks')startTanksInvite();
   else sendGame(a);
 });
 

@@ -35,10 +35,17 @@ function renderStoriesTab(){
   sec('Новые',list.filter(x=>x.unseen));sec('Просмотренные',list.filter(x=>!x.unseen));
   if(!list.length){const e=el('div','tp-empty');e.append(svgI('i-circle'),el('b',null,'Пока нет статусов друзей'),el('span',null,'Когда друзья опубликуют статус, он появится здесь'));body.append(e)}
 }
-// «Игры» — заглушка, содержимое появится позже
+// «Игры»: карточка «Танки» — создать комнату, играть с ботами или зайти по коду
 function renderGamesTab(){
   const box=$('tabGames');if(box.dataset.ready)return;box.dataset.ready='1';
   const top=el('div','tp-top');top.append(el('h2',null,'Мини-игры'));box.append(top);
-  const e=el('div','tp-empty big');const ic=el('span','tp-ic');ic.append(svgI('i-dice'));e.append(ic,el('b',null,'Скоро здесь будут игры'),el('span',null,'Мини-игры на двоих и для компании'));box.append(e);
+  const c=el('div','gm-card');const art=el('div','gm-art');art.append(svgI('i-tank'));
+  const t=el('div','gm-t');t.append(el('b',null,'Танки'),el('small',null,'Онлайн-арена на 2–8 игроков: с другом, в группе или с ботами. Кто первым наберёт 7 побед.'));
+  const row=el('div','gm-btns');
+  const mk=el('button','primary','Создать комнату');mk.onclick=()=>openTanks();
+  const bt=el('button','ghost','С ботами');bt.onclick=()=>openTanks(null,{bots:2});
+  const jn=el('button','ghost','По коду');jn.onclick=()=>{const v=(prompt('Код комнаты')||'').trim();if(/^[A-Za-z0-9]{3,8}$/.test(v))openTanks(v)};
+  row.append(mk,bt,jn);c.append(art,t,row);box.append(c);
+  box.append(el('p','gm-note','Чтобы позвать друзей, откройте чат → «+» → «Танки» — приглашение придёт в чат.'));
 }
 try{const t=localStorage.getItem('nit-tab');if(t&&matchMedia('(max-width:760px)').matches&&t!=='games')setTimeout(()=>setSideTab(t),0)}catch{}
