@@ -147,7 +147,7 @@ SPECIAL.push({re:/^::dice:([1-6])::$/, cls:'game-m', forward:false,
 | `auth.sql` | `profiles.username_set`, новый обработчик регистрации `nit_new_user` (удаляет старый триггер на auth.users, создающий профиль): ник из метаданных или придуманный для Google/GitHub, имя и аватарка оттуда же (`avatar_path` может быть https-ссылкой); RPC `username_free`, `set_username` (один раз) |
 | `fix_forward_delete.sql` | RPC `file_in_use(p, except_id)`: «Удалить у всех» стирает файл из `photos`, только если на него не ссылаются другие (пересланные) сообщения. Без функции файл просто остаётся. Запущено |
 | `titles.sql` | `app_admins` (список админов приложения, меняется только в SQL), `is_app_admin()`, таблица `titles`, RPC `set_main_title`; админ — @lampizza. Запущено |
-| `v3.sql` | Обновление v3: `who_blocked_me()` (плашка «ограничил вам сообщения»), `story_views.liked_at` + RPC `like_story` (лайк истории один раз), таблица `message_events` (открыл/прослушал), RPC `change_username` (смена ника раз в 7 дней) и `login_alias` (вход по новому нику для аккаунтов без почты) |
+| `v3.sql` | Обновление v3: `who_blocked_me()` (плашка «ограничил вам сообщения»), `story_views.liked_at` + RPC `like_story` (лайк истории один раз), таблица `message_events` (открыл/прослушал), RPC `change_username` (смена ника раз в 7 дней) и `login_alias` (вход по новому нику для аккаунтов без почты). Запущено |
 | `autoclean.sql` | Автоудаление: `nit_cleanup(дни)` и ночное расписание pg_cron. Удаляет сообщения навсегда — запускать только после решения владельца о сроке |
 | `stories.sql` | `are_friends()`, таблицы `stories` (срок 24 ч) и `story_views`, правила: истории видят автор и друзья, просмотры — автор; приватное хранилище `stories` (папка = id автора). Запущено |
 
