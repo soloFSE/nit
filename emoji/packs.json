@@ -1,0 +1,16 @@
+{
+ "packs": [
+  {
+   "id": "rb",
+   "name": "Robo Emoji",
+   "n": 40,
+   "ext": "json"
+  },
+  {
+   "id": "hc",
+   "name": "@History_Chechens :: @fStikBot",
+   "n": 117,
+   "ext": "webp"
+  }
+ ]
+}
