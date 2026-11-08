@@ -32,10 +32,18 @@ function premEl(id,n,cls){
   const p=PREM_PACKS.find(x=>x.id===id);const w=document.createElement('span');w.className='pem'+(cls?' '+cls:'');w.dataset.code=':'+id+n+':';
   if(!p){w.textContent=':'+id+n+':';return w}
   if(p.kind==='svg'){w.innerHTML=robotSvg(n%p.n)}
+  else if(p.ext==='json'){lottieLazy(w,'emoji/'+id+'/'+n+'.json')}
   else if(p.ext==='webm'){const v=document.createElement('video');v.src='emoji/'+id+'/'+n+'.webm';v.autoplay=v.loop=v.muted=v.playsInline=true;w.append(v)}
   else{const i=document.createElement('img');i.src='emoji/'+id+'/'+n+'.'+p.ext;i.alt='';i.loading='lazy';w.append(i)}
   return w;
 }
+// Анимированные эмодзи (Lottie из .tgs): библиотека грузится при первой надобности, анимация стартует, когда эмодзи видно
+let lottieP=null;
+const lottieLib=()=>lottieP||(lottieP=new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie_light.min.js';s.onload=()=>ok(window.lottie);s.onerror=()=>{lottieP=null;no()};document.head.append(s)}));
+const lottieIO=new IntersectionObserver(es=>es.forEach(e=>{const w=e.target;if(!e.isIntersecting){w._an?.pause();return}
+  if(w._an){w._an.play();return}if(w._loading)return;w._loading=1;
+  Promise.all([lottieLib(),fetch(w._src).then(r=>r.json())]).then(([L,data])=>{w._an=L.loadAnimation({container:w,renderer:'svg',loop:true,autoplay:true,animationData:data})}).catch(()=>{w._loading=0})}),{threshold:.1});
+function lottieLazy(w,src){w._src=src;lottieIO.observe(w)}
 // Текст сообщения → заменяем :rb7: на картинки (frag — фрагмент с текстовыми узлами)
 function premiumize(frag){
   if(!frag?.childNodes)return frag;
