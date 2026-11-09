@@ -46,6 +46,13 @@ function renderGamesTab(){
   const bt=el('button','ghost','С ботами');bt.onclick=()=>openTanks(null,{bots:2});
   const jn=el('button','ghost','По коду');jn.onclick=()=>{const v=(prompt('Код комнаты')||'').trim();if(/^[A-Za-z0-9]{3,8}$/.test(v))openTanks(v)};
   row.append(mk,bt,jn);c.append(art,t,row);box.append(c);
-  box.append(el('p','gm-note','Чтобы позвать друзей, откройте чат → «+» → «Танки» — приглашение придёт в чат.'));
+  const c2=el('div','gm-card');const art2=el('div','gm-art');art2.append(svgI('i-chess'));
+  const t2=el('div','gm-t');t2.append(el('b',null,'Шахматы'),el('small',null,'Партии на 1, 3 и 5 минут: с другом или с ботом трёх уровней. Живые часы, красивая доска и фигуры.'));
+  const row2=el('div','gm-btns');
+  const mk2=el('button','primary','С другом');mk2.onclick=()=>openChess();
+  const bt2=el('button','ghost','С ботом');bt2.onclick=()=>openChess(null,{bot:2});
+  const jn2=el('button','ghost','По коду');jn2.onclick=()=>{const v=(prompt('Код комнаты')||'').trim();if(/^[A-Za-z0-9]{3,8}$/.test(v))openChess(v)};
+  row2.append(mk2,bt2,jn2);c2.append(art2,t2,row2);box.append(c2);
+  box.append(el('p','gm-note','Чтобы позвать друзей, откройте чат → «+» → «Танки» или «Шахматы» — приглашение придёт в чат.'));
 }
 try{const t=localStorage.getItem('nit-tab');if(t&&matchMedia('(max-width:760px)').matches&&t!=='games')setTimeout(()=>setSideTab(t),0)}catch{}
