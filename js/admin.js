@@ -40,6 +40,7 @@ setInterval(()=>{if(me&&!document.hidden)loadRestr()},120000);
 setInterval(()=>{if(me&&myRestr.length)applyRestr()},15000);
 
 // ---------- Панель ----------
+// Дизайн v5.6: карточки с отступами, вкладки-«таблетки» с иконками, цветной блок уровня, плитки действий, журнал-лента.
 function admBox(){let w=$('adm');if(!w){w=el('div','gi hide');w.id='adm';document.body.append(w)}return w}
 function openAdmin(tab){
   if(adminRole<1){toast('Нет доступа');return}
@@ -50,85 +51,105 @@ function closeAdmin(){const w=$('adm');if(!w)return;w.classList.add('closing');s
 function renderAdmin(){
   const w=admBox();w.innerHTML='';
   const top=el('div','gi-top');const back=el('button','icon');back.append(svgI('i-back'));back.onclick=closeAdmin;
-  const t=el('b',null,'Админ-панель');top.append(back,t);const rb=admBadge(adminRole);rb.classList.add('adm-me');top.append(rb);w.append(top);
-  const tabs=el('div','adm-tabs');
-  [['over','Обзор'],['people','Люди'],['team','Команда'],...(adminRole>=2?[['log','Журнал']]:[])].forEach(([k,n])=>{
-    const b=el('button','adm-tab'+(admTab===k?' on':''),n);b.onclick=()=>{admTab=k;renderAdmin()};tabs.append(b)});
+  const tt=el('div','am-tt');tt.append(el('b',null,'Админ-панель'),el('small',null,'Управление «Нитью»'));
+  top.append(back,tt);const rb=admBadge(adminRole);rb.classList.add('adm-me');top.append(rb);w.append(top);
+  const tabs=el('div','am-tabs');
+  [['over','i-eye','Обзор'],['people','i-users','Люди'],['team','i-shield','Команда'],...(adminRole>=2?[['log','i-hourglass','Журнал']]:[])].forEach(([k,ic,n])=>{
+    const b=el('button','am-tab'+(admTab===k?' on':''));b.append(svgI(ic),el('span',null,n));b.onclick=()=>{admTab=k;renderAdmin()};tabs.append(b)});
   w.append(tabs);
-  const sc=el('div','gi-scroll adm-sc');w.append(sc);
+  const sc=el('div','gi-scroll am-sc');w.append(sc);
   ({over:admOver,people:admPeople,team:admTeam,log:admLog})[admTab](sc);
 }
-const admLoading=sc=>{sc.append(el('p','gf-empty','Загружаю…'))};
-function admTile(sc,items){const g=el('div','adm-stats');items.forEach(([v,l])=>{const t=el('div','adm-stat');t.append(el('b',null,String(v)),el('small',null,l));g.append(t)});sc.append(g)}
+const admLoading=sc=>{const l=el('div','am-load');l.append(el('i'),el('span',null,'Загружаю…'));sc.append(l)};
+const admEmpty=(ic,t,d)=>{const e=el('div','am-empty');e.append(svgI(ic),el('b',null,t));if(d)e.append(el('small',null,d));return e};
+const admCard=(title,right)=>{const c=el('section','am-card');if(title){const h=el('div','am-h');h.append(el('span',null,title));if(right!=null)h.append(el('em',null,String(right)));c.append(h)}return c};
+const admAgo=t=>{const d=new Date(t),n=new Date(),same=d.toDateString()===n.toDateString(),y=new Date(n-864e5).toDateString()===d.toDateString(),hm=d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+  return same?'сегодня, '+hm:y?'вчера, '+hm:d.toLocaleDateString('ru-RU',{day:'numeric',month:'short'})+', '+hm};
+const admLeft=u=>{if(!u)return 'навсегда';const m=Math.max(0,Math.round((new Date(u)-Date.now())/6e4));return 'ещё '+(m<60?m+' мин':m<1440?Math.round(m/60)+' ч':Math.round(m/1440)+' дн')};
+function admPerson(id,sub,badges){ // строка человека: аватар, имя, подпись
+  const r=el('button','am-row');r.append(avatar(id,42));const t=el('div','am-rt');const n=el('b',null,nameOf(id));if(badges)n.append(...badges);t.append(n);if(sub)t.append(el('small',null,sub));r.append(t);return r;
+}
 
 async function admOver(sc){
   admLoading(sc);const {data,error}=await sb.rpc('admin_overview');sc.innerHTML='';
   if(error){sc.append(el('p','err',admErr(error)));return}
-  const me_=ADM_ROLES[adminRole],card=el('section','gi-card adm-you');
-  card.append(el('b',null,'Ваш уровень: '+me_[0]),el('small',null,'Можно: '+me_[2]));sc.append(card);
-  admTile(sc,[[data.users,'людей'],[data.new_day,'новых за сутки'],[data.msgs_day,'сообщений за сутки'],[data.knots,'узелков у всех'],[data.gifts,'подарков']]);
-  const ids=[...data.restr.map(r=>r.user_id),...data.team.map(r=>r.user_id)];await loadProfiles(ids);
-  const c=el('section','gi-card');c.append(el('div','gi-h','Сейчас ограничены · '+data.restr.length));
-  if(!data.restr.length)c.append(el('p','gf-empty','Никто не ограничен'));
-  data.restr.forEach(r=>{const row=giRow(avatar(r.user_id,38),nameOf(r.user_id),(r.kind==='ban'?'Бан':'Мьют')+' до '+admWhen(r.until)+(r.reason?' · '+r.reason:''),'gi-mem');
+  const a=ADM_ROLES[adminRole],hero=el('section','am-hero');hero.style.setProperty('--rc',a[1]);
+  const hi=el('div','am-hero-ic');hi.append(svgI(adminRole>=4?'i-crown':'i-shield'));
+  const ht=el('div','am-hero-t');ht.append(el('small',null,'Ваш уровень'),el('b',null,a[0]),el('span',null,a[2]));hero.append(hi,ht);sc.append(hero);
+  const stats=el('div','am-stats');
+  [['i-users','Людей',data.users,'#3b82f6'],['i-plus','Новых за сутки',data.new_day,'#10b981'],['i-chats','Сообщений за сутки',data.msgs_day,'#a855f7'],['i-thread','Узелков у всех',data.knots,'#f59e0b'],['i-gift','Подарков',data.gifts,'#ec4899']].forEach(([ic,l,v,c],i)=>{
+    const t=el('div','am-stat');t.style.setProperty('--c',c);t.style.animationDelay=i*45+'ms';const ico=el('span','am-sic');ico.append(svgI(ic));
+    const tx=el('div');tx.append(el('b',null,Number(v).toLocaleString('ru-RU')),el('small',null,l));t.append(ico,tx);stats.append(t)});
+  sc.append(stats);
+  await loadProfiles([...data.restr.map(r=>r.user_id),...data.team.map(r=>r.user_id)]);
+  const c=admCard('Сейчас ограничены',data.restr.length);
+  if(!data.restr.length)c.append(admEmpty('i-check','Всё спокойно','Нарушителей сейчас нет'));
+  data.restr.forEach(r=>{const ban=r.kind==='ban',row=admPerson(r.user_id,(r.reason?r.reason+' · ':'')+admLeft(r.until));
+    const tag=el('span','am-tag '+(ban?'bad':'warn'),ban?'Бан':'Мьют');row.append(tag);
     row.onclick=()=>admUser({id:r.user_id,username:people[r.user_id],display_name:prof[r.user_id]?.display_name});c.append(row)});
   sc.append(c);
 }
 
 // ---------- Люди ----------
 function admPeople(sc){
-  const box=el('div','adm-search');const inp=document.createElement('input');inp.placeholder='Ник или имя…';inp.autocomplete='off';
-  const ico_=svgI('i-search');box.append(ico_,inp);sc.append(box);const out=el('div','adm-res');sc.append(out);
-  out.append(el('p','gf-empty','Введите ник — найду человека и покажу действия'));
+  const box=el('div','am-search');const inp=document.createElement('input');inp.placeholder='Найти человека по нику или имени';inp.autocomplete='off';
+  box.append(svgI('i-search'),inp);sc.append(box);const out=el('div','am-list');sc.append(out);
+  const hint=()=>{out.innerHTML='';out.append(admEmpty('i-search','Введите ник','Покажу человека и действия: мьют, бан, узелки, уровень'))};hint();
   let t=0;inp.oninput=()=>{clearTimeout(t);t=setTimeout(async()=>{
-    const q=inp.value.trim();if(q.length<2){out.innerHTML='';out.append(el('p','gf-empty','Введите минимум 2 буквы'));return}
-    const {data,error}=await sb.rpc('admin_find',{q});out.innerHTML='';
+    const q=inp.value.trim();if(q.length<2){hint();return}
+    out.innerHTML='';admLoading(out);const {data,error}=await sb.rpc('admin_find',{q});out.innerHTML='';
     if(error){out.append(el('p','err',admErr(error)));return}
-    if(!(data||[]).length)out.append(el('p','gf-empty','Никого не нашли'));
-    (data||[]).forEach(u=>{people[u.id]=u.username;if(!prof[u.id])prof[u.id]={id:u.id,username:u.username,display_name:u.display_name};
-      const st=[u.banned?'бан':u.muted?'мьют':'',u.farm_gifts>=3?'⚠ подозрительные подарки':''].filter(Boolean).join(' · ');
-      const r=giRow(avatar(u.id,40),u.display_name||u.username,'@'+u.username+(st?' · '+st:''),'gi-mem'+(u.banned||u.muted?' adm-bad':''));
-      const bd=admBadge(u.role);if(bd)r.querySelector('.gi-rt b').append(bd);
+    if(!(data||[]).length){out.append(admEmpty('i-x','Никого не нашли','Проверьте ник'));return}
+    (data||[]).forEach((u,i)=>{people[u.id]=u.username;if(!prof[u.id])prof[u.id]={id:u.id,username:u.username,display_name:u.display_name};
+      const bd=admBadge(u.role),r=admPerson(u.id,'@'+u.username,bd?[bd]:null);r.style.animationDelay=i*35+'ms';
+      if(u.banned)r.append(el('span','am-tag bad','Бан'));else if(u.muted)r.append(el('span','am-tag warn','Мьют'));
+      else if(u.farm_gifts>=3)r.append(el('span','am-tag warn','⚠ подарки'));
       r.onclick=()=>admUser(u);out.append(r)})},350)};
   inp.focus();
 }
 async function admUser(u){
-  // свежие данные о человеке
   let d=u;if(u.role===undefined||u.balance===undefined){const {data}=await sb.rpc('admin_find',{q:u.username||''});d=(data||[]).find(x=>x.id===u.id)||u}
   openModal(s=>{
     s.classList.add('gf-sheet','adm-sheet');
-    const top=el('div','sheet-top');top.append(el('h3',null,'Человек'));const x=el('button','icon');x.append(svgI('i-x'));x.onclick=closeModal;top.append(x);s.append(top);
-    const hero=el('div','adm-hero');hero.append(avatar(d.id,72));const nm=el('b',null,d.display_name||d.username||'?');const bd=admBadge(d.role);if(bd)nm.append(' ',bd);
-    hero.append(nm,el('small',null,'@'+(d.username||'?')+(d.created?' · с '+new Date(d.created).toLocaleDateString('ru-RU'):'')));
-    const meta=el('div','adm-meta');
-    meta.append(el('span',null,'Узелки: '+(d.role===4?'∞':(d.balance??0))),el('span',null,'Подарков: '+(d.gifts??0)+(d.farm_gifts?' (от новых акк.: '+d.farm_gifts+')':'')));
-    if(d.banned)meta.append(el('span','adm-red','Забанен'));else if(d.muted)meta.append(el('span','adm-red','В муте'));
-    hero.append(meta);s.append(hero);
+    const x=el('button','icon gf-x');x.append(svgI('i-x'));x.onclick=closeModal;s.append(x);
+    const hero=el('div','am-uhero');const rc=ADM_ROLES[d.role]?.[1]||'var(--acc)';hero.style.setProperty('--rc',rc);
+    hero.append(avatar(d.id,76));const nm=el('b',null,d.display_name||d.username||'?');hero.append(nm);
+    const sub=el('div','am-usub');sub.append(el('span',null,'@'+(d.username||'?')));const bd=admBadge(d.role);if(bd)sub.append(bd);hero.append(sub);
+    if(d.created)hero.append(el('small',null,'В «Нити» с '+new Date(d.created).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})));
+    s.append(hero);
+    const st=el('div','am-ustats');
+    [['Узелки',d.role===4?'∞':String(d.balance??0)],['Подарков',String(d.gifts??0)],['От новых акк.',String(d.farm_gifts??0)]].forEach(([l,v])=>{const c=el('div');c.append(el('b',null,v),el('small',null,l));st.append(c)});
+    s.append(st);
+    if(d.banned||d.muted){const al=el('div','am-alert');al.append(svgI('i-lock'),el('span',null,d.banned?'Человек забанен':'Человек в муте'));s.append(al)}
     const err=el('p','err');
     const canAct=d.id!==me&&(d.role||0)<adminRole;
     if(!canAct){s.append(el('p','gf-how',d.id===me?'Это вы':'Это админ вашего уровня или выше — действий нет'))}
     else{
-      const mk=(ic,t,sub,f,cls)=>{const r=giRow(ic,t,sub,cls||'gi-mem');r.onclick=f;s.append(r)};
-      mk('i-mic-off','Мьют','Человек не сможет писать',()=>admPick(d,'mute'));
-      if(adminRole>=2)mk('i-lock','Бан','Аккаунт закрывается',()=>admPick(d,'ban'),'gi-mem gi-danger');
-      if(d.muted||d.banned)mk('i-check','Снять ограничения',null,async()=>{
+      const g=el('div','am-acts');
+      const tile=(ic,t,sub,f,cls)=>{const b=el('button','am-act'+(cls?' '+cls:''));const i=el('span','am-aic');i.append(svgI(ic));const tx=el('div');tx.append(el('b',null,t),el('small',null,sub));b.append(i,tx);b.onclick=f;g.append(b)};
+      tile('i-mic-off','Мьют','Не сможет писать',()=>admPick(d,'mute'));
+      if(adminRole>=2)tile('i-lock','Бан','Закрыть аккаунт',()=>admPick(d,'ban'),'bad');
+      if(adminRole>=3)tile('i-thread','Узелки','Начислить / списать',()=>admKnots(d));
+      if(adminRole>=4)tile('i-shield','Уровень','Назначить админа',()=>admRole(d));
+      s.append(g);
+      if(d.muted||d.banned){const b=el('button','primary wide','Снять ограничения');b.onclick=async()=>{
         for(const k of [d.banned?'ban':'',d.muted?'mute':''].filter(Boolean)){const {error}=await sb.rpc('admin_unrestrict',{target:d.id,k});if(error){err.textContent=admErr(error);return}}
-        closeModal();toast('Ограничения сняты');if(admTab)renderAdmin()});
-      if(adminRole>=3)mk('i-thread','Узелки','Начислить или списать'+(adminRole<4?' (до 1000 за раз)':''),()=>admKnots(d));
-      if(adminRole>=4)mk('i-shield','Уровень админа','Назначить Помощника, Модератора или Администратора',()=>admRole(d));
+        closeModal();toast('Ограничения сняты');renderAdmin()};s.append(b)}
     }
     s.append(err);
   });
 }
+function admSheetTop(s,title){const top=el('div','sheet-top');top.append(el('h3',null,title));const x=el('button','icon');x.append(svgI('i-x'));x.onclick=closeModal;top.append(x);s.append(top)}
 function admPick(d,kind){
   openModal(s=>{
-    s.classList.add('gf-sheet','adm-sheet');
-    const top=el('div','sheet-top');top.append(el('h3',null,(kind==='ban'?'Бан: ':'Мьют: ')+(d.display_name||d.username)));const x=el('button','icon');x.append(svgI('i-x'));x.onclick=closeModal;top.append(x);s.append(top);
+    s.classList.add('gf-sheet','adm-sheet');admSheetTop(s,(kind==='ban'?'Бан: ':'Мьют: ')+(d.display_name||d.username));
+    s.append(el('div','am-lab','На сколько'));
     const lim=adminRole===1?60:adminRole===2?(kind==='ban'?4320:10080):adminRole===3?43200:Infinity;
     const opts=[10,60,360,1440,4320,10080,43200,0].filter(m=>m===0?adminRole>=4:m<=lim);
     let pick=opts[0];const g=el('div','adm-chips');
     opts.forEach(m=>{const b=el('button','adm-chip'+(m===pick?' on':''),admDur(m));b.onclick=()=>{pick=m;[...g.children].forEach(c=>c.classList.toggle('on',c===b))};g.append(b)});s.append(g);
-    const why=document.createElement('input');why.placeholder='Причина (её увидит человек)';why.maxLength=200;s.append(why);
+    s.append(el('div','am-lab','Причина'));
+    const why=document.createElement('input');why.placeholder='Её увидит человек';why.maxLength=200;s.append(why);
     const err=el('p','err');const go=el('button','primary wide',kind==='ban'?'Забанить':'Замутить');
     go.onclick=async()=>{go.disabled=true;const {error}=await sb.rpc('admin_restrict',{target:d.id,k:kind,minutes:pick,why:why.value.trim()});
       if(error){err.textContent=admErr(error);go.disabled=false;return}closeModal();toast((kind==='ban'?'Бан':'Мьют')+' выдан: '+admDur(pick));if($('adm')&&!$('adm').classList.contains('hide'))renderAdmin()};
@@ -137,11 +158,13 @@ function admPick(d,kind){
 }
 function admKnots(d){
   openModal(s=>{
-    s.classList.add('gf-sheet','adm-sheet');
-    const top=el('div','sheet-top');top.append(el('h3',null,'Узелки: '+(d.display_name||d.username)));const x=el('button','icon');x.append(svgI('i-x'));x.onclick=closeModal;top.append(x);s.append(top);
-    s.append(el('p','gf-how','Сейчас: '+(d.role===4?'∞':(d.balance??0))+'. Чтобы списать, введите число с минусом.'));
-    const n=document.createElement('input');n.type='number';n.placeholder='Сколько (например 100 или -50)';s.append(n);
-    const why=document.createElement('input');why.placeholder='Причина (в журнал)';why.maxLength=100;s.append(why);
+    s.classList.add('gf-sheet','adm-sheet');admSheetTop(s,'Узелки: '+(d.display_name||d.username));
+    const cur=el('div','am-bal');cur.append(svgI('i-thread'),el('b',null,d.role===4?'∞':String(d.balance??0)),el('small',null,'сейчас на счёте'));s.append(cur);
+    s.append(el('div','am-lab','Сколько (минус — списать)'+(adminRole<4?' · до 1000 за раз':'')));
+    const n=document.createElement('input');n.type='number';n.placeholder='Например 100 или -50';s.append(n);
+    const q=el('div','adm-chips');[50,100,500,1000].forEach(v=>{const b=el('button','adm-chip','+'+v);b.onclick=()=>{n.value=v};q.append(b)});s.append(q);
+    s.append(el('div','am-lab','Причина'));
+    const why=document.createElement('input');why.placeholder='Для журнала';why.maxLength=100;s.append(why);
     const err=el('p','err');const go=el('button','primary wide','Применить');
     go.onclick=async()=>{const a=parseInt(n.value,10);if(!a){err.textContent='Введите число';return}go.disabled=true;
       const {data,error}=await sb.rpc('admin_give',{target:d.id,amount:a,why:why.value.trim()});
@@ -151,40 +174,59 @@ function admKnots(d){
 }
 function admRole(d){
   openModal(s=>{
-    s.classList.add('gf-sheet','adm-sheet');
-    const top=el('div','sheet-top');top.append(el('h3',null,'Уровень: '+(d.display_name||d.username)));const x=el('button','icon');x.append(svgI('i-x'));x.onclick=closeModal;top.append(x);s.append(top);
-    const err=el('p','err');
-    [1,2,3].forEach(r=>{const a=ADM_ROLES[r],row=giRow('i-shield',a[0]+(d.role===r?' · сейчас':''),a[2],'gi-mem');row.onclick=async()=>{
-      const {error}=await sb.rpc('admin_set_role',{target:d.id,newrole:r});if(error){err.textContent=admErr(error);return}closeModal();toast('Назначен уровень «'+a[0]+'»');renderAdmin()};s.append(row)});
-    if(d.role>0){const r=giRow('i-trash','Снять с должности',null,'gi-danger');r.onclick=async()=>{const {error}=await sb.rpc('admin_set_role',{target:d.id,newrole:0});if(error){err.textContent=admErr(error);return}closeModal();toast('Снят');renderAdmin()};s.append(r)}
+    s.classList.add('gf-sheet','adm-sheet');admSheetTop(s,'Уровень: '+(d.display_name||d.username));
+    const err=el('p','err'),list=el('div','am-levels');
+    [1,2,3].forEach(r=>{const a=ADM_ROLES[r],row=el('button','am-level'+(d.role===r?' on':''));row.style.setProperty('--rc',a[1]);
+      const tx=el('div');tx.append(el('b',null,a[0]+(d.role===r?' · сейчас':'')),el('small',null,a[2]));row.append(el('i'),tx);
+      row.onclick=async()=>{const {error}=await sb.rpc('admin_set_role',{target:d.id,newrole:r});if(error){err.textContent=admErr(error);return}closeModal();toast('Назначен уровень «'+a[0]+'»');renderAdmin()};list.append(row)});
+    s.append(list);
+    if(d.role>0){const r=el('button','ghost wide danger','Снять с должности');r.onclick=async()=>{const {error}=await sb.rpc('admin_set_role',{target:d.id,newrole:0});if(error){err.textContent=admErr(error);return}closeModal();toast('Снят');renderAdmin()};s.append(r)}
     s.append(err);
   });
 }
 
 // ---------- Команда ----------
 async function admTeam(sc){
-  const info=el('section','gi-card');info.append(el('div','gi-h','Уровни'));
-  [4,3,2,1].forEach(r=>{const a=ADM_ROLES[r],row=el('div','adm-lvl');const b=admBadge(r);row.append(b,el('small',null,a[2]+(r===1?' · можно купить за 2500 узелков':r===4?' · выдают только разработчики':'')));info.append(row)});sc.append(info);
+  const info=admCard('Уровни доступа');
+  [4,3,2,1].forEach(r=>{const a=ADM_ROLES[r],row=el('div','am-lvl');row.style.setProperty('--rc',a[1]);
+    const tx=el('div');tx.append(el('b',null,a[0]),el('small',null,a[2]+(r===1?' · можно купить за 2500 узелков':r===4?' · выдают только разработчики':'')));row.append(el('i'),tx);info.append(row)});
+  sc.append(info);
   admLoading(sc);const {data,error}=await sb.rpc('admin_overview');sc.lastChild.remove();
   if(error){sc.append(el('p','err',admErr(error)));return}
   await loadProfiles(data.team.map(t=>t.user_id));
-  const c=el('section','gi-card');c.append(el('div','gi-h','Команда · '+data.team.length));
-  data.team.forEach(t=>{const row=giRow(avatar(t.user_id,38),nameOf(t.user_id),'@'+(people[t.user_id]||'?')+(t.bought?' · куплен':''),'gi-mem');const b=admBadge(t.role);if(b)row.querySelector('.gi-rt b').append(b);
-    if(adminRole>=4&&t.role<4)row.onclick=()=>admRole({id:t.user_id,username:people[t.user_id],display_name:prof[t.user_id]?.display_name,role:t.role});c.append(row)});
+  const c=admCard('Команда',data.team.length);
+  data.team.forEach(t=>{const bd=admBadge(t.role),row=admPerson(t.user_id,'@'+(people[t.user_id]||'?')+(t.bought?' · куплен':''),bd?[bd]:null);
+    if(adminRole>=4&&t.role<4){const ch=el('span','chev');ch.append(svgI('i-back'));row.append(ch);row.onclick=()=>admRole({id:t.user_id,username:people[t.user_id],display_name:prof[t.user_id]?.display_name,role:t.role})}
+    c.append(row)});
   sc.append(c);
+  if(adminRole>=4)sc.append(el('p','am-note','Чтобы назначить уровень, откройте человека во вкладке «Люди» → «Уровень».'));
 }
 // ---------- Журнал ----------
+const ADM_LOG={mute:['i-mic-off','#f59e0b','выдал мьют'],ban:['i-lock','#ef4444','забанил'],unmute:['i-check','#10b981','снял мьют'],unban:['i-check','#10b981','снял бан'],give:['i-thread','#f59e0b','изменил узелки'],role:['i-shield','#a855f7','назначил уровень'],buy_helper:['i-gem','#10b981','купил уровень «Помощник»']};
+function admLogText(l){
+  const d=l.details||'';
+  if(l.action==='give'){const m=d.match(/^(-?\d+)\s*(.*)$/);return m?((+m[1]>0?'+':'')+m[1]+' узелков'+(m[2]?' · '+m[2]:'')):d}
+  if(l.action==='role'){const r=ADM_ROLES[+d];return r?'«'+r[0]+'»':(d==='0'?'снят с должности':d)}
+  if(l.action==='mute'||l.action==='ban'){const m=d.match(/^(\d+)\s*мин\.\s*(.*)$/);return m?(admDur(+m[1])+(m[2]?' · '+m[2]:'')):d}
+  return d;
+}
 async function admLog(sc){
   admLoading(sc);const {data,error}=await sb.rpc('admin_audit');sc.innerHTML='';
   if(error){sc.append(el('p','err',admErr(error)));return}
   await loadProfiles([...data.log.flatMap(l=>[l.admin_id,l.target]),...data.farm.map(f=>f.user_id)].filter(Boolean));
-  const f=el('section','gi-card');f.append(el('div','gi-h','Подозрительные подарки (от новых аккаунтов)'));
-  if(!data.farm.length)f.append(el('p','gf-empty','Ничего подозрительного'));
-  data.farm.forEach(x=>{const r=giRow(avatar(x.user_id,36),nameOf(x.user_id),x.n+' подарков от аккаунтов младше 14 дней — их нельзя обменять на узелки','gi-mem');r.onclick=()=>admUser({id:x.user_id,username:people[x.user_id]});f.append(r)});sc.append(f);
-  const NAMES={mute:'мьют',ban:'бан',unmute:'снял мьют',unban:'снял бан',give:'узелки',role:'уровень',buy_helper:'купил Помощника'};
-  const c=el('section','gi-card');c.append(el('div','gi-h','Последние действия'));
-  data.log.forEach(l=>{const r=el('div','adm-log');r.append(el('b',null,nameOf(l.admin_id)+' · '+(NAMES[l.action]||l.action)+(l.target&&l.target!==l.admin_id?' → '+nameOf(l.target):'')),el('small',null,admWhen(l.created_at)+(l.details?' · '+l.details:'')));c.append(r)});
-  if(!data.log.length)c.append(el('p','gf-empty','Журнал пуст'));sc.append(c);
+  const f=admCard('Подозрительные подарки',data.farm.length||null);
+  f.append(el('small','am-sub','Много подарков от аккаунтов младше 14 дней — их нельзя обменять на узелки'));
+  if(!data.farm.length)f.append(admEmpty('i-check','Ничего подозрительного'));
+  data.farm.forEach(x=>{const r=admPerson(x.user_id,x.n+' подарков от новых аккаунтов');r.append(el('span','am-tag warn','⚠'));r.onclick=()=>admUser({id:x.user_id,username:people[x.user_id]});f.append(r)});sc.append(f);
+  const c=admCard('Последние действия',data.log.length||null);
+  if(!data.log.length)c.append(admEmpty('i-hourglass','Журнал пуст'));
+  const tl=el('div','am-tl');
+  data.log.forEach(l=>{const [ic,col,verb]=ADM_LOG[l.action]||['i-gear','#94a3b8',l.action];
+    const it=el('div','am-ev');it.style.setProperty('--c',col);const dot=el('span','am-dot');dot.append(svgI(ic));
+    const tx=el('div','am-evt');const who=nameOf(l.admin_id),tg=l.target&&l.target!==l.admin_id?nameOf(l.target):'';
+    const line=el('b',null,who+' '+verb);if(tg)line.append(el('span',null,' → '+tg));tx.append(line);
+    const sub=[admLogText(l),admAgo(l.created_at)].filter(Boolean).join(' · ');tx.append(el('small',null,sub));it.append(dot,tx);tl.append(it)});
+  c.append(tl);sc.append(c);
 }
 // Запись в настройках
 function adminCard(){
