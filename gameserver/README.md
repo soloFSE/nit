@@ -1,3 +1,7 @@
+# Cloudflare (основной): папка cloudflare/ — Workers + Durable Objects, бесплатно, не засыпает.
+# Деплой: cd gameserver/cloudflare && npx wrangler login && npx wrangler deploy. Адрес: wss://nit-games.mreldar-work.workers.dev
+# Ниже — запасной вариант на Render.
+
 # Игровой сервер «Нити» (бесплатный запуск на Render)
 
 Маленькая программа, которая передаёт игрокам сообщения друг другу. Работает вместо Supabase для игр.

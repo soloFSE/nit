@@ -30,14 +30,15 @@ function openTanks(code,opt={}){
 }
 // ---------- свой игровой сервер (WebSocket) ----------
 // Адрес сервера. Пусто — играем как раньше (прямое соединение + Supabase). Подробности: gameserver/README.md
-const TK_SERVER=''; // игровой сервер отключён: с прямым соединением (WebRTC) пинг ниже. Адрес сервера: wss://nit-fl2s.onrender.com
+const TK_P2P=false; // true — ещё и прямое соединение между телефонами (при игровом сервере оно не нужно: всё идёт через сервер)
+const TK_SERVER='wss://nit-games.mreldar-work.workers.dev'; // Cloudflare (gameserver/cloudflare). Запасной: Render wss://nit-fl2s.onrender.com
 function tkWake(){if(TK_SERVER){try{fetch(TK_SERVER.replace(/^ws/,'http'),{mode:'no-cors',cache:'no-store'}).catch(()=>{})}catch{}}}
 // Канал с тем же устройством, что у Supabase (send / presenceState / unsubscribe), но поверх WebSocket
 function tkWsChannel(code,onMsg,onRoster){
   return new Promise(res=>{
     let ws,list=[],done=false,ping=0,dead=false;
     const fin=v=>{if(!done){done=true;res(v)}};
-    try{ws=new WebSocket(TK_SERVER)}catch{return res(null)}
+    try{ws=new WebSocket(TK_SERVER+'/ws?room='+encodeURIComponent(code))}catch{return res(null)}
     const t=setTimeout(()=>{try{ws.close()}catch{}fin(null)},12000);
     const api={send(o){if(ws.readyState===1)ws.send(JSON.stringify({t:'m',p:o.payload}))},presenceState:()=>({a:list}),unsubscribe(){dead=true;clearInterval(ping);try{ws.close()}catch{}}};
     ws.onopen=()=>{ws.send(JSON.stringify({t:'join',room:code,id:me,name:nameOf(me),tt:tk.myT||(tk.myT=Date.now())}));ping=setInterval(()=>{if(ws.readyState===1)ws.send('{"t":"ping"}')},15000)};
@@ -126,7 +127,7 @@ function tkLinkFor(id){
   return l;
 }
 function tkLinks(){ // создать/убрать/пересоздать прямые соединения под текущий список игроков
-  if(!tk)return;const ids=tk.roster.filter(x=>x.id!==me).map(x=>x.id);if(!tk.tries)tk.tries={};
+  if(!tk||(TK_SERVER&&!TK_P2P))return;const ids=tk.roster.filter(x=>x.id!==me).map(x=>x.id);if(!tk.tries)tk.tries={};
   ids.forEach(id=>{const l=tkLinkFor(id);
     if(l&&!l.isOpen()){const wait=12000+Math.min(3,l.tries)*6000; // не вышло — пробуем заново, каждый раз ждём дольше
       if(Date.now()-l.born>wait&&l.tries<5){tk.tries[id]=l.tries+1;l.close();delete tk.links[id];tkLinkFor(id)}}});
