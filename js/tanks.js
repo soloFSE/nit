@@ -31,7 +31,7 @@ function openTanks(code,opt={}){
 // ---------- свой игровой сервер (WebSocket) ----------
 // Адрес сервера. Пусто — играем как раньше (прямое соединение + Supabase). Подробности: gameserver/README.md
 const TK_P2P=false; // true — ещё и прямое соединение между телефонами (при игровом сервере оно не нужно: всё идёт через сервер)
-const TK_SERVER='wss://nit-games.mreldar-work.workers.dev'; // Cloudflare (gameserver/cloudflare). Запасной: Render wss://nit-fl2s.onrender.com
+const TK_SERVER='wss://nit-fl2s.onrender.com'; // Render · Франкфурт (gameserver/). Запасной: Cloudflare wss://nit-games.mreldar-work.workers.dev (gameserver/cloudflare)
 function tkWake(){if(TK_SERVER){try{fetch(TK_SERVER.replace(/^ws/,'http'),{mode:'no-cors',cache:'no-store'}).catch(()=>{})}catch{}}}
 // Канал с тем же устройством, что у Supabase (send / presenceState / unsubscribe), но поверх WebSocket
 function tkWsChannel(code,onMsg,onRoster){
