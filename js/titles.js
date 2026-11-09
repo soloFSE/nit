@@ -11,7 +11,6 @@ async function loadTitles(){
   if(error){titlesOk=false;return}
   titlesOk=true;titlesOf={};titleById={};
   (data||[]).forEach(t=>{(titlesOf[t.user_id]=titlesOf[t.user_id]||[]).push(t);titleById[t.id]=t});
-  const a=await sb.from('app_admins').select('user_id').eq('user_id',me);amAppAdmin=!a.error&&!!(a.data||[]).length;
   refreshPeer?.();
 }
 const mainTitle=uid=>{const l=titlesOf[uid];if(!l?.length)return null;return l.find(t=>t.main)||l[l.length-1]};

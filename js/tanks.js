@@ -18,27 +18,14 @@ const tkHash=s=>{let h=2166136261;for(const c of s)h=Math.imul(h^c.charCodeAt(0)
 const tkHue=id=>typeof hue==='function'?hue(id):(tkHash(String(id))%360);
 const tkCol=(h,l=55,s=72)=>'hsl('+h+','+s+'%,'+l+'%)';
 const tkAng=(a,b)=>Math.atan2(Math.sin(b-a),Math.cos(b-a)); // кратчайшая разница углов
-// Карта из кода комнаты: стены 4-кратно симметричны (честно для всех), плюс декор
-function tkMap(code){
-  const r=tkRng(tkHash(code)),W=TK.W,H=TK.H,walls=[],base=[];
-  for(let i=0,tries=0;i<11&&tries<200;tries++){
-    const w=90+r()*170,h=70+r()*150,x=300+r()*(W/2-300-w-60),y=240+r()*(H/2-240-h-60);
-    if(base.some(b=>x<b.x+b.w+90&&x+w>b.x-90&&y<b.y+b.h+90&&y+h>b.y-90))continue;base.push({x,y,w,h});i++;
-  }
-  base.forEach(b=>{walls.push(b,{x:W-b.x-b.w,y:b.y,w:b.w,h:b.h},{x:b.x,y:H-b.y-b.h,w:b.w,h:b.h},{x:W-b.x-b.w,y:H-b.y-b.h,w:b.w,h:b.h})});
-  walls.push({x:W/2-80,y:H/2-24,w:160,h:48},{x:W/2-24,y:H/2-110,w:48,h:220}); // крест в центре
-  const ok=walls.filter(w=>!TK_SP.some(([sx,sy])=>sx>w.x-120&&sx<w.x+w.w+120&&sy>w.y-120&&sy<w.y+w.h+120));
-  const decor=[];for(let i=0;i<150;i++){const x=r()*W,y=r()*H;if(ok.some(w=>x>w.x-20&&x<w.x+w.w+20&&y>w.y-20&&y<w.y+w.h+20))continue;decor.push({x,y,k:r()<.7?0:1,s:.6+r()*.8,a:r()*6})}
-  return {walls:ok,decor};
-}
 
 // ---------- запуск ----------
 function openTanks(code,opt={}){
   if(tk)return;code=(code||tkCode()).toUpperCase();
-  const m=tkMap(code);
+  const m=tkMapLay(code,'classic');
   tk={code,phase:'lobby',players:{},bullets:[],mines:[],parts:[],boom:[],walls:m.walls,decor:m.decor,me:null,keys:{},st:{l:null,r:null},
     roster:[{id:me,name:nameOf(me),t:Date.now()}],botN:opt.bots||0,host:true,hostId:me,firing:false,mouse:null,count:0,sendT:0,last:0,raf:0,ch:null,over:null,
-    cam:{x:TK.W/2,y:TK.H/2},shake:0,rtt:{},seen:new Set(),pingT:0,ping:0,time:0};
+    cam:{x:TK.W/2,y:TK.H/2},shake:0,rtt:{},seen:new Set(),pingT:0,ping:0,time:0,cls:{},myCl:tkLoadCl(),th:'grass',wx:'clear',lay:'classic',wind:[0,0]};
   tkUI();tkJoin();
 }
 // ---------- свой игровой сервер (WebSocket) ----------
@@ -82,7 +69,7 @@ function tkRoster(){
   list.sort((a,b)=>(a.t-b.t)||String(a.id).localeCompare(String(b.id)));
   const seen=new Set();list=list.filter(x=>!seen.has(x.id)&&seen.add(x.id));
   tk.roster=list;tk.hostId=list[0].id;tk.host=tk.hostId===me;tkLinks();
-  if(tk.phase==='lobby')tkLobby();
+  if(tk.phase==='lobby'){tkSendOpts();tkLobby()}
 }
 // ---------- прямое соединение игроков (WebRTC DataChannel) ----------
 // Цель: чтобы в большинстве случаев игра шла НАПРЯМУЮ между телефонами (низкий пинг, ноль нагрузки на сервер).
@@ -92,7 +79,7 @@ function tkRoster(){
 //  • Supabase — только знакомство игроков и запасной путь; если им пользуемся, шлём реже и пачками.
 const TK_ICE=[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302','stun:stun2.l.google.com:19302','stun:stun.cloudflare.com:3478','stun:global.stun.twilio.com:3478','stun:stun.sipnet.net:3478','stun:stun.stunprotocol.org:3478']},
   {urls:['turn:openrelay.metered.ca:80','turn:openrelay.metered.ca:443','turn:openrelay.metered.ca:443?transport=tcp'],username:'openrelayproject',credential:'openrelayproject'}];
-const TK_REL=new Set(['hit','h','k','m','mx','x','start','bots']); // эти события не должны теряться
+const TK_REL=new Set(['hit','h','k','m','mx','x','start','bots','cl','opt']); // эти события не должны теряться
 function p2pLink(selfId,peerId,signal,onMsg,onState){
   if(typeof RTCPeerConnection==='undefined')return null;
   const init=String(selfId)<String(peerId);
@@ -161,7 +148,9 @@ function tkNet(p){
   if(p.sk&&p.sk.includes(me))return; // это уже пришло напрямую
   if(p.t==='b'){p.m.forEach(tkNet);return}
   if(p.t==='rtc'){if(p.to===me&&p.from){const l=tkLinkFor(p.from);if(l)(Array.isArray(p.s)?p.s:[p.s]).forEach(x=>l.handle(x))}return}
-  if(p.t==='start'){tkStart(p.seed,p.list);return}
+  if(p.t==='start'){tkStart(p.seed,p.list,p);return}
+  if(p.t==='cl'){tk.cls[p.id]=p.c;if(tk.phase==='lobby')tkLobby();return}
+  if(p.t==='opt'){if(!tk.host){tk.th=p.th;tk.wx=p.wx;tk.lay=p.lay}if(tk.phase==='lobby')tkLobby();return}
   if(p.t==='bots'){tk.botN=p.n|0;if(tk.phase==='lobby')tkLobby();return}
   if(p.t==='pg'){if(p.id!==me)tkSend({t:'pn',to:p.id,from:me,ts:p.ts});return}
   if(p.t==='pn'){if(p.to===me){const r=performance.now()-p.ts;tk.rtt[p.from]=tk.rtt[p.from]?tk.rtt[p.from]*.6+r*.4:r;tk.ping=Math.round(Math.max(0,...Object.values(tk.rtt)));tkPing()}return}
@@ -188,12 +177,14 @@ function tkBullet(o,bid,x,y,a,adv){
 
 // ---------- раунд ----------
 function tkBegin(){
-  const ids=tk.roster.map(x=>({id:x.id,name:x.name}));for(let i=0;i<tk.botN;i++)ids.push({id:'bot'+(i+1),name:'Бот '+(i+1),bot:1});
-  const seed=Date.now();tkSend({t:'start',seed,list:ids});tkStart(seed,ids);
+  const ids=tk.roster.map(x=>({id:x.id,name:x.name,c:x.id===me?tk.myCl:tk.cls[x.id]}));for(let i=0;i<tk.botN;i++)ids.push({id:'bot'+(i+1),name:'Бот '+(i+1),bot:1});
+  const seed=Date.now(),o={th:tk.th,wx:tk.wx,lay:tk.lay};tkSend({t:'start',seed,list:ids,...o});tkStart(seed,ids,o);
 }
-function tkStart(seed,list){
+function tkStart(seed,list,o){
+  o=o||{};tk.th=TK_TH[o.th]?o.th:'grass';tk.wx=TK_WX[o.wx]?o.wx:'clear';tk.lay=TK_LAY[o.lay]?o.lay:'classic';tk.wind=TK_WX[tk.wx].wind||[0,0];tk.wxp=null;
+  {const m=tkMapLay(tk.code,tk.lay);tk.walls=m.walls;tk.decor=m.decor}
   tk.phase='play';tk.players={};tk.bullets=[];tk.mines=[];tk.parts=[];tk.over=null;
-  list.slice(0,8).forEach((e,i)=>{const [x,y]=TK_SP[i%8];tk.players[e.id]={id:e.id,name:e.name,hue:tkHue(e.id),x,y,vx:0,vy:0,a:Math.atan2(TK.H/2-y,TK.W/2-x),ba:0,hp:TK.HP,al:true,sc:0,bot:!!e.bot,reload:0,respawn:0,sh:0,shT:0,dashT:0,cd:{shield:0,dash:0,mine:0,fan:0},buf:[],ai:{t:0,dx:0,dy:0,stuck:0,lx:x,ly:y},trav:0,dm:0,heat:0,lock:false,jit:.01,lrt:0,ls:null,lsT:0}});
+  list.slice(0,8).forEach((e,i)=>{const [x,y]=TK_SP[i%8],cl=tkClassOf(e.c);tk.players[e.id]={id:e.id,name:e.name,hue:tkHue(e.id),x,y,vx:0,vy:0,a:Math.atan2(TK.H/2-y,TK.W/2-x),ba:0,hp:cl.hp,mhp:cl.hp,cl,al:true,sc:0,bot:!!e.bot,reload:0,respawn:0,sh:0,shT:0,dashT:0,cd:{shield:0,dash:0,mine:0,fan:0},buf:[],ai:{t:0,dx:0,dy:0,stuck:0,lx:x,ly:y},trav:0,dm:0,heat:0,lock:false,jit:.01,lrt:0,ls:null,lsT:0}});
   tk.me=tk.players[me]||null;tk.count=3;tk.last=performance.now();
   $('tkLobby')?.classList.add('hide');$('tkOver')?.classList.add('hide');$('tkHud')?.classList.remove('hide');$('tkAbs')?.classList.toggle('hide',!tk.me);
   tkCamSnap();cancelAnimationFrame(tk.raf);tk.raf=requestAnimationFrame(tkLoop);tkScore();
@@ -215,7 +206,7 @@ function tkOver(win){
 }
 function tkSpawnMe(p){
   const free=TK_SP.map(s=>({s,d:Math.min(...Object.values(tk.players).filter(o=>o!==p&&o.al).map(o=>Math.hypot(o.x-s[0],o.y-s[1])),9999)})).sort((a,b)=>b.d-a.d)[0].s;
-  p.x=free[0];p.y=free[1];p.vx=p.vy=0;p.hp=TK.HP;p.al=true;p.dead=false;p.reload=.5;p.shT=1.2;p.sh=1;p.heat=0;p.lock=false; // после возрождения — 1,2 с неуязвимости
+  p.x=free[0];p.y=free[1];p.vx=p.vy=0;p.hp=p.mhp||100;p.al=true;p.dead=false;p.reload=.5;p.shT=1.2;p.sh=1;p.heat=0;p.lock=false; // после возрождения — 1,2 с неуязвимости
   if(p===tk.me)tkCamSnap();
 }
 
@@ -227,7 +218,7 @@ function tkCircleWalls(p){
 }
 function tkMove(p,mx,my,dt){
   const l=Math.hypot(mx,my);if(l>1){mx/=l;my/=l}
-  let sp=TK.SPD;if(p.dashT>0){sp*=3;if(l<.1){mx=Math.cos(p.ba);my=Math.sin(p.ba)}}
+  let sp=TK.SPD*(p.cl?p.cl.spd:1);if(p.dashT>0){sp*=3;if(l<.1){mx=Math.cos(p.ba);my=Math.sin(p.ba)}}
   const ox=p.x,oy=p.y;p.x+=mx*sp*dt;p.y+=my*sp*dt;tkCircleWalls(p);
   p.vx=(p.x-ox)/dt;p.vy=(p.y-oy)/dt;const mv=Math.hypot(p.x-ox,p.y-oy);p.trav+=mv;
   if(mv>.5){const want=Math.atan2(p.y-oy,p.x-ox);p.ba+=tkAng(p.ba,want)*Math.min(1,dt*12);if(Math.random()<dt*14)tkPart(p.x-Math.cos(p.ba)*14,p.y-Math.sin(p.ba)*14,'dust')}
@@ -242,7 +233,7 @@ function tkAbility(p,k){
   if(k==='shield'){p.shT=TK_AB.shield.dur;p.sh=1;tkSfx('shield')}
   else if(k==='dash'){p.dashT=TK_AB.dash.dur;tkSfx('dash');for(let i=0;i<10;i++)tkPart(p.x,p.y,'dust')}
   else if(k==='mine'){const mid=++p.dm;tk.mines.push({id:p.id,mid,x:p.x,y:p.y,life:12,arm:.6});tkSend({t:'m',id:p.id,mid,x:Math.round(p.x),y:Math.round(p.y)});tkSfx('mine')}
-  else if(k==='fan'){if(p.lock){p.cd.fan=0;if(p===tk.me)tkSfx('hot');return false}for(const d of [-.24,0,.24])tkShoot(p,p.a+d);p.reload=TK.RELOAD;tkHeatAdd(p,TK.HEAT)}
+  else if(k==='fan'){if(p.lock){p.cd.fan=0;if(p===tk.me)tkSfx('hot');return false}for(const d of [-.24,0,.24])tkShoot(p,p.a+d);p.reload=TK.RELOAD*(p.cl?p.cl.rel:1);tkHeatAdd(p,TK.HEAT)}
   return true;
 }
 function tkShoot(p,a){
@@ -251,14 +242,14 @@ function tkShoot(p,a){
   for(let i=0;i<5;i++)tkPart(x,y,'flash',a);tkSfx('shot');
 }
 function tkHeatAdd(p,v){p.heat=Math.min(1.05,p.heat+v);if(p.heat>=1&&!p.lock){p.lock=true;if(p===tk.me)tkSfx('hot')}}
-function tkFire(p){if(p.reload>0||!p.al||p.lock)return;p.reload=TK.RELOAD;tkShoot(p,p.a);tkHeatAdd(p,TK.HEAT)}
+function tkFire(p){if(p.reload>0||!p.al||p.lock)return;p.reload=TK.RELOAD*(p.cl?p.cl.rel:1);tkShoot(p,p.a);tkHeatAdd(p,TK.HEAT)}
 
 // ---------- урон: стрелок фиксирует попадание, жертва проверяет ----------
 function tkClaim(c){
   const p=tk.players[c.v];if(!p||!tkOwns(p)||!p.al)return;
   const key=c.by+':'+c.bid;if(tk.seen.has(key))return;tk.seen.add(key);if(tk.seen.size>400)tk.seen.clear();
   const tol=TK.R+14+TK.SPD*(tkOwd(c.by)+.15);if(Math.hypot(p.x-c.x,p.y-c.y)>tol)return; // слишком далеко от моего танка — не засчитываем
-  tkDamage(p,c.d||1,c.by);
+  tkDamage(p,Math.min(60,c.d||25),c.by);
 }
 function tkDamage(p,d,by){
   if(!p.al)return;if(p.sh&&p.shT>0){tkSfx('shield');return}
@@ -298,13 +289,13 @@ function tkStep(dt){
     if(mn.arm<=0&&own&&tkOwns(own)){
       let boom=false;for(const p of pl){if(p===own||!p.al)continue;if(Math.hypot(p.x-mn.x,p.y-mn.y)<TK.R+26){boom=true;break}}
       if(boom){tkSend({t:'mx',id:mn.id,mid:mn.mid,x:Math.round(mn.x),y:Math.round(mn.y)});tkBang(mn.x,mn.y,1.3);
-        for(const p of pl){if(p===own||!p.al)continue;if(Math.hypot(p.x-mn.x,p.y-mn.y)<TK.R+70)tkHitEnemy(p.id,mn.id,'m'+mn.mid+p.id,p.x,p.y,2)}
+        for(const p of pl){if(p===own||!p.al)continue;if(Math.hypot(p.x-mn.x,p.y-mn.y)<TK.R+70)tkHitEnemy(p.id,mn.id,'m'+mn.mid+p.id,p.x,p.y,50)}
         tk.mines.splice(i,1)}
     }
   }
   // пули
   for(let i=tk.bullets.length-1;i>=0;i--){
-    const b=tk.bullets[i];b.life-=dt;b.px=b.x;b.py=b.y;b.x+=b.vx*dt;b.y+=b.vy*dt;let dead=b.life<=0;
+    const b=tk.bullets[i];b.life-=dt;b.px=b.x;b.py=b.y;b.x+=(b.vx+tk.wind[0])*dt;b.y+=(b.vy+tk.wind[1])*dt;let dead=b.life<=0;
     if(Math.random()<dt*40)tkPart(b.x,b.y,'trail');
     if(!dead){
       const w=tkInWall(b.x,b.y);
@@ -317,7 +308,7 @@ function tkStep(dt){
     const shooter=tk.players[b.o];
     if(!dead&&shooter&&tkOwns(shooter)){ // попадание считает стрелок (я и мои боты) по тому, что на экране
       for(const p of pl){if(!p.al||p.id===b.o)continue;
-        if(Math.hypot(p.x-b.x,p.y-b.y)<TK.R+5){tkHitEnemy(p.id,b.o,b.bid,b.x,b.y,1);tkSend({t:'x',id:b.o,bid:b.bid});for(let k=0;k<6;k++)tkPart(b.x,b.y,'spark');dead=true;break}}
+        if(Math.hypot(p.x-b.x,p.y-b.y)<TK.R+5){tkHitEnemy(p.id,b.o,b.bid,b.x,b.y,shooter.cl?shooter.cl.dmg:25);tkSend({t:'x',id:b.o,bid:b.bid});for(let k=0;k<6;k++)tkPart(b.x,b.y,'spark');dead=true;break}}
     }
     if(dead)tk.bullets.splice(i,1);
   }
@@ -360,7 +351,7 @@ function tkBot(p,dt,all){
   const want=ang+(Math.random()-.5)*.1;p.a+=tkAng(p.a,want)*Math.min(1,dt*7);
   const clear=tkClear(p,tgt),aligned=Math.abs(tkAng(p.a,ang))<.16;
   if(best<900&&clear&&aligned)tkFire(p);
-  if(p.hp<=2&&best<500&&p.cd.shield<=0&&Math.random()<dt*2)tkAbility(p,'shield');
+  if(p.hp<=(p.mhp||100)*.5&&best<500&&p.cd.shield<=0&&Math.random()<dt*2)tkAbility(p,'shield');
   if(best<300&&p.cd.mine<=0&&Math.random()<dt*.6)tkAbility(p,'mine');
   if(best<450&&clear&&aligned&&p.cd.fan<=0&&Math.random()<dt*.8)tkAbility(p,'fan');
   if(best>700&&p.cd.dash<=0&&Math.random()<dt*.3)tkAbility(p,'dash');
@@ -405,20 +396,19 @@ function tkDraw(){
   g.save();g.translate(ox,oy);g.scale(z,z);
   const x0=tk.cam.x-vw/2-60,x1=tk.cam.x+vw/2+60,y0=tk.cam.y-vh/2-60,y1=tk.cam.y+vh/2+60;
   const css=getComputedStyle(document.documentElement),acc=css.getPropertyValue('--acc').trim()||'#8b5cf6';
-  const gr=g.createLinearGradient(0,0,TK.W,TK.H);gr.addColorStop(0,'#2c3a2a');gr.addColorStop(.5,'#34452f');gr.addColorStop(1,'#2a3828');g.fillStyle=gr;g.fillRect(0,0,TK.W,TK.H);
+  const gr=g.createLinearGradient(0,0,TK.W,TK.H);const TH=TK_TH[tk.th]||TK_TH.grass,vis=(TK_WX[tk.wx]||{}).vis;gr.addColorStop(0,TH.bg[0]);gr.addColorStop(.5,TH.bg[1]);gr.addColorStop(1,TH.bg[2]);g.fillStyle=gr;g.fillRect(0,0,TK.W,TK.H);
   g.strokeStyle='rgba(255,255,255,.04)';g.lineWidth=2;
   for(let x=Math.floor(Math.max(0,x0)/100)*100;x<=Math.min(TK.W,x1);x+=100){g.beginPath();g.moveTo(x,Math.max(0,y0));g.lineTo(x,Math.min(TK.H,y1));g.stroke()}
   for(let y=Math.floor(Math.max(0,y0)/100)*100;y<=Math.min(TK.H,y1);y+=100){g.beginPath();g.moveTo(Math.max(0,x0),y);g.lineTo(Math.min(TK.W,x1),y);g.stroke()}
   for(const d of tk.decor){if(d.x<x0||d.x>x1||d.y<y0||d.y>y1)continue;
-    if(d.k===0){g.strokeStyle='rgba(120,160,90,.55)';g.lineWidth=2;g.beginPath();for(let i=-1;i<=1;i++){g.moveTo(d.x+i*5*d.s,d.y);g.lineTo(d.x+i*8*d.s,d.y-12*d.s)}g.stroke()}
-    else{g.fillStyle='rgba(0,0,0,.18)';g.beginPath();g.ellipse(d.x+2,d.y+3,10*d.s,6*d.s,0,0,7);g.fill();g.fillStyle='#6b7280';g.beginPath();g.ellipse(d.x,d.y,9*d.s,6*d.s,d.a,0,7);g.fill()}}
+    tkDecor(g,d,TH)}
   {const gl=(x,y,w,h,x1,y1,x2,y2)=>{const q=g.createLinearGradient(x1,y1,x2,y2);q.addColorStop(0,acc);q.addColorStop(1,'rgba(0,0,0,0)');g.globalAlpha=.4;g.fillStyle=q;g.fillRect(x,y,w,h);g.globalAlpha=1};
     gl(0,0,TK.W,110,0,0,0,110);gl(0,TK.H-110,TK.W,110,0,TK.H,0,TK.H-110);gl(0,0,110,TK.H,0,0,110,0);gl(TK.W-110,0,110,TK.H,TK.W,0,TK.W-110,0);
     g.lineWidth=16;g.strokeStyle=acc;g.globalAlpha=.85;g.strokeRect(8,8,TK.W-16,TK.H-16);g.globalAlpha=1;g.lineWidth=3;g.strokeStyle='rgba(255,255,255,.35)';g.strokeRect(17,17,TK.W-34,TK.H-34)}
   for(const w of tk.walls){if(w.x>x1||w.x+w.w<x0||w.y>y1||w.y+w.h<y0)continue;
     g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.roundRect(w.x+8,w.y+10,w.w,w.h,10);g.fill();
-    g.fillStyle='#4b5563';g.beginPath();g.roundRect(w.x,w.y,w.w,w.h,10);g.fill();
-    g.fillStyle='#6b7280';g.beginPath();g.roundRect(w.x+4,w.y+4,w.w-8,w.h-12,8);g.fill();
+    g.fillStyle=TH.wall[0];g.beginPath();g.roundRect(w.x,w.y,w.w,w.h,10);g.fill();
+    g.fillStyle=TH.wall[1];g.beginPath();g.roundRect(w.x+4,w.y+4,w.w-8,w.h-12,8);g.fill();
     g.strokeStyle='rgba(255,255,255,.12)';g.lineWidth=2;g.beginPath();g.moveTo(w.x+12,w.y+10);g.lineTo(w.x+w.w-12,w.y+10);g.stroke();
     g.fillStyle='rgba(0,0,0,.14)';for(let i=0;i<Math.floor(w.w/40);i++)g.fillRect(w.x+16+i*40,w.y+w.h*.45,22,4)}
   for(const mn of tk.mines){const own=tk.players[mn.id],blink=mn.arm<=0&&Math.sin(tk.time*10)>0;
@@ -427,10 +417,11 @@ function tkDraw(){
     g.fillStyle=blink?'#ef4444':(own?tkCol(own.hue):'#999');g.beginPath();g.arc(mn.x,mn.y,4,0,7);g.fill()}
   for(const p of Object.values(tk.players)){
     if(p.x==null||p.x<x0||p.x>x1||p.y<y0||p.y>y1)continue;
+    if(vis&&p!==f&&Math.hypot(p.x-f.x,p.y-f.y)>vis)continue;
     if(!p.al){if(p.dead){g.globalAlpha=.5;tkTank(g,p,true);g.globalAlpha=1}continue}
     tkTank(g,p,false);
   }
-  for(const b of tk.bullets){const sp=Math.hypot(b.vx,b.vy)||1,tx=b.x-b.vx/sp*22,ty=b.y-b.vy/sp*22;
+  for(const b of tk.bullets){if(vis&&Math.hypot(b.x-f.x,b.y-f.y)>vis)continue;const sp=Math.hypot(b.vx,b.vy)||1,tx=b.x-b.vx/sp*22,ty=b.y-b.vy/sp*22;
     const o=tk.players[b.o];const gl=g.createLinearGradient(tx,ty,b.x,b.y);gl.addColorStop(0,'rgba(253,224,71,0)');gl.addColorStop(1,'rgba(253,224,71,.9)');
     g.strokeStyle=gl;g.lineWidth=5;g.lineCap='round';g.beginPath();g.moveTo(tx,ty);g.lineTo(b.x,b.y);g.stroke();
     g.fillStyle='#fff7ae';g.beginPath();g.arc(b.x,b.y,4.5,0,7);g.fill();g.fillStyle=o?tkCol(o.hue,60):'#fde047';g.globalAlpha=.5;g.beginPath();g.arc(b.x,b.y,8,0,7);g.fill();g.globalAlpha=1}
@@ -438,11 +429,12 @@ function tkDraw(){
     g.fillStyle='rgba(255,230,150,'+(.5*(1-k))+')';g.beginPath();g.arc(e.x,e.y,(14+k*50)*e.sz,0,7);g.fill();g.globalAlpha=1}
   for(const q of tk.parts){const k=q.l/q.m;g.globalAlpha=Math.max(0,k);g.fillStyle=q.c;const s=q.k==='smoke'||q.k==='dust'?q.s*(2-k):q.s*k;g.beginPath();g.arc(q.x,q.y,Math.max(.5,s),0,7);g.fill()}g.globalAlpha=1;
   g.restore();
+  tkWeather(g,cw,ch,z,f);
   tkOverlay(g,cw,ch,z);
 }
 function tkTank(g,p,wreck){
   const R=TK.R,c=wreck?tkCol(p.hue,22,18):tkCol(p.hue,52),dk=wreck?'#222':tkCol(p.hue,30),lt=tkCol(p.hue,68);
-  g.save();g.translate(p.x,p.y);
+  g.save();g.translate(p.x,p.y);if(p.cl&&p.cl.sz!==1)g.scale(p.cl.sz,p.cl.sz);
   g.fillStyle='rgba(0,0,0,.35)';g.beginPath();g.ellipse(5,8,R*1.25,R,p.ba,0,7);g.fill();
   g.rotate(p.ba);
   g.fillStyle='#1f2229';for(const sy of [-1,1]){g.beginPath();g.roundRect(-R*1.15,sy*R*.62-R*.32,R*2.3,R*.64,5);g.fill()}
@@ -459,16 +451,16 @@ function tkTank(g,p,wreck){
   if(!wreck&&p.sh&&p.shT>0){const k=.5+.5*Math.sin(tk.time*9);g.strokeStyle='rgba(125,211,252,'+(.55+.3*k)+')';g.lineWidth=4;g.fillStyle='rgba(56,189,248,.18)';g.beginPath();g.arc(0,0,R*1.65,0,7);g.fill();g.stroke()}
   g.restore();
   if(wreck){if(Math.random()<.2)tkPart(p.x+(Math.random()-.5)*20,p.y,'smoke');return}
-  if(p.hp<=1&&Math.random()<.25)tkPart(p.x,p.y-4,'smoke');
+  if(p.hp<=(p.mhp||100)*.25&&Math.random()<.25)tkPart(p.x,p.y-4,'smoke');
   g.textAlign='center';g.font='700 15px Manrope,system-ui,sans-serif';g.lineWidth=3;g.strokeStyle='rgba(0,0,0,.6)';g.strokeText(p.name,p.x,p.y-R-20);g.fillStyle='#fff';g.fillText(p.name,p.x,p.y-R-20);
   const bw=34,bx=p.x-bw/2,by=p.y-R-14;g.fillStyle='rgba(0,0,0,.55)';g.beginPath();g.roundRect(bx-2,by-2,bw+4,9,4);g.fill();
-  const k=Math.max(0,p.hp)/TK.HP;g.fillStyle=k>.5?'#4ade80':k>.25?'#facc15':'#ef4444';g.beginPath();g.roundRect(bx,by,bw*k,5,3);g.fill();
+  const k=Math.max(0,p.hp)/(p.mhp||100);g.fillStyle=k>.5?'#4ade80':k>.25?'#facc15':'#ef4444';g.beginPath();g.roundRect(bx,by,bw*k,5,3);g.fill();
 }
 function tkOverlay(g,cw,ch,z){
   const mw=Math.min(130,cw*.26),mh=mw*TK.H/TK.W,mx=cw-mw-10,my=60,k=mw/TK.W;
-  g.save();g.globalAlpha=.88;g.fillStyle='rgba(10,12,16,.7)';g.beginPath();g.roundRect(mx-3,my-3,mw+6,mh+6,8);g.fill();g.fillStyle='#2f3d2c';g.fillRect(mx,my,mw,mh);
+  g.save();g.globalAlpha=.88;g.fillStyle='rgba(10,12,16,.7)';g.beginPath();g.roundRect(mx-3,my-3,mw+6,mh+6,8);g.fill();g.fillStyle=(TK_TH[tk.th]||TK_TH.grass).bg[0];g.fillRect(mx,my,mw,mh);
   g.fillStyle='#6b7280';for(const w of tk.walls)g.fillRect(mx+w.x*k,my+w.y*k,Math.max(1.5,w.w*k),Math.max(1.5,w.h*k));
-  for(const p of Object.values(tk.players)){if(!p.al||p.x==null)continue;g.fillStyle=tkCol(p.hue,60);g.beginPath();g.arc(mx+p.x*k,my+p.y*k,p.id===me?3.6:2.6,0,7);g.fill();if(p.id===me){g.strokeStyle='#fff';g.lineWidth=1.2;g.stroke()}}
+  {const vv=(TK_WX[tk.wx]||{}).vis;for(const p of Object.values(tk.players)){if(!p.al||p.x==null)continue;if(vv&&tk.me&&p!==tk.me&&Math.hypot(p.x-tk.me.x,p.y-tk.me.y)>vv*1.25)continue;g.fillStyle=tkCol(p.hue,60);g.beginPath();g.arc(mx+p.x*k,my+p.y*k,p.id===me?3.6:2.6,0,7);g.fill();if(p.id===me){g.strokeStyle='#fff';g.lineWidth=1.2;g.stroke()}}}
   const vw=cw/z*k,vh=ch/z*k;g.strokeStyle='rgba(255,255,255,.5)';g.lineWidth=1;g.strokeRect(mx+tk.cam.x*k-vw/2,my+tk.cam.y*k-vh/2,vw,vh);g.restore();
   g.fillStyle='#fff';g.textAlign='center';
   if(tk.count>0){g.font='800 130px Manrope,system-ui,sans-serif';g.fillText(String(Math.ceil(tk.count)),cw/2,ch/2+44)}
@@ -525,7 +517,7 @@ function tkLobby(){
   const list=el('div','tk-players');
   tk.roster.forEach(p=>{const r=el('div','tk-pl');r.append(avatar(p.id,34),el('b',null,p.name+(p.id===me?' (вы)':'')));if(p.id===tk.hostId)r.append(el('small',null,'хозяин'));list.append(r)});
   for(let i=0;i<tk.botN;i++){const r=el('div','tk-pl');r.append(el('span','tk-bav','Б'),el('b',null,'Бот '+(i+1)));list.append(r)}
-  c.append(list);
+  c.append(list);tkLobbyExtra(c);
   const row=el('div','tk-btns');
   const inv=el('button','ghost');inv.append(svgI('i-forward'),document.createTextNode('Позвать в чат'));inv.onclick=tkInvite;row.append(inv);
   if(tk.host){

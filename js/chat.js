@@ -90,13 +90,14 @@ function mediaEl(path){
 }
 
 // Меню сообщения: реакции и действия
-const MENU_IC={'Сведения':'i-eye','Сохранить стикер':'i-heart','Ответить':'i-reply','Изменить':'i-pencil','Переслать':'i-forward','Закрепить':'i-pin','Открепить':'i-pin','Копировать':'i-copy'};
+const MENU_IC={'Выбрать':'i-check2','Сведения':'i-eye','Сохранить стикер':'i-heart','Ответить':'i-reply','Изменить':'i-pencil','Переслать':'i-forward','Закрепить':'i-pin','Открепить':'i-pin','Копировать':'i-copy'};
 function menuEl(m,sp){
   const a=el('div','acts'),d=nodes[m.id];
   const btn=(t,f,cls)=>{const b=el('button',cls||'g');const ic=MENU_IC[t.replace(/ \(.*\)$/,'')]||(/^Удалить/.test(t)?'i-trash':null);if(ic)b.append(svgI(ic));b.append(el('span',null,t));b.onclick=e=>{e.stopPropagation();d.classList.remove('open');a.remove();f()};a.append(b);return b};
   if(!m.deleted_at){
     a.append(reactPicker(m));
     btn('Ответить',()=>startReply(m));
+    btn('Выбрать',()=>startSelect(m.id));
     if(m.sender===me&&!sp&&m.body)btn('Изменить',()=>startEdit(m));
     if(!sp||sp.s.forward!==false)btn('Переслать',()=>forwardMsg(m));
     if(sp?.s.menu)sp.s.menu(m,btn,sp.x);
@@ -133,12 +134,13 @@ function line(m,prepend,quiet){
   if(m.expires_at&&new Date(m.expires_at)<=new Date())return;
   const d=document.createElement('div');d.className='m';d.dataset.id=m.id;d.dataset.t=m.created_at;d.dataset.s=m.sender;
   // Нажатие — только реакции; зажатие (или правая кнопка мыши) — всё меню. См. openMenu в ux.js
-  d.onclick=e=>{if(e.target.closest('a,button,video,audio,input,.acts'))return;
+  d.onclick=e=>{if(selMode){if(!e.target.closest('.acts'))toggleSel(d.dataset.id);return}
+    if(e.target.closest('a,button,video,audio,input,.acts'))return;
     if(longFired){longFired=false;return}
     clearTimeout(tapTimer);
     tapTimer=setTimeout(()=>openMenu(d,'quick'),e.detail>1?0:190);
   };
-  d.oncontextmenu=e=>{if(e.target.closest('a,video,audio,input,.acts'))return;e.preventDefault();clearTimeout(tapTimer);openMenu(d,'full',longFired||!!lpXY)};
+  d.oncontextmenu=e=>{if(selMode||e.target.closest('a,video,audio,input,.acts'))return;e.preventDefault();clearTimeout(tapTimer);openMenu(d,'full',longFired||!!lpXY)};
   nodes[m.id]=d;
   const log=$('log'),near=bulk||prepend||distBottom()<120;
   if(prepend)log.insertBefore(d,log.querySelector('.m'));else log.append(d);

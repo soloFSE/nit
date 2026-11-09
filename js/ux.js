@@ -81,7 +81,7 @@ $('log').addEventListener('dblclick',e=>{
 // Свайп сообщения вправо — ответить (на телефоне). С самого левого края — это «назад», не ответ
 let sw=null;
 $('log').addEventListener('touchstart',e=>{
-  const d=e.target.closest('.m[data-id]');if(!d||e.touches.length>1||e.target.closest('button,input,.ttt-g,audio,.vbars'))return;
+  if(selMode)return;const d=e.target.closest('.m[data-id]');if(!d||e.touches.length>1||e.target.closest('button,input,.ttt-g,audio,.vbars'))return;
   if(e.touches[0].clientX<30)return;
   sw={d,x:e.touches[0].clientX,y:e.touches[0].clientY,dx:0,on:false};
 },{passive:true});
@@ -137,7 +137,7 @@ function placeMenu(d){
     a.scrollIntoView({block:'nearest',behavior:reduceMotion?'auto':'smooth'});
   });
 }
-function closeMenus(){document.querySelectorAll('.m.open').forEach(o=>{o.classList.remove('open','up','quick');o.querySelector('.acts')?.remove()})}
+function closeMenus(){$('log').classList.remove('msg-focus');document.querySelectorAll('.m.open').forEach(o=>{o.classList.remove('open','up','quick');o.querySelector('.acts')?.remove()})}
 document.addEventListener('pointerdown',e=>{if(!e.target.closest('.m.open'))closeMenus()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenus()});
 
@@ -146,13 +146,14 @@ let longFired=false,lpT=0,lpXY=null,menuAt=0;
 // keep=true — зажатие: меню только открывается, никогда не закрывается повторным сигналом.
 // (Android после зажатия шлёт ещё и contextmenu — раньше он тут же закрывал только что открытое меню.)
 function openMenu(d,mode,keep){
+  if(selMode)return;
   const mm=msgs[d.dataset.id];if(!mm)return;
   if(mm.deleted_at)mode='full'; // у удалённого реакций нет
   const same=d.classList.contains('open')&&(mode==='full'?!d.classList.contains('quick'):d.classList.contains('quick'));
   if(same&&(keep||Date.now()-menuAt<900))return;
   closeMenus();if(same)return;
   menuAt=Date.now();
-  d.classList.add('open');d.classList.toggle('quick',mode==='quick');
+  d.classList.add('open');d.classList.toggle('quick',mode==='quick');$('log').classList.add('msg-focus');
   const a=menuEl(mm,!mm.deleted_at&&specialOf(mm.body));d.append(a);
   // «⋯» в строке реакций — открыть всё меню
   const qr=a.querySelector('.qreact');
@@ -160,7 +161,7 @@ function openMenu(d,mode,keep){
   placeMenu(d);
 }
 $('log').addEventListener('touchstart',e=>{
-  const d=e.target.closest('.m[data-id]');if(!d||e.touches.length>1||e.target.closest('a,button,video,audio,input,.acts,.ttt-g'))return;
+  if(selMode)return;const d=e.target.closest('.m[data-id]');if(!d||e.touches.length>1||e.target.closest('a,button,video,audio,input,.acts,.ttt-g'))return;
   lpXY=[e.touches[0].clientX,e.touches[0].clientY];clearTimeout(lpT);
   lpT=setTimeout(()=>{longFired=true;clearTimeout(tapTimer);navigator.vibrate?.(15);openMenu(d,'full',true)},430);
 },{passive:true});

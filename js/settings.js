@@ -51,6 +51,7 @@ function setMain(sc){
     const ch=el('span','chev');ch.append(svgI('i-back'));row.append(ch);card.append(row);sc.append(card)}
   // Аккаунты на этом устройстве
   const acc=el('section','gi-card');acc.append(el('div','gi-h','Аккаунты'));accountsSection(acc);sc.append(acc);
+  {const ac=typeof adminCard==='function'&&adminCard();if(ac)sc.append(ac)}
   const sp=el('section','gi-card prem-card');const pr=setRow('i-gem','Нить Премиум',isPremium(me)?'Подключён '+untilText(premMap[me]):'Эмодзи, звезда у имени, цвет профиля и другое',()=>openPremium(),'pr-set');sp.append(pr);sc.append(sp);
   const s1=el('section','gi-card');
   s1.append(setRow('i-gear','Оформление','Тема, логотип и цвета, обои, размер текста',()=>goSet('look')));

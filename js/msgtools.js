@@ -29,9 +29,10 @@ $('rbX').onclick=()=>{cancelReply();cancelEdit()};
 
 // ---------- Пересылка ----------
 function forwardMsg(m){
+  const many=Array.isArray(m)?m:null;if(many)m=many[0];
   openModal(s=>{
     const top=el('div','sheet-top');top.append(el('h3',null,'Переслать'));const x=el('button','icon');x.append(svgI('i-x'));x.onclick=closeModal;top.append(x);s.append(top);
-    s.append(fillRich(el('div','fwd-prev'),preview(m)));
+    s.append(fillRich(el('div','fwd-prev'),many&&many.length>1?'Сообщений: '+many.length:preview(m)));
     const q=document.createElement('input');q.placeholder='Найти чат';s.append(q);
     const list=el('div','pick');s.append(list);
     const chats=[
@@ -42,8 +43,7 @@ function forwardMsg(m){
         const r=row(c.ava(),c.name,isGroupKey(c.k)?'группа':'@'+(people[c.k]||''));
         r.onclick=async()=>{
           closeModal();
-          const fields={body:m.body||'',image_path:m.image_path||null,forwarded_from:m.forwarded_from||m.sender};
-          try{await sendMsg(c.k,fields,{noReply:true});if(cur!==c.k)toast('Переслано: '+c.name)}
+          try{for(const x of (many||[m])){await sendMsg(c.k,{body:x.body||'',image_path:x.image_path||null,forwarded_from:x.forwarded_from||x.sender},{noReply:true})}if(cur!==c.k)toast('Переслано: '+c.name)}
           catch(e){alert('Не удалось переслать: '+(/forwarded_from/.test(e.message)?'запустите supabase/more.sql':e.message))}
         };list.append(r);
       });

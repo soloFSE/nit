@@ -1450,3 +1450,96 @@ body:has(#tk) #viewer{z-index:105}
 
 .gf-anon input{width:auto;flex:none;margin:0}
 .gf-form input[type=text],.gf-form input:not([type]){width:100%}
+
+/* ============ v5.0: подарки (анимации), вкладки, 3D-наклон ============ */
+.gf-art svg *{transform-box:fill-box}
+.ga-pulse{transform-origin:center;animation:gaPulse 1.3s ease-in-out infinite}
+.ga-flick{transform-origin:50% 90%;animation:gaFlick 1.1s ease-in-out infinite}
+.ga-spin{transform-origin:center;animation:gaSpin 5s ease-in-out infinite}
+.ga-float{transform-origin:center;animation:gaFloat 3s ease-in-out infinite}
+.ga-fly{transform-origin:center;animation:gaFly 2.4s ease-in-out infinite}
+.ga-wig{transform-origin:center;animation:gaWig 1.8s ease-in-out infinite}
+@keyframes gaPulse{0%,100%{transform:scale(1)}18%{transform:scale(1.1)}36%{transform:scale(.98)}54%{transform:scale(1.07)}}
+@keyframes gaFlick{0%,100%{transform:scale(1,1) skewX(0)}33%{transform:scale(.96,1.05) skewX(2deg)}66%{transform:scale(1.03,.97) skewX(-2deg)}}
+@keyframes gaSpin{0%,100%{transform:rotate(-6deg) scale(1)}50%{transform:rotate(8deg) scale(1.06)}}
+@keyframes gaFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes gaFly{0%,100%{transform:translate(0,2px) rotate(-3deg)}50%{transform:translate(0,-3px) rotate(3deg)}}
+@keyframes gaWig{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+.gf-tabs{display:flex;gap:6px;margin:0 0 10px;overflow-x:auto}
+.gf-tab{padding:7px 14px;border-radius:999px;background:var(--surface2);color:var(--text);font-weight:700;font-size:13px;white-space:nowrap;transition:background .2s,color .2s,transform .2s var(--spring)}
+.gf-tab.on{background:var(--acc);color:#fff;transform:scale(1.04)}
+.gf-big{transform-style:preserve-3d;perspective:600px}
+.gf-big.tilt{transition:transform .08s linear;transform:perspective(600px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg))}
+.gf-art{box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
+/* ============ Админ-панель ============ */
+#adm{z-index:60}
+.adm-badge{display:inline-block;margin-left:6px;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:800;color:var(--rc);background:color-mix(in srgb,var(--rc) 16%,transparent);vertical-align:1px}
+.adm-me{margin-left:auto}
+.adm-tabs{display:flex;gap:6px;padding:4px 14px 10px;overflow-x:auto}
+.adm-tab{padding:8px 16px;border-radius:999px;background:var(--surface2);color:var(--text);font-weight:700;font-size:14px;white-space:nowrap;transition:background .2s,color .2s}
+.adm-tab.on{background:var(--acc);color:#fff}
+.adm-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:10px 0}
+.adm-stat{display:flex;flex-direction:column;gap:2px;padding:12px;border-radius:16px;background:var(--surface2);animation:rowIn .35s var(--ease-out) both}
+.adm-stat b{font-size:22px}.adm-stat small{color:var(--dim);font-size:12px}
+.adm-you{display:flex;flex-direction:column;gap:3px;padding:14px}
+.adm-you small{color:var(--dim)}
+.adm-search{display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:14px;background:var(--surface2);margin:6px 0 10px}
+.adm-search svg{width:20px;height:20px;flex:none;color:var(--dim)}
+.adm-search input{flex:1;background:none;border:0;box-shadow:none;padding:12px 0}
+.adm-bad .gi-rt small{color:var(--bad)}
+.adm-hero{display:flex;flex-direction:column;align-items:center;gap:4px;margin-bottom:10px;text-align:center}
+.adm-hero small{color:var(--dim)}
+.adm-meta{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+.adm-meta span{padding:4px 10px;border-radius:999px;background:var(--surface2);font-size:12.5px;font-weight:700}
+.adm-meta .adm-red{background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad)}
+.adm-chips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 10px}
+.adm-chip{padding:9px 14px;border-radius:12px;background:var(--surface2);color:var(--text);font-weight:700;transition:background .2s,color .2s,transform .2s var(--spring)}
+.adm-chip.on{background:var(--acc);color:#fff;transform:scale(1.05)}
+.adm-sheet input{margin-bottom:8px}
+.adm-lvl{display:flex;flex-direction:column;gap:3px;padding:8px 2px;border-bottom:1px solid var(--line,rgba(127,127,127,.15))}
+.adm-lvl small{color:var(--dim)}
+.adm-log{display:flex;flex-direction:column;padding:8px 2px;border-bottom:1px solid var(--line,rgba(127,127,127,.15))}
+.adm-log small{color:var(--dim)}
+.ban-screen{position:fixed;inset:0;z-index:999;display:grid;place-items:center;background:rgba(0,0,0,.82);padding:20px;backdrop-filter:blur(6px)}
+.ban-card{max-width:360px;padding:26px;border-radius:24px;background:var(--surface);text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}
+.ban-card svg{width:46px;height:46px;color:var(--bad)}
+.ban-why{color:var(--dim)}
+body.muted .cbox{opacity:.6}
+/* ============ Сообщения: выделение ============ */
+#log.msg-focus .m:not(.open){opacity:.4;filter:saturate(.7);transition:opacity .22s,filter .22s}
+#log .m{transition:opacity .22s,filter .22s,box-shadow .2s,transform .2s var(--spring)}
+.m.open{z-index:6;transform:scale(1.02);box-shadow:0 0 0 3px var(--acc),0 10px 28px rgba(0,0,0,.28)!important}
+.m.flash{animation:mFlash 1.9s ease-out}
+@keyframes mFlash{0%{box-shadow:0 0 0 0 var(--acc);transform:scale(1.04)}12%{box-shadow:0 0 0 5px var(--acc),0 0 22px 6px color-mix(in srgb,var(--acc) 55%,transparent);transform:scale(1.03)}55%{box-shadow:0 0 0 4px var(--acc),0 0 16px 4px color-mix(in srgb,var(--acc) 40%,transparent)}100%{box-shadow:0 0 0 0 transparent}}
+body.sel-mode .m{cursor:pointer;user-select:none}
+.m.sel{box-shadow:0 0 0 3px var(--acc)!important;transform:scale(.985)}
+.m.sel::after{content:"";position:absolute;inset:0;border-radius:inherit;background:color-mix(in srgb,var(--acc) 16%,transparent);pointer-events:none}
+.selchk{position:absolute;top:-9px;left:-9px;width:24px;height:24px;border-radius:50%;background:var(--acc);color:#fff;display:grid;place-items:center;box-shadow:0 2px 8px rgba(0,0,0,.3);animation:popIn .25s var(--spring);z-index:2}
+.selchk svg{width:15px;height:15px}
+.m.me .selchk{left:auto;right:-9px}
+.selbar{position:fixed;left:8px;right:8px;bottom:max(10px,env(safe-area-inset-bottom));z-index:50;display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:20px;background:var(--surface);box-shadow:0 10px 34px rgba(0,0,0,.3);animation:sheetUp .25s var(--ease-out)}
+.sel-n{flex:1;font-size:15px}
+.sel-a{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 10px;border-radius:12px;background:none;color:var(--text);font-size:11px;font-weight:700}
+.sel-a svg{width:22px;height:22px}
+.sel-a.danger{color:var(--bad)}
+.sel-a:active{background:var(--surface2)}
+@keyframes sheetUp{from{transform:translateY(30px);opacity:0}}
+/* ============ Танки: выбор класса, карта ============ */
+.tkc-box{width:100%;display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:16px;background:#1d2029;text-align:left}
+.tkc-h{font-weight:800;color:#fff;font-size:15px}
+.tkc-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tkc-l{font-size:12px;color:#9aa3b2;width:88px}
+.tkc-chip{padding:8px 13px;border-radius:999px;background:#2a2e3a;color:#e5e7eb;font-weight:700;font-size:13.5px;transition:background .2s,transform .2s var(--spring)}
+.tkc-chip.sm{padding:6px 11px;font-size:12.5px}
+.tkc-chip.on{background:var(--acc);color:#fff;transform:scale(1.04)}
+.tkc-d{margin:0;color:#9aa3b2;font-size:12.5px}
+.tkc-stats{display:flex;flex-direction:column;gap:5px}
+.tkc-st{display:grid;grid-template-columns:116px 1fr;align-items:center;gap:8px;font-size:12px;color:#cbd2de}
+.tkc-st i{display:block;height:6px;border-radius:3px;background:#2a2e3a;position:relative;overflow:hidden}
+.tkc-st i::after{content:"";position:absolute;inset:0;width:var(--w);border-radius:3px;background:linear-gradient(90deg,var(--acc),var(--acc2,var(--acc)));transition:width .3s var(--ease-out)}
+.tkc-cs{display:flex;align-items:center;gap:8px;color:#e5e7eb;font-size:13px}
+.tkc-cs span{flex:1}
+.tkc-cs b{min-width:16px;text-align:center}
+.tkc-cs .icon{width:30px;height:30px;background:#2a2e3a;color:#fff;font-size:18px}
+.adm-lvl,.adm-log{padding-left:14px;padding-right:14px}
+.gi-card .gf-empty{padding:0 14px 8px}
