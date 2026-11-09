@@ -23,21 +23,22 @@ const canClaim=()=>!wallet||wallet.last_claim!==strToday();
 function dailyAmount(){const st=typeof strEff==='function'?strEff(strMe):0,pr=typeof isPremium==='function'&&isPremium(me);return (10+Math.min(st,30))*(pr?2:1)+(wallet&&wallet.last_claim?0:50)}
 
 // ---------- рисунок ----------
-function giftSvg(type,bg,pat,rar){
-  const u='g'+Math.random().toString(36).slice(2,7),art=GART[type],scene=giftIsScene(type),[c1,c2]=scene?GSKY[bg%3]:(GBG[bg%9]||GBG[0]),e=GEMB[type]||{i:'i-gem'};
+function giftSvg(type,bg,pat,rar,size){
+  const u='g'+Math.random().toString(36).slice(2,7),art=GART[type],scene=giftIsScene(type),[c1,c2]=scene?(GSKY_T[type]||GSKY[bg%3]):(GBG[bg%9]||GBG[0]),e=GEMB[type]||{i:'i-gem'};
   const P=[`<circle cx="10" cy="10" r="2.4" fill="#fff"/>`,`<path d="M10 5v10M5 10h10" stroke="#fff" stroke-width="2" stroke-linecap="round"/>`,`<circle cx="10" cy="10" r="6" fill="none" stroke="#fff" stroke-width="1.8"/>`,`<path d="M-2 22L22 -2" stroke="#fff" stroke-width="2.4"/>`,`<path d="M0 10q5-7 10 0t10 0" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>`][pat%5];
   let em;
   if(art)em=art(u);
   else if(e.y){const s=yarnSvg(e.y,'g'+type);em='<svg x="18" y="16" width="64" height="64" viewBox="0 0 64 64" overflow="visible">'+s.slice(s.indexOf('>')+1,s.lastIndexOf('</svg>'))+'</svg>'}
   else em='<svg x="20" y="18" width="60" height="60" viewBox="0 0 24 24" style="color:#fff;overflow:visible;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))"><use href="#'+e.i+'" stroke-width="2.4"/><use href="#'+e.i+'" opacity=".5" transform="translate(.35 .35)" style="color:rgba(0,0,0,.35)"/></svg>';
-  return '<svg viewBox="0 0 100 100"><defs><clipPath id="'+u+'cl"><rect width="100" height="100" rx="24"/></clipPath><linearGradient id="'+u+'g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="'+c1+'"/><stop offset="1" stop-color="'+c2+'"/></linearGradient>'
+  const svg='<svg viewBox="0 0 100 100"><defs><clipPath id="'+u+'cl"><rect width="100" height="100" rx="24"/></clipPath><linearGradient id="'+u+'g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="'+c1+'"/><stop offset="1" stop-color="'+c2+'"/></linearGradient>'
    +'<pattern id="'+u+'p" width="20" height="20" patternUnits="userSpaceOnUse">'+P+'</pattern>'+giftDefs(u)+'<radialGradient id="'+u+'h" cx=".3" cy=".2" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>'
    +'<rect width="100" height="100" rx="24" fill="url(#'+u+'g)"/><rect width="100" height="100" rx="24" fill="url(#'+u+'p)" opacity="'+(scene?0:.22)+'"/><rect width="100" height="100" rx="24" fill="url(#'+u+'h)"/>'
    +(art?'':'<ellipse cx="50" cy="84" rx="22" ry="4" fill="rgba(0,0,0,.18)"/>')+'<g clip-path="url(#'+u+'cl)">'+em+'</g>'
    +(rar==='legendary'?'<rect width="100" height="100" rx="24" fill="none" stroke="#fde047" stroke-width="3"/>':rar==='epic'?'<rect width="100" height="100" rx="24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="2"/>':'')+'</svg>';
+  return size&&size<60?svg.replace(/<animate(?:Transform)?[^>]*\/>/g,'').replace(/<animate(?:Transform)?[^>]*>[^]*?<\/animate(?:Transform)?>/g,''):svg;
 }
 function giftEl(g,size,cls){
-  const s=el('span','gf-art r-'+(g.rarity||'common')+(cls?' '+cls:''));s.style.width=s.style.height=size+'px';s.innerHTML=giftSvg(g.type,g.bg??0,g.pat??0,g.rarity);
+  const s=el('span','gf-art r-'+(g.rarity||'common')+(cls?' '+cls:''));s.style.width=s.style.height=size+'px';s.innerHTML=giftSvg(g.type,g.bg??0,g.pat??0,g.rarity,size);
   if(g.rarity==='legendary'||g.rarity==='epic'||(cls&&cls.includes('gf-big')))s.append(el('i','gf-shine'));return s;
 }
 const giftWhen=t=>new Date(t).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});
@@ -75,7 +76,7 @@ function openGiftShop(toUid){
     s.append(bar);
     let coll='all';const tabs=el('div','gf-tabs');[['all','Все'],['caucasus','Кавказ'],['classic','Классика']].forEach(([k,n])=>{const b=el('button','gf-tab'+(k===coll?' on':''),n);b.onclick=()=>{coll=k;[...tabs.children].forEach(c=>c.classList.toggle('on',c===b));fill()};tabs.append(b)});s.append(tabs);
     const grid=el('div','gf-grid');s.append(grid);const form=el('div','gf-form hide');s.append(form);
-    function fill(){grid.innerHTML='';pick=null;form.classList.add('hide');Object.values(giftCat).filter(c=>coll==='all'||giftColl(c.id)===coll).sort((a,b)=>a.price-b.price).forEach((c,i)=>{
+    function fill(){grid.innerHTML='';pick=null;form.classList.add('hide');Object.values(giftCat).filter(c=>c.active!==false&&(coll==='all'||giftColl(c.id)===coll)).sort((a,b)=>a.price-b.price).forEach((c,i)=>{
       const left=c.supply==null?null:c.supply-c.sold,out=left!=null&&left<=0;
       const t=el('button','gf-tile'+(out?' out':''));t.style.animationDelay=i*35+'ms';
       t.append(giftEl({type:c.id,bg:(i*3+1)%4,pat:i%5},64),el('b',null,c.name));

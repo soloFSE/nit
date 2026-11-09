@@ -30,7 +30,7 @@ function openTanks(code,opt={}){
 }
 // ---------- свой игровой сервер (WebSocket) ----------
 // Адрес сервера. Пусто — играем как раньше (прямое соединение + Supabase). Подробности: gameserver/README.md
-const TK_SERVER='wss://nit-fl2s.onrender.com';
+const TK_SERVER=''; // игровой сервер отключён: с прямым соединением (WebRTC) пинг ниже. Адрес сервера: wss://nit-fl2s.onrender.com
 function tkWake(){if(TK_SERVER){try{fetch(TK_SERVER.replace(/^ws/,'http'),{mode:'no-cors',cache:'no-store'}).catch(()=>{})}catch{}}}
 // Канал с тем же устройством, что у Supabase (send / presenceState / unsubscribe), но поверх WebSocket
 function tkWsChannel(code,onMsg,onRoster){

@@ -90,6 +90,7 @@
 | `js/streak.js` | **«Нить»** — серия дней общения: уровни `YARN` (нить → моток → клубок → большой → золотой → алмазный → легендарный), рисунок клубка `yarnSvg`, значки у чатов/в шапке/в настройках, окно `openStreak`. Счётчики ведёт триггер `nit_streak` (v6.sql), дни по Москве |
 | `js/admin.js` | **Админ-панель** (v8.sql): уровни 1–4, мьют/бан, узелки, команда, журнал; показ собственных ограничений (`loadRestr`, `applyRestr`) |
 | `js/giftart.js` | Рисунки подарков: анимированные SVG-сцены, флаги республик Кавказа (`giftFlag`), коллекции |
+| `js/giftart2.js` | Подарки Кавказа v5.1: сцены (башни, волк, папаха, кинжал, орёл, Эльбрус, номера 95/06), флаги с живыми складками |
 | `js/select.js` | Выбор нескольких сообщений: копировать / переслать / удалить |
 | `js/tankx.js` | Танки: классы (`TK_CL`, `tkClassOf`), расстановки карт, местности, погода |
 | `gameserver/` | Игровой сервер (Node + ws): ретранслятор комнат для танков; запуск описан в `gameserver/README.md` |
@@ -158,6 +159,7 @@ SPECIAL.push({re:/^::dice:([1-6])::$/, cls:'game-m', forward:false,
 | `admins.sql` | `group_members.role`, `groups.only_admins_edit/send/add`, `is_group_admin()`, RPC `set_group_role`, `admin_delete_message`, новый `transfer_group` (бывший создатель остаётся админом), триггер: создатель вышел → права самому давнему админу/участнику, триггер-защита от смены создателя/настроек не-админом, правило «писать только админам» |
 | `auth.sql` | `profiles.username_set`, новый обработчик регистрации `nit_new_user` (удаляет старый триггер на auth.users, создающий профиль): ник из метаданных или придуманный для Google/GitHub, имя и аватарка оттуда же (`avatar_path` может быть https-ссылкой); RPC `username_free`, `set_username` (один раз) |
 | `fix_forward_delete.sql` | RPC `file_in_use(p, except_id)`: «Удалить у всех» стирает файл из `photos`, только если на него не ссылаются другие (пересланные) сообщения. Без функции файл просто остаётся. Запущено |
+| `v9.sql` | v5.1: цены и каталог «Кавказ»: убран os_pie, добавлены plate95/plate06 |
 | `v8.sql` | v5.0: `app_admins.role`, `user_restrictions`, `admin_log`, RPC `admin_*`, `buy_helper`, защита узелков (`gifts.farm`, `locked_until`), коллекция «Кавказ» |
 | `v7.sql` | v4.5: `wallets`, `gift_catalog`, `gifts`, RPC `claim_daily`, `send_gift`, `sell_gift`, `set_gift_shown` (подарки и узелки) |
 | `v6.sql` | v4.3: `user_streaks`, `pair_streaks`, триггер `nit_streak` (серии дней общения) |

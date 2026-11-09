@@ -27,7 +27,7 @@ function giftFlag(u,kind,x,y,w,h,dur){
    +`<g clip-path="url(#${id})">${body}<rect x="${x}" y="${Y}" width="${w}" height="${H}" fill="url(#${u}fs)"/></g>`;
 }
 // Общие определения: затенение полотнища, блики
-const giftDefs=u=>`<linearGradient id="${u}fs" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".25"/><stop offset=".2" stop-color="#fff" stop-opacity=".18"/><stop offset=".45" stop-color="#000" stop-opacity=".16"/><stop offset=".7" stop-color="#fff" stop-opacity=".16"/><stop offset="1" stop-color="#000" stop-opacity=".25"/></linearGradient>`
+var giftDefs=u=>`<linearGradient id="${u}fs" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".25"/><stop offset=".2" stop-color="#fff" stop-opacity=".18"/><stop offset=".45" stop-color="#000" stop-opacity=".16"/><stop offset=".7" stop-color="#fff" stop-opacity=".16"/><stop offset="1" stop-color="#000" stop-opacity=".25"/></linearGradient>`
  +`<linearGradient id="${u}au" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff2a8"/><stop offset=".5" stop-color="#f5b52b"/><stop offset="1" stop-color="#b8650c"/></linearGradient>`
  +`<linearGradient id="${u}st" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d8dee9"/><stop offset=".5" stop-color="#8d99ae"/><stop offset="1" stop-color="#4a5568"/></linearGradient>`;
 const gSpark=(x,y,s,d)=>`<path transform="translate(${x} ${y}) scale(${s})" d="M0-3L.8-.8 3 0 .8.8 0 3-.8.8-3 0-.8-.8z" fill="#fff"><animate attributeName="opacity" values="0;1;0" dur="2.4s" begin="${d}s" repeatCount="indefinite"/></path>`;
