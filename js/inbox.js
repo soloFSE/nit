@@ -64,6 +64,7 @@ function chatMenu(it){
     const opt=(ic,t,d,f,cls)=>{const r=giRow(ic,t,d,cls);r.onclick=()=>{closeModal();f()};s.append(r)};
     if(!isArchived(k))opt('i-pin',isPinned(k)?'Открепить':'Закрепить','Закреплённые чаты всегда сверху (до 5)',()=>setPref(k,'p',!isPinned(k)));
     opt('i-download',isArchived(k)?'Вернуть из архива':'В архив','Уберёт чат из общего списка',()=>setPref(k,'a',!isArchived(k)));
+    opt('i-trash','Очистить историю','У себя или у всех',()=>openClearMenu(k));
     opt('i-chats','Открыть',null,()=>openChat(k));
   });
 }

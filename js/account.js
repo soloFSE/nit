@@ -77,6 +77,9 @@ async function openAccount(){
     all.onclick=async()=>{if(!confirm('Выйти из аккаунта на всех телефонах и компьютерах, включая этот?'))return;
       byUser=true;closeModal();await sb.auth.signOut({scope:'global'}).catch(()=>{})};
     dv.append(el('small','sm','Если потеряли телефон или вошли с чужого устройства.'),all);s.append(dv);
+    const dl=el('div','acc-card');dl.append(el('span','acc-l','Удаление аккаунта'));
+    const delb=el('button','ghost danger wide','Удалить аккаунт навсегда');delb.onclick=()=>{closeModal();setTimeout(openDeleteAccount,220)};
+    dl.append(el('small','sm','Профиль, друзья, подарки и сообщения удалятся без возможности вернуть.'),delb);s.append(dl);
     s.append(err);
   });
 }

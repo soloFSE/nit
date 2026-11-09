@@ -99,6 +99,7 @@ function renderGroupInfo(){
 
   // Выход и удаление
   const danger=el('section','gi-card');
+  const clr=giRow('i-trash','Очистить историю','У себя'+(isAdminOf(gid)?' или у всех (админ)':''),'gi-danger');clr.onclick=()=>openClearMenu('g:'+gid);danger.append(clr);
   const out=giRow('i-out','Выйти из группы',null,'gi-danger');out.onclick=()=>leaveGroup(gid);danger.append(out);
   if(owner){const del=giRow('i-trash','Удалить группу',null,'gi-danger');del.onclick=()=>deleteGroup(gid);danger.append(del)}
   sc.append(danger);

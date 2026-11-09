@@ -97,6 +97,7 @@ function renderPeer(){
   if(st==='friend'){const media=el('section','gi-card gi-media hide');sc.append(media);loadPeerMedia(id,media)}
   // Опасные действия — аккуратными строками
   const danger=el('section','gi-card');
+  {const cl=giRow('i-trash','Очистить переписку','У себя или свои сообщения у всех','gi-danger');cl.onclick=()=>openClearMenu(id);danger.append(cl)}
   if(st==='friend'){const r=giRow('i-user','Удалить из друзей',null,'gi-danger');r.onclick=async()=>{if(await removeFriend(id))renderPeer()};danger.append(r)}
   if(st==='sent'){const r=giRow('i-x','Отменить заявку',null,'gi-danger');r.onclick=async()=>{const f=friendState(id).f;const {error}=await sb.from('friendships').delete().eq('id',f.id);if(!error){setFr(fr.filter(x=>x.id!==f.id));renderPeer()}};danger.append(r)}
   const b=giRow(blockedNow?'i-check':'i-x',blockedNow?'Разблокировать':'Заблокировать',blockedNow?null:'Не сможет писать вам и присылать заявки','gi-danger');
