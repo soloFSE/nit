@@ -5,15 +5,12 @@
 let ch=null;
 const CH_TC=[[60,'1 мин','Пуля'],[180,'3 мин','Блиц'],[300,'5 мин','Блиц']];
 const CH_LV=[[1,'Новичок'],[2,'Любитель'],[3,'Мастер']];
-const CH_TH={
-  wood:{n:'Дерево',l:'#f0d9b5',d:'#b58863',f:'#5a3a22'},marble:{n:'Мрамор',l:'#e8edf3',d:'#7d94b0',f:'#2c3b52'},
-  emerald:{n:'Изумруд',l:'#eeeed2',d:'#4f8a5b',f:'#1d3b26'},night:{n:'Ночь',l:'#8d97ba',d:'#3a416a',f:'#12152b'},rose:{n:'Роза',l:'#f6dfe4',d:'#c0728a',f:'#4a1f30'}
-};
+const CH_TH={bw:{n:'Чёрно-белая',l:'#f2f2f4',d:'#62626c',f:'#16161b'}}; // доска всегда чёрно-белая, не зависит от темы приложения
 const CH_WHY={mate:'Мат',stalemate:'Пат',material:'Недостаточно материала',fifty:'Правило 50 ходов',repeat:'Троекратное повторение',time:'Время вышло',resign:'Сдача',agreed:'Ничья по соглашению',left:'Соперник вышел'};
 const chCode=()=>Math.random().toString(36).replace(/[^a-z0-9]/g,'').slice(2,7).toUpperCase().padEnd(5,'X');
 const chTcName=ms=>(CH_TC.find(x=>x[0]*1000===ms)||[0,Math.round(ms/60000)+' мин'])[1];
 const chFmt=ms=>{ms=Math.max(0,ms);const s=Math.floor(ms/1000),m=Math.floor(s/60);return ms<10000?(s%60)+'.'+Math.floor(ms%1000/100):m+':'+String(s%60).padStart(2,'0')};
-const chTheme=()=>{try{const t=localStorage.getItem('nit-ch-theme');return CH_TH[t]?t:'wood'}catch{return'wood'}};
+const chTheme=()=>'bw';
 
 // ---------- фигуры (SVG-спрайт 45×45; белые светлые, чёрные тёмные, у каждой — градиент и блик) ----------
 function chSprite(){
@@ -203,9 +200,8 @@ function chUI(){
   const top=el('div','ch-top');
   const x=el('button','icon ch-x');x.append(svgI('i-x'));x.title='Выйти';x.onclick=()=>{if(ch.phase!=='play'||confirm('Выйти из партии? Это будет поражение.')){if(ch.phase==='play'&&!ch.bot)chSend({t:'rs'});chClose()}};
   const ti=el('b','ch-title','Шахматы');ti.id='chTitle';
-  const th=el('button','icon');th.append(svgI('i-brush'));th.title='Тема доски';th.onclick=()=>{const ks=Object.keys(CH_TH),n=ks[(ks.indexOf(ch.theme)+1)%ks.length];ch.theme=n;try{localStorage.setItem('nit-ch-theme',n)}catch{}chApplyTheme($('ch'));toast('Доска: '+CH_TH[n].n)};
   const fl=el('button','icon');fl.append(svgI('i-flip'));fl.title='Перевернуть доску';fl.onclick=()=>{ch.flip=!ch.flip;chBoardBuild()};
-  top.append(x,ti,fl,th);w.append(top);
+  top.append(x,ti,fl);w.append(top);
   const main=el('div','ch-main');
   const col=el('div','ch-col');
   const ob=el('div','ch-bar opp');ob.id='chOppBar';const bw=el('div','ch-bw');bw.id='chBw';
@@ -224,7 +220,7 @@ function chUI(){
   document.body.append(w);requestAnimationFrame(()=>w.classList.add('in'));
   chBoardBuild();chBars();
 }
-function chApplyTheme(w){const t=CH_TH[ch.theme]||CH_TH.wood;w.style.setProperty('--cl',t.l);w.style.setProperty('--cd',t.d);w.style.setProperty('--cf',t.f)}
+function chApplyTheme(w){const t=CH_TH.bw;w.style.setProperty('--cl',t.l);w.style.setProperty('--cd',t.d);w.style.setProperty('--cf',t.f)}
 function chViewIdx(r,c){return ch.flip?[7-r,7-c]:[r,c]}
 function chBoardBuild(){
   const bw=$('chBw');if(!bw)return;bw.innerHTML='';
