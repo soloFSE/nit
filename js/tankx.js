@@ -126,4 +126,27 @@ function tkLobbyExtra(c){
   pick('Расстановка',TK_LAY,'lay');pick('Местность',TK_TH,'th');pick('Погода',TK_WX,'wx');
   if(!tk.host)mb.append(el('p','tkc-d','Карту выбирает хозяин комнаты'));
   c.append(mb);
+  const pb=el('section','tkc-box');const pr=el('div','tkc-prb');pb.append(el('div','tkc-h','Скорость до серверов'),pr);
+  const go=el('button','tkc-chip sm','Проверить');go.onclick=()=>{go.disabled=true;tkProbeAll(pr).then(()=>{go.disabled=false;go.textContent='Проверить ещё раз'})};pb.append(go);c.append(pb);
+}
+
+// ---------- Замер скорости до игровых серверов (кнопка в лобби) ----------
+const TK_PROBE=[['Cloudflare (основной)','wss://nit-games.mreldar-work.workers.dev'],['Render · Франкфурт','wss://nit-fl2s.onrender.com'],['Render · Орегон','wss://nit-m6l0.onrender.com']];
+function tkPingServer(url){
+  return new Promise(res=>{
+    let ws,done=false,s=[],t0=0;const fin=v=>{if(!done){done=true;try{ws.close()}catch{}res(v)}};
+    try{ws=new WebSocket(url+'/ws?room=probe'+Math.floor(Math.random()*1e6))}catch{return res(null)}
+    const to=setTimeout(()=>fin(s.length?s:null),20000);
+    ws.onopen=()=>{ws.send(JSON.stringify({t:'join',room:'probe',id:'p'+Math.random(),name:'p',tt:1}));const go=()=>{t0=performance.now();ws.send('{"t":"ping"}')};
+      ws.onmessage=e=>{if(String(e.data).includes('pong')){s.push(Math.round(performance.now()-t0));if(s.length<6)setTimeout(go,150);else{clearTimeout(to);fin(s)}}};go()};
+    ws.onerror=()=>fin(s.length?s:null);ws.onclose=()=>fin(s.length?s:null);
+  });
+}
+async function tkProbeAll(box){
+  box.innerHTML='';const rows=TK_PROBE.map(([n])=>{const r=el('div','tkc-pr');r.append(el('span',null,n),el('b',null,'проверяю…'));box.append(r);return r});
+  await Promise.all(TK_PROBE.map(async ([n,u],i)=>{
+    const s=await tkPingServer(u),b=rows[i].querySelector('b');
+    if(!s){b.textContent='не отвечает';b.className='bad';return}
+    const m=[...s].sort((a,c)=>a-c)[Math.floor(s.length/2)];b.textContent=m+' мс';b.className=m<90?'ok':m<180?'mid':'bad';
+  }));
 }
