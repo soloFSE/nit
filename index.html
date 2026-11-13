@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#170420">
 <title>Нить</title>
 <!-- Безопасность (v6.0): политика загрузки (CSP) — исполняется только свой код, соединения только с нашими серверами; ссылки не передают адрес сайта -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' blob: https://lojlwcsqbbthmpetmbmq.supabase.co wss://lojlwcsqbbthmpetmbmq.supabase.co https://nit-proxy.mreldar-work.workers.dev wss://nit-proxy.mreldar-work.workers.dev https://nit-games.mreldar-work.workers.dev wss://nit-games.mreldar-work.workers.dev https://nit-fl2s.onrender.com wss://nit-fl2s.onrender.com https://nit-m6l0.onrender.com wss://nit-m6l0.onrender.com; worker-src 'self' blob:; manifest-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' blob: https://challenges.cloudflare.com https://lojlwcsqbbthmpetmbmq.supabase.co wss://lojlwcsqbbthmpetmbmq.supabase.co https://nit-proxy.mreldar-work.workers.dev wss://nit-proxy.mreldar-work.workers.dev https://nit-games.mreldar-work.workers.dev wss://nit-games.mreldar-work.workers.dev https://nit-fl2s.onrender.com wss://nit-fl2s.onrender.com https://nit-m6l0.onrender.com wss://nit-m6l0.onrender.com; worker-src 'self' blob:; manifest-src 'self' blob:; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="no-referrer">
 <script src="js/guard.js"></script>
 <link rel="stylesheet" href="css/fonts.css">
@@ -336,6 +336,7 @@
 <script src="js/cleanup.js"></script>
 <script src="js/banner.js"></script>
 <script src="js/security.js"></script>
+<script src="js/captcha.js"></script>
 <script src="js/gifts.js"></script>
 <script src="js/admin.js"></script>
 <script src="js/reactions.js"></script>

@@ -27,6 +27,7 @@ function showAuth(view){authView=view;aerr('');renderAuth()}
 function renderAuth(){
   const box=$('authBody');if(!box)return;box.innerHTML='';box.className='auth-view v-'+authView;
   ({login:viewLogin,register:viewRegister,check:viewCheck,forgot:viewForgot,otp:viewOtp,newpass:viewNewPass})[authView](box);
+  if(['login','register','check','forgot','otp'].includes(authView)&&typeof capMount==='function')capMount(box); // капча (Turnstile)
 }
 function oauthButtons(box){
   const w=el('div','oauth');
@@ -64,12 +65,12 @@ function viewLogin(box){
       email=id+'@'+FAKE_DOMAIN;
     }
     authEmail=id.includes('@')?id:'';
-    let {error}=await sb.auth.signInWithPassword({email,password:pw});
+    let {error}=await sb.auth.signInWithPassword({email,password:pw,options:{captchaToken:await capToken()}});
     if(!error){secLoginOk?.();return}
     // Ник меняли: служебный адрес остался от старого ника — узнаём его по новому (функция отдаёт только служебные адреса)
     if(!id.includes('@')&&/invalid login|invalid credentials/i.test(error.message)){
       const r=await sb.rpc('login_alias',{u:id});
-      if(!r.error&&r.data&&r.data!==email){({error}=await sb.auth.signInWithPassword({email:r.data,password:pw}));if(!error){secLoginOk?.();return}}
+      if(!r.error&&r.data&&r.data!==email){({error}=await sb.auth.signInWithPassword({email:r.data,password:pw,options:{captchaToken:await capToken()}}));if(!error){secLoginOk?.();return}}
     }
     secLoginFail?.();
     if(/not confirmed/i.test(error.message)){authEmail=email;showAuth('check');aerr('Почта ещё не подтверждена. Откройте письмо или отправьте его снова.');return}
@@ -114,7 +115,7 @@ function viewRegister(box){
     const bad=pwProblem(pw);if(bad){aerr(bad);return}
     if(pw!==p2.input.value){aerr('Пароли не совпадают');return}
     if(!ck.checked){aerr('Отметьте согласие с правилами');return}
-    const {data,error}=await sb.auth.signUp({email,password:pw,options:{data:{username},emailRedirectTo:SITE_URL}});
+    const {data,error}=await sb.auth.signUp({email,password:pw,options:{data:{username},emailRedirectTo:SITE_URL,captchaToken:await capToken()}});
     if(error){
       if(/username taken|already|database error/i.test(error.message)&&!/registered/i.test(error.message)){aerr('Такой ник уже занят');return}
       if(/registered|exists/i.test(error.message)){aerr('На эту почту уже есть аккаунт. Войдите или восстановите пароль.');return}
@@ -138,7 +139,7 @@ function viewCheck(box){
   const tick=()=>{const s=Math.ceil((resendAt-Date.now())/1000);again.disabled=s>0;again.textContent=s>0?'Отправить ещё раз через '+s+' с':'Отправить письмо ещё раз';
     if(s>0&&authView==='check')setTimeout(tick,1000)};tick();
   again.onclick=()=>busy(again,'Отправляю…',async()=>{
-    const {error}=await sb.auth.resend({type:'signup',email:authEmail,options:{emailRedirectTo:SITE_URL}});if(error)throw error;
+    const {error}=await sb.auth.resend({type:'signup',email:authEmail,options:{emailRedirectTo:SITE_URL,captchaToken:await capToken()}});if(error)throw error;
     resendAt=Date.now()+60e3;aok('Письмо отправлено ещё раз');tick();
   });
   const links=el('div','alinks');links.append(link('← Изменить почту',()=>showAuth('register')),link('Я подтвердил — войти',()=>showAuth('login')));box.append(links);
@@ -150,7 +151,7 @@ function viewForgot(box){
   const go=el('button','primary wide','Отправить ссылку');box.append(go);
   go.onclick=()=>busy(go,'Отправляю…',async()=>{
     const email=e.input.value.trim().toLowerCase();if(!emailOk(email)){aerr('Введите почту, указанную при регистрации');return}
-    const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:SITE_URL});if(error)throw error;
+    const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:SITE_URL,captchaToken:await capToken()});if(error)throw error;
     authEmail=email;aok('Если такой аккаунт есть, письмо уже в пути. Откройте ссылку из него на этом устройстве.');
   });
   box.append(el('p','sm hint2','Аккаунты, созданные по нику без почты, восстановить нельзя — привяжите почту в настройках, пока помните пароль.'));
@@ -165,7 +166,7 @@ function viewOtp(box){
   box.append(e,c,send,go);
   send.onclick=()=>busy(send,'Отправляю…',async()=>{
     const email=e.input.value.trim().toLowerCase();if(!emailOk(email)){aerr('Введите почту');return}
-    const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:false,emailRedirectTo:SITE_URL}});
+    const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:false,emailRedirectTo:SITE_URL,captchaToken:await capToken()}});
     if(error){if(/signups? not allowed|not found/i.test(error.message)){aerr('Аккаунта с такой почтой нет. Зарегистрируйтесь.');return}throw error}
     authEmail=email;c.classList.remove('hide');go.classList.remove('hide');send.classList.add('hide');aok('Код отправлен на '+email+'. Можно и просто нажать ссылку в письме.');c.input.focus();
   });
@@ -194,6 +195,7 @@ function viewNewPass(box){
 function authErr(e){
   const m=(e?.message||String(e||'')).toLowerCase(),st=e?.status;
   if(st===429||/rate limit|too many|security purposes/.test(m))return 'Слишком много попыток или писем. Подождите минуту и попробуйте снова.';
+  if(/captcha/.test(m))return 'Не пройдена проверка «я не робот». Обновите страницу, отключите блокировщик рекламы или смените VPN и попробуйте ещё раз.';
   if(/invalid login|invalid credentials/.test(m))return 'Неверная почта или пароль';
   if(/failed to fetch|network|load failed|timeout/.test(m))return 'Нет связи с сервером. Проверьте интернет (или отключите VPN/блокировщик) и попробуйте ещё раз.';
   if(/email not confirmed/.test(m))return 'Почта ещё не подтверждена — откройте письмо.';
