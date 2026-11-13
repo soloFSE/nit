@@ -39,8 +39,9 @@ function linkPreviews(t){
       a.append(i,el('span','yt-play','▶'),el('span','yt-l','YouTube'));out.push(a);return;
     }
     if(/\.(png|jpe?g|gif|webp)(\?.*)?$/i.test(u)){
-      const i=document.createElement('img');i.className='photo';i.src=u;i.loading='lazy';i.referrerPolicy='no-referrer';
-      i.onerror=()=>i.remove();i.onclick=e=>{e.stopPropagation();openViewer(u)};out.push(i);
+      const mk=()=>{const i=document.createElement('img');i.className='photo';i.src=u;i.loading='lazy';i.referrerPolicy='no-referrer';i.onerror=()=>i.remove();i.onclick=e=>{e.stopPropagation();openViewer(u)};return i};
+      if(typeof secPref==='function'&&secPref().autoimg)out.push(mk());
+      else{let host='';try{host=new URL(u).hostname}catch{}const b=el('button','ext-img');b.append(svgI('i-image'),el('span',null,'Показать картинку с '+host+' (сайт узнает ваш IP)'));b.onclick=e=>{e.stopPropagation();b.replaceWith(mk())};out.push(b)}
     }
   });
   return out;

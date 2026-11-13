@@ -3,3 +3,11 @@ dist/
 Thumbs.db
 .DS_Store
 node_modules/
+
+# секреты и ключи не должны попадать в репозиторий
+.env
+.env.*
+*.pem
+*.key
+*.p12
+secrets.*

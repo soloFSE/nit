@@ -1,7 +1,8 @@
 // Смайлики (emoji-picker-element) и стикеры (анимированные эмодзи Google Noto)
-const PICKER_JS='https://cdn.jsdelivr.net/npm/emoji-picker-element@1.29.1/index.js';
-const PICKER_RU='https://cdn.jsdelivr.net/npm/emoji-picker-element@1.29.1/i18n/ru_RU.js';
-const PICKER_DATA='https://cdn.jsdelivr.net/npm/emoji-picker-element-data@1.8.0/ru/cldr/data.json';
+// Библиотека эмодзи лежит у нас (js/vendor), а не на чужом CDN: взлом CDN не сможет выполнить чужой код внутри приложения
+const PICKER_JS=new URL('js/vendor/emoji-picker/index.js',document.baseURI).href;
+const PICKER_RU=new URL('js/vendor/emoji-picker/ru_RU.js',document.baseURI).href;
+const PICKER_DATA=new URL('js/vendor/emoji-picker/data-ru.json',document.baseURI).href;
 const NOTO='https://fonts.gstatic.com/s/e/notoemoji/latest/';
 const STICKERS='1f602 1f923 1f60d 1f970 1f618 1f60e 1f914 1f644 1f62d 1f621 1f92f 1f631 1f973 1f97a 1f634 1f480 1f4a9 1f921 1f47b 1f916 1f648 1f44d 1f44e 1f44f 1f64f 1f4aa 1f525 2764_fe0f 1f494 1f4af 1f389 1f381 1f440 1f44b 1f680 1f608 1f911 1f920 1f92a 1f60b 1f607 1f975 1f976 1f62c 1f971 2728 1f308 1f600'.split(' ');
 // Стикер хранится в тексте сообщения как ::st:<код>::
@@ -30,7 +31,7 @@ function insertAtCursor(t){
 
 // Свои стикеры: у каждого свой набор (строки custom_stickers с owner = я), файлы — в хранилище 'stickers',
 // сообщение ::cs:<путь>::. Удаление убирает стикер из набора, но файл остаётся — отправленные стикеры не ломаются.
-const CS_RE=/^::cs:([\w\/.-]{5,200})::$/;
+const CS_RE=/^::cs:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/[\w.-]{1,120})::$/;
 const csUrl=p=>SUPABASE_URL+'/storage/v1/object/public/stickers/'+p;
 let customs=[],customsOk=true;
 async function loadCustoms(){

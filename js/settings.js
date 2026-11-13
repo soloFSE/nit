@@ -13,7 +13,7 @@ function refreshSettings(){if(setPage)renderSettings()}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&setPage&&$('modal').classList.contains('hide')&&!document.querySelector('.crop'))setPage==='main'?closeSettings():goSet('main')});
 function goSet(p){setPage=p;renderSettings(true)}
 
-const SET_TITLES={main:'Настройки',look:'Оформление',notify:'Уведомления и звук',privacy:'Конфиденциальность'};
+const SET_TITLES={main:'Настройки',look:'Оформление',notify:'Уведомления и звук',privacy:'Конфиденциальность',sec:'Безопасность'};
 function renderSettings(anim){
   const w=setBox(),p=setPage;if(!p)return;
   w.innerHTML='';
@@ -21,7 +21,7 @@ function renderSettings(anim){
   const back=el('button','icon');back.append(svgI('i-back'));back.title='Назад';back.onclick=()=>p==='main'?closeSettings():goSet('main');
   top.append(back,el('b',null,SET_TITLES[p]));w.append(top);
   const sc=el('div','gi-scroll'+(anim&&p!=='main'?' set-in':''));w.append(sc);
-  ({main:setMain,look:setLook,notify:setNotifyPage,privacy:setPrivacy})[p](sc);
+  ({main:setMain,look:setLook,notify:setNotifyPage,privacy:setPrivacy,sec:setSecurity})[p](sc);
 }
 function setRow(icon,title,sub,f,cls){const r=giRow(icon,title,sub,cls);r.onclick=f;const ch=el('span','chev');ch.append(svgI('i-back'));r.append(ch);return r}
 
@@ -51,6 +51,7 @@ function setMain(sc){
     const row=giRow('i-gift','Узелки и подарки',(wallet?wallet.balance:0)+' узелков'+(canClaim()?' · бонус ждёт':''),'sk-set');row.onclick=()=>openWallet();
     const ch=el('span','chev');ch.append(svgI('i-back'));row.append(ch);card.append(row);sc.append(card)}
   // Аккаунты на этом устройстве
+  {const sx=el('section','gi-card');sx.append(setRow('i-shield','Безопасность','Двойная защита, код-пароль, приватность',()=>goSet('sec'),'gi-accent'));sc.append(sx)}
   const acc=el('section','gi-card');acc.append(el('div','gi-h','Аккаунты'));accountsSection(acc);sc.append(acc);
   {const ac=typeof adminCard==='function'&&adminCard();if(ac)sc.append(ac)}
   const sp=el('section','gi-card prem-card');const pr=setRow('i-gem','Нить Премиум',isPremium(me)?'Подключён '+untilText(premMap[me]):'Эмодзи, звезда у имени, цвет профиля и другое',()=>openPremium(),'pr-set');sp.append(pr);sc.append(sp);

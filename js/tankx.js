@@ -137,7 +137,7 @@ function tkPingServer(url){
     let ws,done=false,s=[],t0=0;const fin=v=>{if(!done){done=true;try{ws.close()}catch{}res(v)}};
     try{ws=new WebSocket(url+'/ws?room=probe'+Math.floor(Math.random()*1e6))}catch{return res(null)}
     const to=setTimeout(()=>fin(s.length?s:null),20000);
-    ws.onopen=()=>{ws.send(JSON.stringify({t:'join',room:'probe',id:'p'+Math.random(),name:'p',tt:1}));const go=()=>{t0=performance.now();ws.send('{"t":"ping"}')};
+    ws.onopen=()=>{const go=()=>{t0=performance.now();ws.send('{"t":"ping"}')};
       ws.onmessage=e=>{if(String(e.data).includes('pong')){s.push(Math.round(performance.now()-t0));if(s.length<6)setTimeout(go,150);else{clearTimeout(to);fin(s)}}};go()};
     ws.onerror=()=>fin(s.length?s:null);ws.onclose=()=>fin(s.length?s:null);
   });

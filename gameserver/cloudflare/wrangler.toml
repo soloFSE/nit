@@ -2,6 +2,12 @@ name = "nit-games"
 main = "worker.js"
 compatibility_date = "2025-01-01"
 
+# Публичные значения (адрес и «публикуемый» ключ Supabase видны в приложении всем; секретов тут нет)
+[vars]
+SUPABASE_URL = "https://lojlwcsqbbthmpetmbmq.supabase.co"
+SUPABASE_KEY = "sb_publishable_I6_9GkOyKCJc6WnsjY9nQg_RFuL-oUY"
+ALLOWED_ORIGINS = "https://solofse.github.io,http://localhost:5173"
+
 [[durable_objects.bindings]]
 name = "ROOMS"
 class_name = "Room"

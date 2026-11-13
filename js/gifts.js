@@ -167,6 +167,7 @@ SPECIAL.push({re:/^::gift:(\d+)::$/,cls:'gift-m',forward:false,preview:()=>PI('i
     giftById(+x[1]).then(g=>{
       w.innerHTML='';
       if(!g){w.append(el('small',null,'Подарок обменян или недоступен'));return}
+      if(g.sender!==m.sender){w.append(el('small',null,'Карточка не совпадает с подарком (возможна подделка)'));return}
       const mine=m.sender===me,who=g.anon&&!mine?'Аноним':nameOf(m.sender);
       w.style.setProperty('--rc',GRAR[g.rarity]?.[1]||'#94a3b8');
       const ic=giftEl(g,92,'gf-card-art');const t=el('div','gfcard-t');

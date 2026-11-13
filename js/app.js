@@ -37,6 +37,7 @@ window.addEventListener('online',()=>{if(!me&&!$('splash').classList.contains('h
 
 async function safeBoot(u){
   clearTimeout(retryT);
+  if(typeof mfaGate==='function'){hideSplash();if(!(await mfaGate()))return} // 2FA: сначала код из приложения
   try{
     await boot(u);hideSplash();
     if(typeof rememberProfile==='function')rememberProfile();
@@ -55,10 +56,11 @@ $('splashOut').onclick=()=>{byUser=true;hideSplash();sb.auth.signOut().catch(()=
 
 // Если на GitHub обновили не все файлы, части кода не будет — предупреждаем сразу
 (function(){
-  const need={'js/files.js':'isFile','js/reads.js':'markRead','js/msgtools.js':'startEdit','js/fun.js':'pollOf','js/appearance.js':'applyWall',
+  const need={'js/files.js':'fileEl','js/reads.js':'markRead','js/msgtools.js':'startEdit','js/fun.js':'openPollEditor','js/appearance.js':'applyWall',
     'js/calls.js':'startCall','js/gcall.js':'joinGroupCall','js/ux.js':'layoutNode','js/bg.js':'sysNotify','js/ginfo.js':'openGroupInfo','js/account.js':'openAccount','js/inbox.js':'renderChats','js/media.js':'openMediaPicker','js/crop.js':'cropImage','js/mention.js':'linkMentions','js/settings.js':'openSettings','js/changelog.js':'CHANGELOG','js/accounts.js':'switchAccount','js/peer.js':'showProfile','js/newchat.js':'openNewChat','js/stories.js':'loadStories','js/tabs.js':'setSideTab','js/tanks.js':'openTanks','js/titles.js':'loadTitles','js/logo.js':'logoSVG','js/jumps.js':'placeUnread','js/msginfo.js':'showMsgInfo','js/photoedit.js':'editPhoto','js/social.js':'loadBlocks','js/emoji.js':'closeEmoji','js/premium.js':'buildPremium','js/premacc.js':'openPremium','js/streak.js':'loadStreaks','js/gifts.js':'openGiftShop','js/admin.js':'openAdmin','js/banner.js':'bannerEl','js/chess.js':'openChess','js/chessengine.js':'chLegal','js/cleanup.js':'openClearMenu','js/giftart.js':'giftDefs','js/reactions.js':'loadReactions','js/circle.js':'circleEl',
     'js/voice.js':'startRec','js/groups.js':'loadGroups','js/friends.js':'loadFriends','js/profile.js':'loadProfiles','js/compose.js':'sendMsg','js/pwa.js':'installEvt'};
-  const miss=Object.entries(need).filter(([,fn])=>{try{return typeof eval(fn)==='undefined'}catch{return true}}).map(([f])=>f);
+  // Без eval (политика безопасности его запрещает): функции-объявления видны в window, а файлы с const/let отмечаются в __mods
+  const miss=Object.entries(need).filter(([f,fn])=>typeof window[fn]==='undefined'&&!(window.__mods||[]).includes(f)).map(([f])=>f);
   if(miss.length){const b=document.createElement('div');b.className='filewarn';
     b.textContent='Сайт загружен не полностью: не найдены '+miss.join(', ')+'. Загрузите на GitHub все файлы из папки проекта и обновите страницу.';
     document.body.prepend(b)}

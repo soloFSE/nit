@@ -56,6 +56,7 @@ function viewLogin(box){
   const enter=e=>{if(e.key==='Enter')go.click()};u.input.onkeydown=enter;p.input.onkeydown=enter;
   go.onclick=()=>busy(go,'Вхожу…',async()=>{
     const id=u.input.value.trim().toLowerCase(),pw=p.input.value;aerr('');
+    {const w=typeof secLoginWait==='function'?secLoginWait():0;if(w){aerr('Слишком много неудачных попыток. Подождите '+w+' с');return}}
     if(!id||!pw){aerr('Введите почту (или ник) и пароль');return}
     let email=id;
     if(!id.includes('@')){
@@ -64,12 +65,13 @@ function viewLogin(box){
     }
     authEmail=id.includes('@')?id:'';
     let {error}=await sb.auth.signInWithPassword({email,password:pw});
-    if(!error)return;
+    if(!error){secLoginOk?.();return}
     // Ник меняли: служебный адрес остался от старого ника — узнаём его по новому (функция отдаёт только служебные адреса)
     if(!id.includes('@')&&/invalid login|invalid credentials/i.test(error.message)){
       const r=await sb.rpc('login_alias',{u:id});
-      if(!r.error&&r.data&&r.data!==email){({error}=await sb.auth.signInWithPassword({email:r.data,password:pw}));if(!error)return}
+      if(!r.error&&r.data&&r.data!==email){({error}=await sb.auth.signInWithPassword({email:r.data,password:pw}));if(!error){secLoginOk?.();return}}
     }
+    secLoginFail?.();
     if(/not confirmed/i.test(error.message)){authEmail=email;showAuth('check');aerr('Почта ещё не подтверждена. Откройте письмо или отправьте его снова.');return}
     if(/invalid login|invalid credentials/i.test(error.message)&&!id.includes('@')){aerr('Неверный ник или пароль. Если регистрировались по почте — введите почту.');return}
     throw error;

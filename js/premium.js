@@ -40,7 +40,7 @@ function premEl(id,n,cls,still){
 // Анимированные эмодзи (Lottie из .tgs). Чтобы не лагало: рисуем на canvas (легче SVG), анимируем только то, что видно,
 // одновременно играет не больше 10, а в панели эмодзи (режим still) показываем первый кадр и оживляем при наведении/нажатии.
 let lottieP=null;
-const lottieLib=()=>lottieP||(lottieP=new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie_canvas.min.js';s.onload=()=>ok(window.lottie);s.onerror=()=>{lottieP=null;no()};document.head.append(s)}));
+const lottieLib=()=>lottieP||(lottieP=new Promise((ok,no)=>{const s=document.createElement('script');s.src='js/vendor/lottie_canvas.min.js'; /* свой файл, а не чужой CDN (v6.0, безопасность) */s.onload=()=>ok(window.lottie);s.onerror=()=>{lottieP=null;no()};document.head.append(s)}));
 const lottieData={},playing=[];
 const getLottieJson=src=>lottieData[src]||(lottieData[src]=fetch(src).then(r=>r.json()));
 function lottiePlay(w){

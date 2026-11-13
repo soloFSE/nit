@@ -93,7 +93,8 @@ function grantPremium(uid){
 }
 // Подарок-сообщение
 SPECIAL.push({re:/^::pgift:(\d+)::$/,cls:'pgift-m',forward:false,preview:()=>PI('i-gem')+'Подарок: Премиум',
-  render:(m,d,x)=>{const days=+x[1],w=el('div','pgift');const ic=el('div','pgift-ic');ic.append(svgI('i-gem'));
+  render:(m,d,x)=>{if(typeof admIds!=='undefined'&&admIds.size&&!admIds.has(m.sender)){d.append(el('small',null,'Подделка: Премиум дарит только администрация'));return}
+    const days=+x[1],w=el('div','pgift');const ic=el('div','pgift-ic');ic.append(svgI('i-gem'));
     w.append(ic,el('small',null,m.sender===me?'Вы подарили Премиум':'Вам подарен Премиум'),el('b',null,'Нить Премиум'),el('span',null,days?days+' '+plural(days,'день','дня','дней'):'Навсегда'));
     d.append(w);
     if(m.sender!==me&&Date.now()-new Date(m.created_at)<8000&&typeof fx==='function')setTimeout(()=>fx('confetti'),300)}});

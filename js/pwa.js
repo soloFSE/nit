@@ -1,5 +1,6 @@
 // Установка как приложение (PWA). Работает только с сайта по https (например GitHub Pages),
 // у файла, открытого с компьютера, такой возможности нет.
+(window.__mods=window.__mods||[]).push('js/pwa.js');
 let installEvt=null;
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){
   navigator.serviceWorker.register('sw.js').catch(e=>console.warn('sw',e));

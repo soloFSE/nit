@@ -35,13 +35,14 @@ const TK_SERVER='wss://nit-fl2s.onrender.com'; // Render · Франкфурт (
 function tkWake(){if(TK_SERVER){try{fetch(TK_SERVER.replace(/^ws/,'http'),{mode:'no-cors',cache:'no-store'}).catch(()=>{})}catch{}}}
 // Канал с тем же устройством, что у Supabase (send / presenceState / unsubscribe), но поверх WebSocket
 function tkWsChannel(code,onMsg,onRoster){
-  return new Promise(res=>{
+  return new Promise(async res=>{
     let ws,list=[],done=false,ping=0,dead=false;
     const fin=v=>{if(!done){done=true;res(v)}};
+    const tok=typeof gameToken==='function'?await gameToken():''; // токен входа: по нему сервер узнаёт, кто вы (v6.0)
     try{ws=new WebSocket(TK_SERVER+'/ws?room='+encodeURIComponent(code))}catch{return res(null)}
     const t=setTimeout(()=>{try{ws.close()}catch{}fin(null)},12000);
     const api={send(o){if(ws.readyState===1)ws.send(JSON.stringify({t:'m',p:o.payload}))},presenceState:()=>({a:list}),unsubscribe(){dead=true;clearInterval(ping);try{ws.close()}catch{}}};
-    ws.onopen=()=>{ws.send(JSON.stringify({t:'join',room:code,id:me,name:nameOf(me),tt:tk.myT||(tk.myT=Date.now())}));ping=setInterval(()=>{if(ws.readyState===1)ws.send('{"t":"ping"}')},15000)};
+    ws.onopen=()=>{ws.send(JSON.stringify({t:'join',room:code,tok,name:nameOf(me),tt:tk.myT||(tk.myT=Date.now())}));ping=setInterval(()=>{if(ws.readyState===1)ws.send('{"t":"ping"}')},15000)};
     ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch{return}
       if(m.t==='roster'){list=m.list;clearTimeout(t);fin(api);onRoster()}else if(m.t==='m')onMsg(m.p)};
     ws.onclose=ws.onerror=()=>{clearTimeout(t);clearInterval(ping);if(!done)fin(null);else if(!dead&&tk&&tk.ch===api){tk.ws=false;tk.ch=null;toast('Связь с игровым сервером потеряна');tkJoinSb()}};

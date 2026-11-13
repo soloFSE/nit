@@ -1,7 +1,7 @@
 // Админ-панель «Нити» (supabase/v8.sql). Уровни: 1 Помощник (можно купить), 2 Модератор, 3 Администратор, 4 Главный админ (только разработчики).
 // Панель открывается из Настроек. Все действия идут через защищённые функции базы (admin_*): уровень проверяет сервер, а не телефон.
 // Здесь же — «ограничения как в Discord»: мьют (нельзя писать) и бан (аккаунт закрыт) на срок или навсегда, с причиной.
-let adminRole=0,adminGold=false,myRestr=[],admTab='over';
+let adminRole=0,adminGold=false,myRestr=[],admTab='over',admIds=new Set();
 const ADM_ROLES={1:['Помощник','#10b981','Мьют до 1 часа'],2:['Модератор','#3b82f6','Мьют до 7 дней, бан до 3 дней, журнал'],3:['Администратор','#a855f7','Ограничения до 30 дней, узелки до 1000 за раз, звания и Премиум'],4:['Главный админ','#f59e0b','Всё без ограничений, бесконечные узелки']};
 const admBadge=(r,gold)=>{const a=ADM_ROLES[r];if(!a)return null;const b=el('span','adm-badge'+(gold?' gold':''),gold?'★ Золотой админ':a[0]);b.style.setProperty('--rc',a[1]);return b};
 const admWhen=t=>t?new Date(t).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'навсегда';
@@ -14,6 +14,7 @@ async function loadAdminRole(){
   if(error)({data,error}=await sb.from('app_admins').select('user_id,role').eq('user_id',me));
   if(error)({data,error}=await sb.from('app_admins').select('user_id').eq('user_id',me)); // v8.sql ещё не запущен — прежние админы = главные
   adminRole=error||!(data||[]).length?0:(data[0].role??4);adminGold=!error&&!!(data||[])[0]?.gold; // золотой админ: закреплён владельцем (v11.sql)
+  try{const l=await sb.from('app_admins').select('user_id');admIds=new Set((l.data||[]).map(r=>r.user_id))}catch{}
   amAppAdmin=adminRole>=3; // звания и Премиум — с уровня «Администратор»
 }
 // ---------- Мои ограничения ----------
@@ -132,6 +133,7 @@ async function admUser(u){
       if(adminRole>=2)tile('i-lock','Бан','Закрыть аккаунт',()=>admPick(d,'ban'),'bad');
       if(adminRole>=3)tile('i-thread','Узелки','Начислить / списать',()=>admKnots(d));
       if(adminRole>=4)tile('i-shield','Уровень','Назначить админа',()=>admRole(d));
+      if(adminRole>=4)tile('i-lock','Сбросить 2FA','Если потерян телефон',async()=>{if(!confirm('Сбросить двухфакторную защиту у этого человека?'))return;const {error}=await sb.rpc('admin_reset_mfa',{target:d.id});if(error){err.textContent=admErr(error);return}toast('Двухфакторная защита сброшена')});
       s.append(g);
       if(d.muted||d.banned){const b=el('button','primary wide','Снять ограничения');b.onclick=async()=>{
         for(const k of [d.banned?'ban':'',d.muted?'mute':''].filter(Boolean)){const {error}=await sb.rpc('admin_unrestrict',{target:d.id,k});if(error){err.textContent=admErr(error);return}}
@@ -203,7 +205,7 @@ async function admTeam(sc){
   if(adminRole>=4)sc.append(el('p','am-note','Чтобы назначить уровень, откройте человека во вкладке «Люди» → «Уровень».'));
 }
 // ---------- Журнал ----------
-const ADM_LOG={mute:['i-mic-off','#f59e0b','выдал мьют'],ban:['i-lock','#ef4444','забанил'],unmute:['i-check','#10b981','снял мьют'],unban:['i-check','#10b981','снял бан'],give:['i-thread','#f59e0b','изменил узелки'],role:['i-shield','#a855f7','назначил уровень'],buy_helper:['i-gem','#10b981','купил уровень «Помощник»']};
+const ADM_LOG={reset_mfa:['i-lock','#ef4444','сбросил 2FA'],mute:['i-mic-off','#f59e0b','выдал мьют'],ban:['i-lock','#ef4444','забанил'],unmute:['i-check','#10b981','снял мьют'],unban:['i-check','#10b981','снял бан'],give:['i-thread','#f59e0b','изменил узелки'],role:['i-shield','#a855f7','назначил уровень'],buy_helper:['i-gem','#10b981','купил уровень «Помощник»']};
 function admLogText(l){
   const d=l.details||'';
   if(l.action==='give'){const m=d.match(/^(-?\d+)\s*(.*)$/);return m?((+m[1]>0?'+':'')+m[1]+' узелков'+(m[2]?' · '+m[2]:'')):d}

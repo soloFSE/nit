@@ -66,13 +66,15 @@ function chNetOpen(code,onMsg,onRoster){
     sb_ch.on('presence',{event:'sync'},sync).on('broadcast',{event:'ch'},({payload})=>onMsg(payload))
       .subscribe(async st=>{if(st==='SUBSCRIBED'){try{await sb_ch.track({id:me,name:nameOf(me),t:ch?.myT||(ch.myT=Date.now())})}catch{}sync()}});
   };
-  const open=()=>{
+  const open=async()=>{
     if(dead)return;
     if(typeof TK_SERVER==='undefined'||!TK_SERVER){fallback();return}
     let opened=false;
+    const tok=typeof gameToken==='function'?await gameToken():''; // токен входа: по нему сервер узнаёт, кто вы (v6.0)
+    if(dead)return;
     try{ws=new WebSocket(TK_SERVER+'/ws?room='+encodeURIComponent(room))}catch{fallback();return}
     const to=setTimeout(()=>{if(!opened){try{ws.close()}catch{}fallback()}},10000);
-    ws.onopen=()=>{opened=true;clearTimeout(to);retry=0;ws.send(JSON.stringify({t:'join',room,id:me,name:nameOf(me),tt:ch?.myT||(ch.myT=Date.now())}));
+    ws.onopen=()=>{opened=true;clearTimeout(to);retry=0;ws.send(JSON.stringify({t:'join',room,tok,name:nameOf(me),tt:ch?.myT||(ch.myT=Date.now())}));
       clearInterval(ping);ping=setInterval(()=>{if(ws.readyState===1)ws.send('{"t":"ping"}')},15000)};
     ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch{return}
       if(m.t==='roster'){list=[...m.list].sort((a,b)=>(a.t-b.t)||String(a.id).localeCompare(String(b.id)));onRoster(list)}else if(m.t==='m')onMsg(m.p)};
