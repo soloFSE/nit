@@ -55,6 +55,7 @@ function renderPeer(){
   const h2=el('h2',null,nameOf(id));const pm=typeof premMark==='function'&&premMark(id);if(pm)h2.append(pm);
   const ph=typeof premHue==='function'&&premHue(id);if(ph!=null)hero.style.setProperty('--h',ph);
   hero.append(av,h2);
+  if(typeof bannerInto==='function')bannerInto(hero,id);
   const nk=el('button','pv-nick','@'+nick);nk.title='Скопировать ник';nk.onclick=()=>{navigator.clipboard?.writeText('@'+nick);toast('Ник скопирован')};hero.append(nk);
   const mt=mainTitle(id);if(mt)hero.append(titleBadge(mt,'big'));
   const line=el('div','pv-line');

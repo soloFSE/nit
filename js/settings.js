@@ -30,6 +30,7 @@ function setMain(sc){
   const p=prof[me]||{};
   // Шапка: цветной фон под выбранную тему, аватар, имя, ник и быстрые плитки
   const hero=el('section','gi-hero set-hero');
+  if(typeof bannerInto==='function')bannerInto(hero,me);
   const av=avatar(me,104);if(p.avatar_path){av.classList.add('zoom');av.onclick=()=>openViewer(avatarUrl(p.avatar_path))}else av.onclick=()=>openProfileEdit();
   const h2=el('h2',null,nameOf(me));const pm=typeof premMark==='function'&&premMark(me);if(pm)h2.append(pm);hero.append(av,h2);
   const sub=el('div','set-sub');const nk=el('button','set-nick','@'+myName);nk.title='Скопировать ник';nk.onclick=()=>{navigator.clipboard?.writeText('@'+myName);toast('Ник скопирован')};sub.append(nk);

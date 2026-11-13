@@ -1729,3 +1729,74 @@ body.sel-mode .m{cursor:pointer;user-select:none}
 .tkc-prb{display:flex;flex-direction:column;gap:6px}
 .tkc-pr{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:12px;background:#242836;font-size:13.5px;color:#dfe3ef}
 .tkc-pr b{font-variant-numeric:tabular-nums}.tkc-pr b.ok{color:#4ade80}.tkc-pr b.mid{color:#facc15}.tkc-pr b.bad{color:#f87171}
+
+/* ============ Баннеры профиля (v5.9) ============ */
+.modal{z-index:100} /* окна поверх админ-панели, шахмат и профиля */
+.bn{position:relative;width:100%;height:100%;overflow:hidden;background:#222}
+.bn::before,.bn::after{content:"";position:absolute;pointer-events:none}
+.bn-img img{width:100%;height:100%;object-fit:cover;display:block}
+.bn-dawn{background:linear-gradient(120deg,#ff9a8b,#ff6a88 45%,#ff99ac)}
+.bn-forest{background:linear-gradient(135deg,#0f3d2e,#1f7a4d 55%,#a8e063)}
+.bn-ocean{background:linear-gradient(135deg,#0b3a75,#1e88e5 55%,#7de0ff)}
+.bn-violet{background:linear-gradient(135deg,#2a1260,#7c3aed 55%,#f0abfc)}
+.bn-graphite{background:linear-gradient(135deg,#0b0f19,#374151 60%,#9ca3af)}
+.bn-gold{background:linear-gradient(135deg,#78350f,#d97706 50%,#fde68a)}
+/* анимированные */
+.bn-aurora{background:linear-gradient(180deg,#050b1f,#0b2a4a)}
+.bn-aurora::before{inset:-40%;background:radial-gradient(40% 30% at 30% 55%,rgba(52,211,153,.75),transparent 70%),radial-gradient(38% 28% at 70% 45%,rgba(139,92,246,.7),transparent 70%),radial-gradient(30% 22% at 50% 65%,rgba(34,211,238,.6),transparent 70%);filter:blur(14px);animation:bnAur 11s ease-in-out infinite alternate}
+@keyframes bnAur{0%{transform:translate(-8%,2%) rotate(-4deg)}100%{transform:translate(8%,-4%) rotate(5deg) scale(1.1)}}
+.bn-neon{background:linear-gradient(120deg,#ff00cc,#3333ff,#00ffd5,#ff00cc);background-size:300% 300%;animation:bnFlow 8s linear infinite}
+.bn-neon::before{inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.07) 0 2px,transparent 2px 14px)}
+@keyframes bnFlow{0%{background-position:0 50%}100%{background-position:300% 50%}}
+.bn-flame{background:linear-gradient(0deg,#450a0a,#b91c1c 35%,#f97316 65%,#fde047);background-size:100% 220%;animation:bnFire 3.2s ease-in-out infinite alternate}
+.bn-flame::before{inset:0;background:radial-gradient(60% 80% at 20% 110%,rgba(254,240,138,.9),transparent 60%),radial-gradient(50% 70% at 75% 115%,rgba(253,186,116,.85),transparent 60%);animation:bnFlick 1.4s ease-in-out infinite alternate}
+@keyframes bnFire{0%{background-position:0 0}100%{background-position:0 100%}}
+@keyframes bnFlick{0%{transform:translateY(8%) scaleY(.9);opacity:.8}100%{transform:translateY(-6%) scaleY(1.08);opacity:1}}
+.bn-waves{background:linear-gradient(180deg,#0c4a6e,#0ea5e9)}
+.bn-waves::before,.bn-waves::after{left:0;right:0;bottom:0;height:60%;background-repeat:repeat-x;background-size:50% 100%;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 60' preserveAspectRatio='none'%3E%3Cpath d='M0 30c25-20 50-20 75 0s50 20 75 0 40-14 50-6v36H0z' fill='%23ffffff' fill-opacity='.22'/%3E%3C/svg%3E");animation:bnWave 7s linear infinite}
+.bn-waves::after{height:46%;opacity:.8;animation-duration:11s;animation-direction:reverse}
+@keyframes bnWave{0%{background-position-x:0}100%{background-position-x:100%}}
+.bn-stars{background:radial-gradient(120% 140% at 50% 120%,#3b2a7a,#0a0a24 60%)}
+.bn-stars::before{inset:0;background-image:radial-gradient(1.6px 1.6px at 12% 22%,#fff,transparent),radial-gradient(1.2px 1.2px at 30% 70%,#fff,transparent),radial-gradient(2px 2px at 48% 35%,#fff,transparent),radial-gradient(1.4px 1.4px at 66% 78%,#fff,transparent),radial-gradient(1.8px 1.8px at 82% 25%,#fff,transparent),radial-gradient(1.2px 1.2px at 92% 60%,#fff,transparent),radial-gradient(1.5px 1.5px at 6% 80%,#fff,transparent);animation:bnTw 3s ease-in-out infinite alternate}
+.bn-stars::after{inset:0;background-image:radial-gradient(1px 1px at 20% 40%,#cbd5ff,transparent),radial-gradient(1.3px 1.3px at 58% 15%,#cbd5ff,transparent),radial-gradient(1px 1px at 75% 50%,#cbd5ff,transparent),radial-gradient(1.4px 1.4px at 38% 88%,#cbd5ff,transparent);animation:bnTw 4.4s ease-in-out infinite alternate-reverse}
+@keyframes bnTw{0%{opacity:.25}100%{opacity:1}}
+.bn-snow{background:linear-gradient(180deg,#0f2342,#2a5a9a)}
+.bn-snow::before,.bn-snow::after{inset:-100% 0 0 0;background-image:radial-gradient(3px 3px at 10% 20%,#fff,transparent),radial-gradient(2.4px 2.4px at 35% 60%,#fff,transparent),radial-gradient(3.4px 3.4px at 55% 30%,#fff,transparent),radial-gradient(2px 2px at 75% 75%,#fff,transparent),radial-gradient(3px 3px at 90% 45%,#fff,transparent);background-size:100% 50%;animation:bnSnow 7s linear infinite}
+.bn-snow::after{background-size:70% 40%;opacity:.7;animation-duration:11s}
+@keyframes bnSnow{0%{transform:translateY(0)}100%{transform:translateY(50%)}}
+.bn-liquid{background:#1e1b4b}
+.bn-liquid::before{left:-30%;top:-80%;width:160%;height:260%;background:conic-gradient(from 0deg,#ec4899,#8b5cf6,#06b6d4,#22c55e,#eab308,#ec4899);filter:blur(34px);opacity:.85;animation:bnSpin 14s linear infinite}
+@keyframes bnSpin{to{transform:rotate(360deg)}}
+.bn-sunset{background:linear-gradient(180deg,#1e1b4b,#be185d 55%,#fb923c)}
+.bn-sunset::before{left:50%;bottom:-22%;width:62%;aspect-ratio:1;margin-left:-31%;border-radius:50%;background:radial-gradient(circle,#fff3b0,#fbbf24 45%,rgba(251,146,60,0) 70%);animation:bnSun 5s ease-in-out infinite alternate}
+.bn-sunset::after{inset:auto 0 0 0;height:30%;background:linear-gradient(180deg,transparent,rgba(30,10,50,.65))}
+@keyframes bnSun{0%{transform:translateY(8%) scale(.95)}100%{transform:translateY(-8%) scale(1.08)}}
+@media (prefers-reduced-motion:reduce){.bn *,.bn::before,.bn::after{animation:none!important}.bn{animation:none!important}}
+/* показ в шапках */
+.bn-wrap{position:absolute;left:0;right:0;top:0;height:170px;z-index:0;-webkit-mask-image:linear-gradient(#000 62%,transparent);mask-image:linear-gradient(#000 62%,transparent);animation:fade .4s}
+.pv-hero.has-bn,.set-hero.has-bn{position:relative;overflow:hidden}
+.pv-hero.has-bn>:not(.bn-wrap),.set-hero.has-bn>:not(.bn-wrap){position:relative;z-index:1}
+.set-hero.has-bn .bn-wrap{height:130px}
+/* редактор в окне «Профиль» */
+.bn-ed{display:flex;flex-direction:column;gap:8px;margin:6px 0 10px}
+.bn-h{font-weight:800;font-size:14px}
+.bn-prev{position:relative;height:96px;border-radius:16px;overflow:hidden;background:var(--surface2);display:grid;place-items:center}
+.bn-none{color:var(--dim);font-size:13px}
+.bn-prev.lock{filter:saturate(.6)}
+.bn-lock{display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px;border-radius:16px;background:linear-gradient(135deg,color-mix(in srgb,var(--acc) 22%,var(--surface)),color-mix(in srgb,var(--acc2) 16%,var(--surface)));color:var(--text);text-align:center}
+.bn-lock svg{width:24px;height:24px;color:var(--acc)}.bn-lock small{color:var(--dim)}
+.bn-strip{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:none}
+.bn-strip::-webkit-scrollbar{display:none}
+.bn-th{flex:none;width:112px;display:flex;flex-direction:column;gap:4px;padding:4px;border-radius:14px;background:var(--surface2);color:var(--text);font-size:11.5px;font-weight:700;text-align:center;box-shadow:inset 0 0 0 2px transparent;transition:box-shadow .2s,transform .15s var(--spring)}
+.bn-th .bn{height:44px;border-radius:10px}
+.bn-th.on{box-shadow:inset 0 0 0 2px var(--acc)}
+.bn-th:active{transform:scale(.96)}
+.bn-btns{display:flex;gap:8px}.bn-btns>*{flex:1}
+/* золотой админ */
+.adm-badge.gold{color:#5a3a00;background:linear-gradient(120deg,#fde68a,#f59e0b 45%,#fde68a);background-size:220% 100%;animation:goldSh 3.2s linear infinite;font-weight:900;box-shadow:0 0 12px rgba(245,158,11,.45)}
+@keyframes goldSh{to{background-position:-220% 0}}
+.am-hero.gold{background:linear-gradient(135deg,#fde68a,#f59e0b 40%,#b45309);color:#3b2400;box-shadow:0 14px 36px rgba(245,158,11,.45)}
+.am-hero.gold::before{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.55) 50%,transparent 65%);background-size:250% 100%;animation:goldSh 3.6s linear infinite}
+.am-hero.gold .am-hero-ic{background:rgba(255,255,255,.35);color:#7a4a00}
+.am-hero.gold .am-hero-t small,.am-hero.gold .am-hero-t span{color:#5a3a00}
+.am-uhero.gold .ava{box-shadow:0 0 0 4px #f59e0b,0 0 22px rgba(245,158,11,.6)}

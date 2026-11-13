@@ -40,7 +40,7 @@ async function boot(u){
   startCalls();
   startLive();
 }
-function unboot(){clearTimeout(poll);lastOf={};stories=[];storySeen=new Set();titlesOf={};titleById={};amAppAdmin=false;adminRole=0;myRestr=[];premMap={};strMe=null;strPairs={};strPrev=null;wallet=null;giftCache={};poll=null;me=null;cur=null;fr=[];frSig="";groups={};gm={};grSig="";prof={};unread={};blocked=new Set();online=new Set();reacts={};liveCh=null;socialOk=true;myReads={};peerReads={};votes={};seen=new Set();sb.removeAllChannels();$('app').classList.add('hide');$('auth').classList.remove('hide')}
+function unboot(){clearTimeout(poll);lastOf={};stories=[];storySeen=new Set();titlesOf={};titleById={};amAppAdmin=false;adminRole=0;adminGold=false;myRestr=[];premMap={};strMe=null;strPairs={};strPrev=null;wallet=null;giftCache={};poll=null;me=null;cur=null;fr=[];frSig="";groups={};gm={};grSig="";prof={};unread={};blocked=new Set();online=new Set();reacts={};liveCh=null;socialOk=true;myReads={};peerReads={};votes={};seen=new Set();sb.removeAllChannels();$('app').classList.add('hide');$('auth').classList.remove('hide')}
 
 // Пока работают мгновенные обновления (realtime), сервер почти не опрашиваем — это только подстраховка.
 // Если realtime отвалился — опрашиваем чаще. Свёрнутая вкладка опрашивает в 4 раза реже.

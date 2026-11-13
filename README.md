@@ -93,6 +93,7 @@
 | `js/giftart2.js` | Подарки Кавказа v5.1: сцены (башни, волк, папаха, кинжал, орёл, Эльбрус, номера 95/06), флаги с живыми складками |
 | `js/chessengine.js` | Шахматный движок: полные правила (проверен perft), SAN, статус партии, бот 3 уровней (alpha-beta + размен до конца) |
 | `js/chess.js` | Шахматы: доска и SVG-фигуры, часы 1/3/5 мин, игра по сети (комната `c-<код>` на игровом сервере, запасной канал Supabase), бот, приглашение в чат `::game:ch:КОД::` |
+| `js/banner.js` | Баннеры профиля (v11.sql): готовые и анимированные баннеры, свои картинки/GIF, показ в шапках; ставить может только Премиум |
 | `js/cleanup.js` | Очистка переписки (у меня / у всех / группа для всех) и удаление аккаунта (v10.sql) |
 | `js/select.js` | Выбор нескольких сообщений: копировать / переслать / удалить |
 | `js/tankx.js` | Танки: классы (`TK_CL`, `tkClassOf`), расстановки карт, местности, погода |
@@ -162,6 +163,7 @@ SPECIAL.push({re:/^::dice:([1-6])::$/, cls:'game-m', forward:false,
 | `admins.sql` | `group_members.role`, `groups.only_admins_edit/send/add`, `is_group_admin()`, RPC `set_group_role`, `admin_delete_message`, новый `transfer_group` (бывший создатель остаётся админом), триггер: создатель вышел → права самому давнему админу/участнику, триггер-защита от смены создателя/настроек не-админом, правило «писать только админам» |
 | `auth.sql` | `profiles.username_set`, новый обработчик регистрации `nit_new_user` (удаляет старый триггер на auth.users, создающий профиль): ник из метаданных или придуманный для Google/GitHub, имя и аватарка оттуда же (`avatar_path` может быть https-ссылкой); RPC `username_free`, `set_username` (один раз) |
 | `fix_forward_delete.sql` | RPC `file_in_use(p, except_id)`: «Удалить у всех» стирает файл из `photos`, только если на него не ссылаются другие (пересланные) сообщения. Без функции файл просто остаётся. Запущено |
+| `v11.sql` | v5.9: `profiles.banner`, бакет `banners`, золотой админ (`app_admins.gold/locked_by`), @skylo |
 | `v10.sql` | v5.3: `delete_my_account`, `clear_my_messages`, `clear_group` |
 | `v9.sql` | v5.1: цены и каталог «Кавказ»: убран os_pie, добавлены plate95/plate06 |
 | `v8.sql` | v5.0: `app_admins.role`, `user_restrictions`, `admin_log`, RPC `admin_*`, `buy_helper`, защита узелков (`gifts.farm`, `locked_until`), коллекция «Кавказ» |

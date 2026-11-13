@@ -1,7 +1,7 @@
 // Профили: имя, описание, аватарка; окно настроек и карточка собеседника
 let prof={},profFull=true,profCols=0;
 // Пробуем от полного набора полей к простому: SQL-обновления могли быть запущены не все
-const COLS_TRY=['id,username,display_name,bio,avatar_path,status','id,username,display_name,bio,avatar_path','id,username'];
+const COLS_TRY=['id,username,display_name,bio,avatar_path,status,banner','id,username,display_name,bio,avatar_path,status','id,username,display_name,bio,avatar_path','id,username'];
 let PROFILE_COLS=COLS_TRY[0];
 
 // Загружает профили; если SQL для профиля ещё не запущен — берёт только ник
@@ -13,7 +13,7 @@ async function loadProfiles(ids,force){
     ({data,error}=await sb.from('profiles').select(COLS_TRY[profCols]).in('id',ids));
     if(!error)break;
   }
-  PROFILE_COLS=COLS_TRY[Math.min(profCols,COLS_TRY.length-1)];profFull=profCols<2;
+  PROFILE_COLS=COLS_TRY[Math.min(profCols,COLS_TRY.length-1)];profFull=profCols<3;
   (data||[]).forEach(p=>{prof[p.id]=p;people[p.id]=p.username});
 }
 const nameOf=id=>prof[id]?.display_name||people[id]||'?';
@@ -89,6 +89,7 @@ function openProfileEdit(){
       nkT=setTimeout(async()=>{const v=nki.value;const {data}=await sb.rpc('username_free',{u:v});if(nki.value!==v)return;nickOk=!!data;
         fillRich(nks,data?PI('i-check')+'свободен':PI('i-x')+'занят');nks.classList.add(data?'ok':'bad')},350)};
 
+    const bnEd=profCols===0&&typeof bannerEditor==='function'?bannerEditor(s,p.banner):null;
     const bi=el('label','fld');const cnt=el('small','sm');
     const bh=el('span');bh.append(document.createTextNode('О себе '),cnt);bi.append(bh);
     const ta=document.createElement('textarea');ta.maxLength=160;ta.rows=3;ta.placeholder='Пара слов о себе';ta.value=p.bio||'';
@@ -101,7 +102,7 @@ function openProfileEdit(){
     ['играю','учусь','работаю','сплю','в дороге','слушаю музыку','ем'].forEach(t=>{const c=el('button','chip',t);c.onclick=e=>{e.preventDefault();sti.value=t};chips.append(c)});
     const clr=el('button','chip chip-x');clr.append(ico('i-x'),'очистить');clr.onclick=e=>{e.preventDefault();sti.value=''};chips.append(clr);
     stl.append(chips);s.append(stl);
-    if(profCols>0)stl.append(el('small','sm','Чтобы сохранить статус, запустите supabase/more.sql.'));
+    if(profCols>1)stl.append(el('small','sm','Чтобы сохранить статус, запустите supabase/more.sql.'));
 
 
     const err=el('p','err');s.append(err);
@@ -119,8 +120,9 @@ function openProfileEdit(){
           people[me]=myName=newNick;if(prof[me])prof[me].username=newNick;toast('Ник изменён: @'+newNick);
         }
         const patch={display_name:ni.value.trim()||null,bio:ta.value.trim()||null};
-        if(profCols===0)patch.status=sti.value.trim()||null;
-        const old=p.avatar_path;
+        if(profCols<=1)patch.status=sti.value.trim()||null;
+        const old=p.avatar_path;let bnDrop=null;
+        if(bnEd){const r=await bannerSave(bnEd,p.banner);if(r){patch.banner=r.val;bnDrop=r.drop}}
         if(newAva){
           const path=me+'/'+crypto.randomUUID()+'.jpg';
           const up=await sb.storage.from('avatars').upload(path,newAva,{contentType:'image/jpeg'});
@@ -129,6 +131,7 @@ function openProfileEdit(){
         const {data,error}=await sb.from('profiles').update(patch).eq('id',me).select(PROFILE_COLS).single();
         if(error)throw error;
         if(old&&old!==data.avatar_path)sb.storage.from('avatars').remove([old]);
+        if(bnDrop)sb.storage.from('banners').remove([bnDrop]);
         prof[me]=data;renderMe();render();closeModal();refreshSettings?.();
       }catch(e){err.textContent='Не удалось сохранить: '+(e.message||e);save.disabled=false;save.textContent='Сохранить'}
     };
