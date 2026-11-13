@@ -175,46 +175,40 @@ function lockDisable(){
   });
 }
 
-// ---------- Страница «Безопасность» в Настройках ----------
+// ---------- Страница «Безопасность» в Настройках (v6.2: минимализм — сводка и компактные строки со статусом) ----------
 function setSecurity(sc){
-  const card=(t)=>{const c=el('section','gi-card');if(t)c.append(el('div','gi-h',t));sc.append(c);return c};
-  // проверка безопасности
-  const chk=card('Проверка безопасности');const list=el('div','sec-chk');chk.append(list);
-  const row=(ok,t,d)=>{const r=el('div','sec-ck'+(ok?' ok':''));const i=el('span','sec-i');i.append(svgI(ok?'i-check':'i-x'));const tx=el('div');tx.append(el('b',null,t),el('small',null,d));r.append(i,tx);list.append(r)};
   const lock=lockCfg(),hide=secPref().hide!==false;
+  // сводка
+  const sum=el('section','sec-sum');const ic=el('div','sec-shield');ic.append(svgI('i-shield'));
+  const tx=el('div','sec-sum-t');const ttl=el('b',null,'Защита аккаунта'),sub=el('small',null,'Проверяю…');tx.append(ttl,sub);
+  const bar=el('div','sec-bar');for(let i=0;i<4;i++)bar.append(el('i'));sum.append(ic,tx,bar);sc.append(sum);
+  const set=(n)=>{[...bar.children].forEach((b,i)=>b.classList.toggle('on',i<n));
+    sub.textContent=n>=4?'Всё включено — отлично':n>=2?'Включено '+n+' из 4 — можно лучше':'Включено '+n+' из 4 — стоит усилить';sum.dataset.n=n};
+  // строка со статусом справа
+  const row=(icon,title,subt,pill,f)=>{const r=giRow(icon,title,subt);r.classList.add('sec-row');if(pill!=null){const p=el('span','sec-pill'+(pill.ok?' ok':''),pill.t);r.append(p);r.pill=p}
+    const ch=el('span','chev');ch.append(svgI('i-back'));r.append(ch);r.onclick=f;return r};
+  // 1. вход
+  const g1=el('section','gi-card sec-card');g1.append(el('div','gi-h','Вход'));
+  const r2fa=row('i-shield','Двойная защита','Код из приложения при входе',{t:'…'},()=>{});g1.append(r2fa);
+  g1.append(row('i-lock','Пароль и способы входа','Пароль, почта, Google, GitHub',null,()=>openAccount()));
+  const lo=row('i-out','Выйти на всех устройствах','Если потеряли телефон',null,async()=>{if(!confirm('Выйти из аккаунта на всех телефонах и компьютерах, включая этот?'))return;byUser=true;closeSettings?.();await sb.auth.signOut({scope:'global'}).catch(()=>{})});lo.classList.add('gi-danger');g1.append(lo);
+  sc.append(g1);
+  // 2. устройство
+  const g2=el('section','gi-card sec-card');g2.append(el('div','gi-h','Это устройство'));
+  g2.append(row('i-lock','Код-пароль','Просит код при запуске и после сворачивания',{t:lock?'Включён':'Выключен',ok:!!lock},lockSetup));
+  if(lock){const ld=row('i-x','Выключить код-пароль',null,null,lockDisable);ld.classList.add('gi-danger');g2.append(ld)}
+  g2.append(switchRow('i-eye','Скрывать экран при сворачивании','В списке приложений виден размытый экран',hide,on=>{secSet('hide',on);document.body.classList.remove('sec-blur');set(cnt())}));
+  g2.append(switchRow('i-image','Загружать картинки из ссылок','Выключено: картинка грузится после нажатия — иначе сайт узнаёт ваш IP',!!secPref().autoimg,on=>secSet('autoimg',on)));
+  sc.append(g2);
+  sc.append(el('p','sec-foot','Сообщения хранятся на сервере в открытом виде и защищены правилами доступа. Сквозного шифрования, как в Signal, нет.'));
+  // состояние
+  let has2fa=false,hasMail=false;const cnt=()=>[has2fa,!!lockCfg(),hasMail,secPref().hide!==false].filter(Boolean).length;
+  set(cnt());
   sb.auth.getUser().then(async({data})=>{
-    const u=data?.user,hasMail=!!u&&!isFakeEmail(u.email),f=await mfaFactor();
-    list.innerHTML='';
-    row(!!f,'Двухфакторная защита',f?'Включена: вход требует код из приложения':'Выключена — самая важная защита от взлома пароля');
-    row(!!lock,'Код-пароль на вход',lock?'Включён':'Выключен — телефон в чужих руках открывает «Нить»');
-    row(hasMail,'Почта для восстановления',hasMail?'Привязана':'Не привязана — не восстановить пароль');
-    row(hide,'Скрытие при сворачивании',hide?'Включено':'Выключено — в списке приложений виден экран');
-    const n=[!!f,!!lock,hasMail,hide].filter(Boolean).length;
-    const sc2=chk.querySelector('.gi-h');if(sc2)sc2.append(el('small',null,n+' из 4'));
-    drawFactor(f);
+    const u=data?.user;hasMail=!!u&&!isFakeEmail(u.email);const f=await mfaFactor();has2fa=!!f;
+    r2fa.pill.textContent=f?'Включена':'Выключена';r2fa.pill.classList.toggle('ok',!!f);
+    r2fa.onclick=()=>f?mfaDisable(f):mfaEnable();
+    r2fa.querySelector('.gi-rt small').textContent=f?'Вход требует код из приложения':'Самая важная защита от взлома пароля';
+    set(cnt());
   });
-  // 2FA
-  const tf=card('Двухфакторная защита');const tfBox=el('div');tf.append(tfBox);
-  function drawFactor(f){
-    tfBox.innerHTML='';
-    tfBox.append(el('p','sec-d','Даже если пароль украдут, зайти в аккаунт без кода из вашего телефона нельзя. Защита проверяется и на сервере.'));
-    const r=giRow('i-shield',f?'Выключить защиту':'Включить защиту',f?'Сейчас включена':'Приложение-аутентификатор (TOTP)',f?'gi-danger':'gi-accent');r.onclick=()=>f?mfaDisable(f):mfaEnable();tfBox.append(r);
-  }
-  drawFactor(null);
-  // код-пароль
-  const lk=card('Код-пароль');
-  lk.append(el('p','sec-d','Просит код при запуске приложения и после сворачивания. Защищает, если телефон попал в чужие руки.'));
-  const lr=giRow('i-lock',lock?'Изменить код-пароль':'Включить код-пароль',lock?'Блокировка: '+(lock.tmo===0?'сразу':lock.tmo+' мин'):'4–8 цифр','gi-accent');lr.onclick=lockSetup;lk.append(lr);
-  if(lock){const ld=giRow('i-x','Выключить код-пароль',null,'gi-danger');ld.onclick=lockDisable;lk.append(ld)}
-  // приватность
-  const pv=card('Приватность');
-  const sw=(t,sub,key,def)=>{const l=el('label','gi-sw');const tx=el('span');tx.append(el('b',null,t),el('small',null,sub));const c=document.createElement('input');c.type='checkbox';c.checked=secPref()[key]??def;c.onchange=()=>{secSet(key,c.checked);if(key==='hide')document.body.classList.remove('sec-blur')};l.append(tx,c);pv.append(l)};
-  sw('Скрывать экран при сворачивании','В списке запущенных приложений будет размытый экран','hide',true);
-  sw('Загружать картинки из ссылок сами','Выключено: картинка по чужой ссылке грузится после нажатия — иначе отправитель узнаёт ваш IP-адрес','autoimg',false);
-  // вход
-  const ac=card('Вход и устройства');
-  const pw=giRow('i-lock','Пароль и способы входа','Сменить пароль, привязать почту, Google, GitHub');pw.onclick=()=>openAccount();ac.append(pw);
-  const lo=giRow('i-out','Выйти на всех устройствах','Если потеряли телефон или вошли с чужого устройства','gi-danger');
-  lo.onclick=async()=>{if(!confirm('Выйти из аккаунта на всех телефонах и компьютерах, включая этот?'))return;byUser=true;closeSettings?.();await sb.auth.signOut({scope:'global'}).catch(()=>{})};ac.append(lo);
-  sc.append(el('p','sec-foot','Сообщения хранятся на сервере в открытом виде и защищены правилами доступа. Сквозного шифрования, как в Signal, в «Нити» нет.'));
 }

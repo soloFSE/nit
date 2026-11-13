@@ -100,7 +100,7 @@ function chatRow(it){
   const r=el('div','crow'+(cur===k?' on':'')+(n?' unread':''));r.dataset.k=k;
   r.append(it.group?groupAvatar(it.g,52):avatar(k,52));
   const body=el('div','crow-b');
-  const top=el('div','crow-t');const nb=el('b',null,it.name);if(!it.group&&typeof premMark==='function'){const pm=premMark(k);if(pm)nb.append(pm)}top.append(nb);if(!it.group&&typeof strEff==='function'){const sn=strEff(strPairs[k]);if(sn>=3){const sc2=streakChip(sn,!strDone(strPairs[k]));sc2.onclick=e=>{e.stopPropagation();openStreak(k)};top.append(sc2)}}
+  const top=el('div','crow-t');const nb=el('b',null,it.name);if(!it.group&&typeof premPaint==='function')premPaint(nb,k);if(!it.group&&typeof premMark==='function'){const pm=premMark(k);if(pm)nb.append(pm)}top.append(nb);if(!it.group&&typeof strEff==='function'){const sn=strEff(strPairs[k]);if(sn>=3){const sc2=streakChip(sn,!strDone(strPairs[k]));sc2.onclick=e=>{e.stopPropagation();openStreak(k)};top.append(sc2)}}
   if(m){const tm=el('time',null,shortTime(m.created_at));top.append(tm)}
   const bot=el('div','crow-s');
   const pv=el('span','crow-p');

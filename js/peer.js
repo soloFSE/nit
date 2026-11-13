@@ -52,7 +52,7 @@ function renderPeer(){
   // Шапка: фон под цвет аватарки
   const hero=el('section','pv-hero');hero.style.setProperty('--h',hue(id));
   const av=avatar(id,120);if(p.avatar_path){av.classList.add('zoom');av.onclick=()=>openViewer(avatarUrl(p.avatar_path))}
-  const h2=el('h2',null,nameOf(id));const pm=typeof premMark==='function'&&premMark(id);if(pm)h2.append(pm);
+  const h2=el('h2',null,nameOf(id));if(typeof premPaint==='function')premPaint(h2,id);const pm=typeof premMark==='function'&&premMark(id);if(pm)h2.append(pm);
   const ph=typeof premHue==='function'&&premHue(id);if(ph!=null)hero.style.setProperty('--h',ph);
   hero.append(av,h2);
   if(typeof bannerInto==='function')bannerInto(hero,id);

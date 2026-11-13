@@ -2,7 +2,9 @@
 // как звания. Фишки: премиум-эмодзи в сообщениях, золотая звезда или статус-эмодзи рядом с именем, цвет профиля,
 // до 10 закреплённых чатов, ранний доступ. Если таблицы в базе ещё нет — ограничений нет (premOk=false).
 let premMap={},premOk=true;
-const PREM_COLORS=['#f59e0b','#ef4444','#ec4899','#a855f7','#3b82f6','#06b6d4','#22c55e','#64748b'];
+const PREM_COLORS=['#f59e0b','#f97316','#ef4444','#ec4899','#d946ef','#a855f7','#6366f1','#3b82f6','#06b6d4','#14b8a6','#22c55e','#84cc16','#eab308','#94a3b8'];
+// Цвет ника (подписка): красим имя человека там, где оно показано. Цвет выбирается в «Нить Премиум» → «Цвет ника»
+function premPaint(node,uid){const c=premMap[uid]?.color;if(c&&isPremium(uid)&&/^#[0-9a-fA-F]{6}$/.test(c)){node.style.color=c;node.classList.add('pnick')}return node}
 const premActive=r=>!!r&&(!r.until||new Date(r.until)>new Date());
 const isPremium=uid=>premOk&&premActive(premMap[uid]);
 const canUsePremEmoji=()=>!premOk||isPremium(me)||amAppAdmin; // админы приложения тоже могут
@@ -42,9 +44,11 @@ function openPremium(){
       const st1=giRow('i-smile','Статус-эмодзи',r.emoji_status?'Выбрано':'Не выбрано');const cur=r.emoji_status&&/^:([a-z]{2,6})(\d{1,3}):$/.exec(r.emoji_status);
       if(cur&&typeof premEl==='function'){const p=el('span','pr-cur');p.append(premEl(cur[1],+cur[2]));st1.append(p)}
       st1.onclick=()=>pickStatusEmoji();c.append(st1);
-      const cw=el('div','pr-colors');cw.append(el('span',null,'Цвет профиля'));const sw=el('div');
+      const cw=el('div','pr-colors');const pv=el('b','pr-nickprev',nameOf(me));premPaint(pv,me);cw.append(el('span',null,'Цвет ника и профиля'),pv);const sw=el('div');
       [null,...PREM_COLORS].forEach(col=>{const b=el('button','pr-col'+((r.color||null)===col?' on':''));if(col)b.style.background=col;else b.append(svgI('i-x'));b.onclick=async()=>{await savePremPrefs(r.emoji_status,col);openPremium()};sw.append(b)});
-      cw.append(sw);c.append(cw);s.append(c);
+      {const cust=document.createElement('input');cust.type='color';cust.className='pr-custom';cust.title='Свой цвет';cust.value=/^#[0-9a-fA-F]{6}$/.test(r.color||'')?r.color:'#a855f7';
+        cust.onchange=async()=>{await savePremPrefs(r.emoji_status,cust.value);openPremium()};sw.append(cust)}
+      cw.append(sw);cw.append(el('small','pr-hint','Цвет ника виден в чатах, группах и профиле. Подойдёт и свой цвет — кружок с палитрой.'));c.append(cw);s.append(c);
     }else{
       s.append(el('p','pr-how','Премиум выдаёт администрация «Нити» — например за помощь с тестированием и идеи. Если хотите, напишите им.'));
     }
