@@ -8,6 +8,8 @@
 
 -- 1. Баннеры
 alter table public.profiles add column if not exists banner text;
+-- менять свой баннер можно (остальные колонки профиля по-прежнему закрыты, см. profile.sql)
+grant update (banner) on public.profiles to authenticated;
 do $$ begin
   alter table public.profiles add constraint profiles_banner_len check (banner is null or char_length(banner) <= 200);
 exception when duplicate_object then null; end $$;
