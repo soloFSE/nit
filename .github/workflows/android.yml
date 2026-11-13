@@ -1,0 +1,80 @@
+# Сборка приложения «Нить» для Android (APK) в облаке GitHub.
+# Запуск: вкладка Actions → «Android APK» → Run workflow, или автоматически при изменениях в папке mobile/.
+# Готовый файл появляется на странице Releases (метка android-latest): https://github.com/soloFSE/nit/releases/tag/android-latest
+# Подпись: если в Settings → Secrets заданы ANDROID_KEYSTORE_B64, ANDROID_KEYSTORE_PASS (и по желанию ANDROID_KEY_ALIAS), APK подписывается вашим
+# постоянным ключом (обновления ставятся поверх). Иначе на каждую сборку создаётся временный ключ (тогда перед обновлением старое приложение нужно удалить).
+name: Android APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['mobile/**', '.github/workflows/android.yml']
+permissions:
+  contents: write
+concurrency:
+  group: android-apk
+  cancel-in-progress: true
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Сборка APK
+        id: build
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KS_PASS_SECRET: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+          KEY_ALIAS_SECRET: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -o pipefail
+          exec > >(tee "$GITHUB_WORKSPACE/build.log") 2>&1
+          set -x
+          cd mobile
+          npm ci
+          npx capacitor-assets generate --android --assetPath assets
+          npx cap sync android
+          # --- ключ подписи ---
+          if [ -n "$KS_B64" ] && [ -n "$KS_PASS_SECRET" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/nit.jks"
+            export NIT_KS_PASS="$KS_PASS_SECRET"; export NIT_KEY_ALIAS="${KEY_ALIAS_SECRET:-nit}"
+            echo "SIGNING=постоянный ключ" >> "$GITHUB_ENV"
+          else
+            export NIT_KS_PASS="$(openssl rand -hex 16)"; export NIT_KEY_ALIAS=nit
+            keytool -genkeypair -v -keystore "$RUNNER_TEMP/nit.jks" -storepass "$NIT_KS_PASS" -keypass "$NIT_KS_PASS" \
+              -alias nit -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Nit, O=Nit, C=RU"
+            echo "SIGNING=временный ключ (при обновлении сначала удалите старое приложение)" >> "$GITHUB_ENV"
+          fi
+          export NIT_KEYSTORE="$RUNNER_TEMP/nit.jks"
+          # --- сборка ---
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace -PappVersionCode=${{ github.run_number }} -PappVersionName=1.0.${{ github.run_number }}
+          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/nit.apk"
+          ls -la "$GITHUB_WORKSPACE/nit.apk"
+      - name: Выложить в Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete android-latest --cleanup-tag --yes || true
+          gh release create android-latest nit.apk --prerelease --target "${{ github.sha }}" \
+            --title "Нить для Android (последняя сборка)" \
+            --notes "Сборка №${{ github.run_number }}. Подпись: ${SIGNING}. Установка: скачайте nit.apk на телефон и откройте (разрешите установку из этого источника)."
+      - name: Журнал сборки при ошибке (ветка apk-logs)
+        if: failure()
+        run: |
+          mkdir -p "$RUNNER_TEMP/logs" && cp build.log "$RUNNER_TEMP/logs/build.log" || echo "нет журнала" > "$RUNNER_TEMP/logs/build.log"
+          git config user.name "github-actions"; git config user.email "actions@users.noreply.github.com"
+          git checkout --orphan apk-logs && git rm -rf . >/dev/null 2>&1 || true
+          cp "$RUNNER_TEMP/logs/build.log" build.log
+          tail -n 4000 build.log > build-tail.log
+          git add build-tail.log && git commit -m "журнал сборки №${{ github.run_number }}" && git push -f origin apk-logs

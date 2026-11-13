@@ -1,0 +1,25 @@
+{
+  "appId": "app.nit.chat",
+  "appName": "Нить",
+  "webDir": "www",
+  "backgroundColor": "#170420",
+  "server": {
+    "url": "https://solofse.github.io/nit/",
+    "cleartext": false,
+    "errorPath": "offline.html",
+    "allowNavigation": [
+      "solofse.github.io",
+      "lojlwcsqbbthmpetmbmq.supabase.co",
+      "nit-proxy.mreldar-work.workers.dev",
+      "challenges.cloudflare.com"
+    ]
+  },
+  "android": {
+    "appendUserAgent": "NitApp/1.0",
+    "backgroundColor": "#170420",
+    "allowMixedContent": false,
+    "adjustMarginsForEdgeToEdge": "auto",
+    "webContentsDebuggingEnabled": false,
+    "loggingBehavior": "none"
+  }
+}

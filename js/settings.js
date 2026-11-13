@@ -70,6 +70,7 @@ function setMain(sc){
    item(c,setRow('i-star','Что нового','v'+NIT_VERSION,()=>openWhatsNew()),'что нового обновления версия');
    item(c,setRow('i-chats','Идеи и баги','Общий документ — пишите, что улучшить',()=>window.open(FEEDBACK_URL,'_blank','noopener')),'идеи баги обратная связь');
    item(c,setRow('i-redial','Обновить приложение','Если что-то глючит',()=>refreshApp()),'обновить приложение кэш');
+   if(!IN_APP)item(c,setRow('i-download','Приложение для Android','Скачать APK и установить',()=>window.open(APK_URL,'_blank','noopener')),'android андроид apk приложение скачать');
    if(typeof installEvt!=='undefined'&&installEvt)item(c,setRow('i-download','Установить приложение',null,()=>$('install').click()),'установить приложение')}
   {const c=el('section','gi-card set-group');const out=giRow('i-out','Выйти из аккаунта',null,'gi-danger');
    out.onclick=()=>{if(confirm('Выйти из аккаунта @'+myName+'?')){closeSettings();$('out').click()}};item(c,out,'выйти');sc.append(c);groups.push(c)}
