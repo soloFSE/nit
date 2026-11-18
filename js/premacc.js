@@ -9,7 +9,8 @@ const premActive=r=>!!r&&(!r.until||new Date(r.until)>new Date());
 const isPremium=uid=>premOk&&premActive(premMap[uid]);
 const canUsePremEmoji=()=>!premOk||isPremium(me)||amAppAdmin; // админы приложения тоже могут
 const hasPremTokens=b=>{if(!b||typeof premRe==='undefined')return false;premRe.lastIndex=0;const r=premRe.test(b);premRe.lastIndex=0;return r};
-const premBlocked=b=>premOk&&!isPremium(me)&&!amAppAdmin&&hasPremTokens(b);
+// Личный набор :chs…: (шахматные фигуры) — только его владельцу и без подписки; остальные эмодзи — по Премиуму
+const premBlocked=b=>{if(/:chs\d{1,3}:/.test(b||'')&&!premOwnerOk('chs'))return true;const t=premOwnerOk('chs')?String(b||'').replace(/:chs\d{1,3}:/g,''):b;return premOk&&!isPremium(me)&&!amAppAdmin&&hasPremTokens(t)};
 async function loadPremium(){
   if(!me)return;
   const {data,error}=await sb.from('premium_users').select('user_id,until,emoji_status,color');
@@ -19,7 +20,7 @@ async function loadPremium(){
 }
 // Значок рядом с именем: статус-эмодзи или золотая звезда (только у активного Премиума)
 function premMark(uid){
-  if(!isPremium(uid))return null;const r=premMap[uid],s=el('span','pmark');s.title='Премиум';
+  const r=premMap[uid];if(!isPremium(uid)&&!/^:chs\d{1,3}:$/.test((r&&r.emoji_status)||''))return null;const s=el('span','pmark');s.title='Премиум';
   const m=r.emoji_status&&/^:([a-z]{2,6})(\d{1,3}):$/.exec(r.emoji_status);
   if(m&&typeof premEl==='function')s.append(premEl(m[1],+m[2]));else s.append(ico('i-star'));
   return s;
@@ -32,23 +33,23 @@ const untilText=r=>!r?'':!r.until?'навсегда':'до '+new Date(r.until).t
 // ---------- Экран «Премиум» ----------
 const PREM_FEATURES=[['i-gem','Премиум-эмодзи','Отправляйте анимированные эмодзи из наборов в сообщениях'],['i-star','Золотая звезда','Значок рядом с именем в чатах и профиле'],['i-smile','Статус-эмодзи','Своя эмодзи вместо звезды рядом с именем'],['i-brush','Цвет профиля','Профиль в вашем цвете для всех, кто его открывает'],['i-pin','10 закреплённых чатов','Вместо 5 обычных'],['i-rocket','Ранний доступ','Новые функции «Нити» раньше всех']];
 function openPremium(){
-  const r=premMap[me],act=isPremium(me);
+  const r=premMap[me]||{},act=isPremium(me),ownOnly=!act&&premOwnerOk('chs');
   openModal(s=>{
     s.classList.add('pr-sheet');
     const x=el('button','icon pr-x');x.append(svgI('i-x'));x.onclick=closeModal;s.append(x);
     const hero=el('div','pr-hero');const st=el('div','pr-stars');for(let i=0;i<7;i++){const i2=el('i');i2.style.setProperty('--i',i);st.append(i2)}
     const big=el('div','pr-big');big.append(svgI('i-gem'));hero.append(st,big,el('h2',null,'Нить Премиум'),el('p',null,act?'Подключён '+untilText(r):'Ещё не подключён'));s.append(hero);
     const l=el('div','pr-list');PREM_FEATURES.forEach(([ic,t,d],i)=>{const row=giRow(ic,t,d,'gi-mem pr-row');row.style.animationDelay=i*45+'ms';l.append(row)});s.append(l);
-    if(act){
+    if(act||ownOnly){
       const c=el('div','gi-card pr-card');c.append(el('div','gi-h','Ваши настройки'));
       const st1=giRow('i-smile','Статус-эмодзи',r.emoji_status?'Выбрано':'Не выбрано');const cur=r.emoji_status&&/^:([a-z]{2,6})(\d{1,3}):$/.exec(r.emoji_status);
       if(cur&&typeof premEl==='function'){const p=el('span','pr-cur');p.append(premEl(cur[1],+cur[2]));st1.append(p)}
       st1.onclick=()=>pickStatusEmoji();c.append(st1);
-      const cw=el('div','pr-colors');const pv=el('b','pr-nickprev',nameOf(me));premPaint(pv,me);cw.append(el('span',null,'Цвет ника и профиля'),pv);const sw=el('div');
+      if(act){const cw=el('div','pr-colors');const pv=el('b','pr-nickprev',nameOf(me));premPaint(pv,me);cw.append(el('span',null,'Цвет ника и профиля'),pv);const sw=el('div');
       [null,...PREM_COLORS].forEach(col=>{const b=el('button','pr-col'+((r.color||null)===col?' on':''));if(col)b.style.background=col;else b.append(svgI('i-x'));b.onclick=async()=>{await savePremPrefs(r.emoji_status,col);openPremium()};sw.append(b)});
       {const cust=document.createElement('input');cust.type='color';cust.className='pr-custom';cust.title='Свой цвет';cust.value=/^#[0-9a-fA-F]{6}$/.test(r.color||'')?r.color:'#a855f7';
         cust.onchange=async()=>{await savePremPrefs(r.emoji_status,cust.value);openPremium()};sw.append(cust)}
-      cw.append(sw);cw.append(el('small','pr-hint','Цвет ника виден в чатах, группах и профиле. Подойдёт и свой цвет — кружок с палитрой.'));c.append(cw);s.append(c);
+      cw.append(sw);cw.append(el('small','pr-hint','Цвет ника виден в чатах, группах и профиле. Подойдёт и свой цвет — кружок с палитрой.'));c.append(cw)}s.append(c);
     }else{
       s.append(el('p','pr-how','Премиум выдаёт администрация «Нити» — например за помощь с тестированием и идеи. Если хотите, напишите им.'));
     }
@@ -58,7 +59,7 @@ function openPremium(){
 async function savePremPrefs(e,c){
   const {error}=await sb.rpc('set_premium_prefs',{e:e||'',c:c||''});
   if(error){toast('Не удалось сохранить: '+error.message);return false}
-  if(premMap[me]){premMap[me].emoji_status=e||null;premMap[me].color=c||null}refreshPeer?.();renderMe?.();return true;
+  if(premMap[me]){premMap[me].emoji_status=e||null;premMap[me].color=c||null}else if(e)premMap[me]={user_id:me,until:new Date(Date.now()-864e5).toISOString(),emoji_status:e,color:null};refreshPeer?.();renderMe?.();return true;
 }
 function pickStatusEmoji(){
   openModal(s=>{
@@ -66,7 +67,7 @@ function pickStatusEmoji(){
     const top=el('div','sheet-top');top.append(el('h3',null,'Статус-эмодзи'));const x=el('button','icon');x.append(svgI('i-x'));x.onclick=()=>openPremium();top.append(x);s.append(top);
     const box=el('div','pr-pick');
     const none=el('button','ghost wide','Убрать (показывать звезду)');none.onclick=async()=>{if(await savePremPrefs('',premMap[me]?.color))openPremium()};box.append(none);
-    PREM_PACKS.forEach(p=>{box.append(el('div','prem-h',p.name));const g=el('div','prem-grid');
+    PREM_PACKS.forEach(p=>{if(p.own?!premOwnerOk(p.id):!isPremium(me))return;box.append(el('div','prem-h',p.name));const g=el('div','prem-grid');
       for(let i=0;i<p.n;i++){const b=el('button','prem-it');b.append(premEl(p.id,i,'',true));b.onclick=async()=>{if(await savePremPrefs(':'+p.id+i+':',premMap[me]?.color))openPremium()};g.append(b)}
       box.append(g)});
     s.append(box);
