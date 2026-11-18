@@ -1874,3 +1874,31 @@ body.sec-blur>*:not(.lock-screen):not(.mfa-gate){filter:blur(26px) saturate(.6);
 .sec-card .sw-row .gi-rt{flex:1;min-width:0}
 
 .in-app .oauth,.in-app .oauth+.or{display:none}
+
+/* личные баннеры @ne95gr */
+.bn-chess,.bn-wt{container-type:size}
+.bn-chess{background:radial-gradient(70% 130% at 80% 45%,rgba(250,204,21,.26),transparent 62%),linear-gradient(110deg,#06060a,#101018 58%,#1d1606)}
+.bn-chess::before{inset:-60% -20% -5% -20%;background:conic-gradient(rgba(255,255,255,.085) 25%,transparent 0 50%,rgba(255,255,255,.085) 0 75%,transparent 0) 0 0/64px 64px;transform:perspective(340px) rotateX(62deg);transform-origin:50% 100%;-webkit-mask-image:linear-gradient(transparent,#000 60%);mask-image:linear-gradient(transparent,#000 60%);animation:bnBoard 16s linear infinite}
+.bn-chess::after{inset:0;background:linear-gradient(100deg,transparent 38%,rgba(255,236,170,.2) 50%,transparent 62%) 0 0/260% 100%;animation:bnSheen 7s ease-in-out infinite}
+.bx{position:absolute;font-style:normal;line-height:1;z-index:1;font-family:"Segoe UI Symbol","Noto Sans Symbols 2","Apple Symbols",serif}
+.bx-k{right:7%;top:50%;font-size:92cqh;transform:translateY(-52%);background:linear-gradient(180deg,#fff7cf,#facc15 45%,#a16207);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 3cqh rgba(250,204,21,.55)) drop-shadow(0 2cqh 2cqh rgba(0,0,0,.6));animation:bnFloat 5s ease-in-out infinite}
+.bx-q{right:30%;top:42%;font-size:56cqh;color:rgba(255,255,255,.1);transform:translateY(-50%)}
+.bx-a{left:5%;top:34%;font-size:44cqh;color:rgba(255,255,255,.1)}
+.bx-b{left:17%;top:48%;font-size:36cqh;color:rgba(250,204,21,.16)}
+.bx-c{left:28%;top:30%;font-size:30cqh;color:rgba(255,255,255,.08)}
+.bx-t{position:absolute;left:5%;top:13%;z-index:1;font:600 8.5cqh/1 ui-monospace,Consolas,monospace;letter-spacing:.06em;color:rgba(255,236,170,.75);text-shadow:0 0 2cqh rgba(250,204,21,.5);white-space:nowrap}
+@keyframes bnBoard{to{background-position:128px 0}}
+@keyframes bnSheen{0%,25%{background-position:130% 0}75%,100%{background-position:-30% 0}}
+@keyframes bnFloat{0%,100%{transform:translateY(-52%) rotate(-2deg)}50%{transform:translateY(-58%) rotate(2deg)}}
+.bn-wt{background:linear-gradient(115deg,#0c100a,#1f2717 55%,#35341f)}
+.bn-wt::before{inset:-15%;background:radial-gradient(38% 60% at 18% 30%,rgba(86,100,52,.6),transparent 70%),radial-gradient(34% 55% at 52% 80%,rgba(104,86,52,.55),transparent 70%),radial-gradient(30% 50% at 84% 22%,rgba(52,66,42,.7),transparent 70%),radial-gradient(26% 40% at 36% 62%,rgba(30,38,24,.7),transparent 70%);animation:bnDrift 18s ease-in-out infinite alternate}
+.bn-wt::after{inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.1) 0 1px,transparent 1px 3px),radial-gradient(120% 120% at 50% 50%,transparent 55%,rgba(0,0,0,.6));z-index:1}
+.bw-r{position:absolute;right:6%;top:50%;width:104cqh;height:104cqh;transform:translateY(-50%);border-radius:50%;border:.7cqh solid rgba(255,159,10,.9);box-shadow:0 0 3cqh rgba(255,159,10,.45),inset 0 0 4cqh rgba(255,159,10,.25);background:linear-gradient(#ff9f0a,#ff9f0a) 50% 50%/.6cqh 100% no-repeat,linear-gradient(#ff9f0a,#ff9f0a) 50% 50%/100% .6cqh no-repeat,radial-gradient(circle,transparent 0 22%,rgba(255,159,10,.55) 22.5% 23.5%,transparent 24% 48%,rgba(255,159,10,.4) 48.5% 49.5%,transparent 50%);z-index:2;overflow:hidden}
+.bw-s{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,rgba(255,159,10,.55),rgba(255,159,10,0) 28%);animation:bnSpin 3.6s linear infinite}
+.bw-tr{position:absolute;left:-30%;top:36%;width:26%;height:.8cqh;border-radius:9px;background:linear-gradient(90deg,transparent,#ffd98a 70%,#fff);box-shadow:0 0 2cqh #ffb020;z-index:2;animation:bnTrace 2.8s linear infinite}
+.bw-tr2{top:68%;width:20%;animation-delay:1.3s;animation-duration:3.3s}
+.bw-t{position:absolute;left:5%;top:26%;z-index:2;font:italic 900 24cqh/1 Impact,"Arial Narrow",Arial,sans-serif;letter-spacing:.07em;color:#efe6cc;text-shadow:0 .6cqh 0 #7a4a06,0 0 3cqh rgba(255,159,10,.55);white-space:nowrap}
+.bw-u{position:absolute;left:5.4%;top:56%;z-index:2;font:700 8cqh/1 Arial,sans-serif;letter-spacing:.28em;color:#ff9f0a;white-space:nowrap}
+@keyframes bnDrift{from{transform:translate(-3%,-2%) scale(1)}to{transform:translate(3%,2%) scale(1.08)}}
+@keyframes bnTrace{0%{transform:translateX(0);opacity:0}8%{opacity:1}100%{transform:translateX(520%);opacity:0}}
+@media (prefers-reduced-motion:reduce){.bx-k,.bw-s,.bw-tr{animation:none!important}}

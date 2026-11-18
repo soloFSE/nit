@@ -3,15 +3,23 @@
 // (своя картинка, в том числе GIF и анимированный WebP). Баннер показывается в шапке профиля и в «Настройках».
 const BN_LIST=[ // [id, название, анимированный?]
   ['dawn','Рассвет',0],['forest','Лес',0],['ocean','Океан',0],['violet','Фиалка',0],['graphite','Графит',0],['gold','Золото',0],
-  ['aurora','Северное сияние',1],['neon','Неон',1],['flame','Пламя',1],['waves','Волны',1],['stars','Звёзды',1],['snow','Снегопад',1],['liquid','Жидкость',1],['sunset','Закат',1]
+  ['aurora','Северное сияние',1],['neon','Неон',1],['flame','Пламя',1],['waves','Волны',1],['stars','Звёзды',1],['snow','Снегопад',1],['liquid','Жидкость',1],['sunset','Закат',1],
+  ['chess','Шахматный гамбит',1,'ne95gr'],['wt','Боевой вылет',1,'ne95gr'] // личные баннеры: видит и ставит только этот ник (проверяет и сервер, supabase/v13.sql)
 ];
+// Дополнительные элементы личных баннеров
+const BN_DECOR={
+  chess:d=>{[['bx-k','♞'],['bx-q','♚'],['bx-a','♜'],['bx-b','♝'],['bx-c','♛']].forEach(([c,t])=>d.append(el('i','bx '+c,t)));d.append(el('span','bx-t','1. e4 e5  2. Nf3 Nc6  3. Bb5 a6'))},
+  wt:d=>{const r=el('div','bw-r');r.append(el('i','bw-s'));d.append(r,el('i','bw-tr'),el('i','bw-tr bw-tr2'),el('span','bw-t','WAR THUNDER'),el('span','bw-u','ВОЗДУХ · ЗЕМЛЯ · МОРЕ'))}
+};
+const bnOwn=o=>!o||String(typeof myName!=='undefined'?myName:'').toLowerCase()===o;
 const bnUrl=p=>SUPABASE_URL+'/storage/v1/object/public/banners/'+p;
-const bnCan=()=>(typeof isPremium==='function'&&isPremium(me))||(typeof amAppAdmin!=='undefined'&&amAppAdmin);
+const bnFull=()=>(typeof isPremium==='function'&&isPremium(me))||(typeof amAppAdmin!=='undefined'&&amAppAdmin);
+const bnCan=()=>bnFull()||BN_LIST.some(b=>b[3]&&bnOwn(b[3]));
 // Элемент баннера (или null, если баннера нет)
 function bannerEl(v,cls){
   if(!v)return null;
   const d=el('div','bn'+(cls?' '+cls:''));
-  if(v.startsWith('p:')){const id=v.slice(2);if(!BN_LIST.some(b=>b[0]===id))return null;d.classList.add('bn-'+id)}
+  if(v.startsWith('p:')){const id=v.slice(2);if(!BN_LIST.some(b=>b[0]===id))return null;d.classList.add('bn-'+id);if(BN_DECOR[id])BN_DECOR[id](d)}
   else{d.classList.add('bn-img');const i=document.createElement('img');i.alt='';i.decoding='async';i.src=bnUrl(v);i.onerror=()=>d.remove();d.append(i)}
   return d;
 }
@@ -36,10 +44,10 @@ function bannerEditor(s,cur){
   }
   const strip=el('div','bn-strip');
   const mk=(id,name,anim)=>{const b=el('button','bn-th');const t=bannerEl('p:'+id);b.append(t,el('span',null,(anim?'✨ ':'')+name));b.onclick=e=>{e.preventDefault();st.val='p:'+id;st.file=null;st.changed=true;showPrev();mark()};b.dataset.id='p:'+id;strip.append(b)};
-  BN_LIST.forEach(([id,n,a])=>mk(id,n,a));
+  BN_LIST.forEach(([id,n,a,o])=>{if(o?bnOwn(o):bnFull())mk(id,n,a)});
   const mark=()=>strip.querySelectorAll('.bn-th').forEach(b=>b.classList.toggle('on',!st.file&&st.val===b.dataset.id));mark();
   box.append(strip);
-  const row=el('div','bn-btns');
+  const row=el('div','bn-btns');if(!bnFull())row.hidden=true;
   const up=el('button','ghost','Своя картинка / GIF'),del=el('button','ghost danger','Убрать баннер');
   const f=document.createElement('input');f.type='file';f.accept='image/jpeg,image/png,image/webp,image/gif';f.hidden=true;
   up.onclick=e=>{e.preventDefault();f.click()};
